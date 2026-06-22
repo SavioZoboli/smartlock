@@ -1,0 +1,5 @@
+src/firmware/.pio
+src/*/.vscode
+src/*/node_modules
+src/*/.env
+src/firmware/include/secrets.h
