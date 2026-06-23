@@ -1,4 +1,4 @@
-import { roteiaMqttSistema } from "./sistema.routes";
+import { roteiaMqttSistema } from "./sistema.topic";
 
 export const rotearMensagemMQTT = async (topico: string, payload: any) => {
   

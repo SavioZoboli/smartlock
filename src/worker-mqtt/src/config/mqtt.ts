@@ -1,5 +1,5 @@
 import mqtt from "mqtt";
-import { rotearMensagemMQTT } from "../routes/mqtt.routes";
+import { rotearMensagemMQTT } from "../topic/mqtt.topic";
 
 export const initMqtt = () => {
   // Avalia as configurações de conexão apenas no momento da execução
