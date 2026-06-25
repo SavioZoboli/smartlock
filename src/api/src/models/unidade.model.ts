@@ -16,6 +16,10 @@ interface UnidadeCreationAttributes extends Optional<
 > {}
 
 class Unidade extends Model<UnidadesAttributes, UnidadeCreationAttributes> {
+  declare id: number;
+  declare nome: string;
+  declare regional: string;
+  declare ativo: boolean;
 }
 
 Unidade.init(

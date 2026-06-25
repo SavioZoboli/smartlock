@@ -22,6 +22,18 @@ class Smartlock extends Model<
   SmartlockAttributes,
   SmartlockCreationAttributes
 > {
+
+  declare id: number;
+  declare mac_address: string;
+  declare apelido: string;
+  declare unidade_id: string;
+  declare is_online: boolean;
+  declare has_equipamentos: boolean;
+  declare ativo: boolean;
+  declare createdAt?: Date;
+  declare updatedAt?: Date;
+
+
 }
 
 Smartlock.init(
@@ -65,7 +77,7 @@ Smartlock.init(
   },
   {
     sequelize,
-    tableName: "smartlock",
+    tableName: "smartlocks",
     timestamps: true,
   },
 );
