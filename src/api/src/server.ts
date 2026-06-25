@@ -21,6 +21,9 @@ app.get("/status", (req, res) => {
   });
 });
 
+const indexRoutes = require("./routes/index.routes")
+app.use("/api",indexRoutes)
+
 // Liga o servidor HTTP Express
 app.listen(PORT, () => {
   console.log(`[SISTEMA] Servidor HTTP operacional na porta ${PORT}`);

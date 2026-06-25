@@ -50,7 +50,7 @@ Equipamento.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'smartlock',
+        model: 'smartlocks',
         key: 'id',
       },
     },
@@ -60,7 +60,7 @@ Equipamento.init(
     },
     usuario_atual_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'usuarios',
         key: 'id',

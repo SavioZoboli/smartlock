@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from "sequelize";
+import { DataTypes, Model, Optional, Sequelize } from "sequelize";
 import sequelize from '../config/database';
 
 interface LogUsuarioAttributes {
@@ -40,7 +40,7 @@ LogUsuario.init(
         type:DataTypes.INTEGER,
         allowNull:false,
         references:{
-            model:'smartlock',
+            model:'smartlocks',
             key:'id'
         }
     },
@@ -55,7 +55,7 @@ LogUsuario.init(
     timestamp:{
         type:DataTypes.DATE,
         allowNull:false,
-        defaultValue:Date.now()
+        defaultValue:Sequelize.fn("NOW")
     }
   },
   {
