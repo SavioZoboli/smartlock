@@ -26,13 +26,13 @@ export const rotearMensagemMQTT = async (topico: string, payload: any) => {
     switch (partesTopico[1]){
         case 'usuario':
             console.log("Mensagem recebida para o usuário")
-            break;
+            return;
         case 'equipamento':
             console.log("Mensagem recebida para o equipamento")
-            break;
+            return;
         case 'system':
             roteiaMqttSistema(partesTopico[2]||'',macAddress,payload)
-            break;
+            return;
     }
 
     // Se chegou até aqui, é um tópico que a API não tem interesse em tratar
