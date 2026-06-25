@@ -1,4 +1,4 @@
-import LogSmartlockService from "../services/logSmartLock.service";
+import sistemaService from "../services/sistema.service";
 
 class LogSmartlockController {
 
@@ -10,7 +10,7 @@ class LogSmartlockController {
             return;
         }
         try{
-            await LogSmartlockService.gravarLog(mac,status)
+            await sistemaService.enviaStatusAtual(mac,status)
         }catch(e){
             console.log("[LogSmartLock Controller] Erro ao processar requisição")
             console.error(e)
