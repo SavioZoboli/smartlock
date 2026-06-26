@@ -33,6 +33,7 @@ void InventoryManager::update() {
 }
 
 bool InventoryManager::scanJustFinished() {
+    return true; //Remover quando chegar o leitor de RFID
     return flagFinished;
 }
 

@@ -1,77 +1,96 @@
 #include "wifi_handler.h"
 #include <WiFiManager.h>
 #include "status_feedback_handler.h"
-
-// Usamos um namespace anônimo para encapsular essas variáveis.
-// Elas só existem dentro deste arquivo, protegendo a memória do projeto.
+#include "secrets.h"
 namespace {
     WiFiManager wm;
     unsigned long lastReconnectAttempt = 0;
-    const unsigned long RECONNECT_INTERVAL = 60000; // 60.000 ms = 1 minuto
+    const unsigned long RECONNECT_INTERVAL = 60000;
     bool portalRunning = false;
     
-    char macHtml[150]; // Buffer para armazenar o HTML com o MAC
+    char macHtml[150];
     WiFiManagerParameter* customMacParam = nullptr;
 }
 
 void WiFiHandler::init() {
-    // Sinaliza visualmente que iniciou o processo de rede
     StatusFeedback::set(Component::WIFI, State::CONNECTING);
+    WiFi.mode(WIFI_STA);
 
-    // Garante que o ESP32 atue como Estação (Cliente) e Access Point
-    WiFi.mode(WIFI_AP_STA);
+    // 1. TENTA CONECTAR NA REDE SALVA NA FLASH
+    Serial.println("[WIFI] Tentando rede salva na memoria...");
+    WiFi.begin(); // Usa as credenciais que já estão na NVS
     
-    // 1. Injeta o MAC Address na tela do Portal Cativeiro
-    snprintf(macHtml, sizeof(macHtml), 
-             "<hr><h3>Configuracao de Fabrica</h3><p><b>MAC Address:</b> %s</p><hr>", 
-             WiFi.macAddress().c_str());
-    customMacParam = new WiFiManagerParameter(macHtml);
-    wm.addParameter(customMacParam);
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) { // Aguarda ~10 segundos
+        delay(500);
+        attempts++;
+        Serial.print(".");
+    }
 
-    // 2. O Segredo do Assíncrono: Desabilita o bloqueio de código
-    wm.setConfigPortalBlocking(false);
+    // 2. SE FALHOU (OU ESTAVA VAZIO), TENTA A REDE PADRÃO DA FIESC
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("\n[WIFI] Rede salva falhou/vazia. Tentando rede padrao FIESC...");
+        WiFi.disconnect();
+        delay(100);
+        
+        WiFi.begin(WIFI_DEFAULT_SSID, WIFI_DEFAULT_PASSWORD);
+        
+        attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < 20) { // Aguarda mais ~10 segundos
+            delay(500);
+            attempts++;
+            Serial.print(".");
+        }
+    }
 
-    // 3. Tenta conectar com o que está na Flash (NVS)
-    // Se falhar (ou se estiver vazio), ele abre a rede "SMART_LOCK_CONFIG" sem travar o código
-    if(wm.autoConnect("SMART_LOCK_CONFIG")) {
+    // 3. SE TUDO FALHOU, SOBE O PORTAL CATIVEIRO
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\n[WIFI] Conectado com sucesso!");
         StatusFeedback::set(Component::WIFI, State::OK);
-        Serial.println("[WIFI] Conectado via cache da Flash!");
     } else {
+        Serial.println("\n[WIFI] Nenhuma rede disponivel. Subindo Portal AP em background...");
+        
+        snprintf(macHtml, sizeof(macHtml), 
+                 "<hr><h3>Configuracao de Fabrica</h3><p><b>MAC Address:</b> %s</p><hr>", 
+                 WiFi.macAddress().c_str());
+        customMacParam = new WiFiManagerParameter(macHtml);
+        wm.addParameter(customMacParam);
+
+        // Configurações do Portal
+        wm.setConfigPortalBlocking(false); // Mantém o hardware rodando!
+        wm.setRemoveDuplicateAPs(true);
+        wm.setMinimumSignalQuality(20);
+        wm.setConfigPortalTimeout(0);
+        
+        // Inicia o portal AP de forma direta, sem forçar autoConnect a fazer scan
+        wm.startConfigPortal("SMART_LOCK_CONFIG");
         portalRunning = true;
-        Serial.println("[WIFI] Cache vazio/invalido. Portal AP iniciado de forma assincrona.");
     }
 }
 
 void WiFiHandler::update() {
-    // Cenário 1: O Portal Cativeiro está aberto esperando o celular do usuário
     if (portalRunning) {
-        wm.process(); // Processa as requisições HTTP da página sem usar delay()
+        wm.process(); // Mantém o portal web vivo sem travar o loop
         
-        // Verifica se o usuário finalizou a digitação e o ESP32 conectou
         if (WiFi.status() == WL_CONNECTED) {
             portalRunning = false;
             StatusFeedback::set(Component::WIFI, State::OK);
-            Serial.println("[WIFI] Credenciais recebidas. Conectado com sucesso!");
+            Serial.println("[WIFI] Credenciais recebidas via Portal com sucesso!");
         }
-        return; // Sai da função para não executar a lógica de reconexão abaixo
+        return; 
     }
 
-    // Cenário 2: Operação normal, verificando se o roteador caiu
+    // Operação normal: monitoramento de queda
     if (WiFi.status() != WL_CONNECTED) {
-        StatusFeedback::set(Component::WIFI, State::ERROR); // LED passa a piscar
+        StatusFeedback::set(Component::WIFI, State::ERROR);
         
         unsigned long currentMillis = millis();
-        // Dispara a tentativa exatamente a cada 1 minuto
         if (currentMillis - lastReconnectAttempt >= RECONNECT_INTERVAL) {
             lastReconnectAttempt = currentMillis;
-            Serial.println("[WIFI] Conexao perdida. Tentando reconectar (Sem abrir o Portal)...");
-            
-            // Usamos WiFi.reconnect() em vez do WiFiManager para não reabrir a rede do ESP32,
-            // garantindo que não crie uma brecha de segurança toda vez que o roteador reiniciar.
+            Serial.println("[WIFI] Conexao perdida. Tentando reconectar no background...");
             WiFi.reconnect(); 
         }
     } else {
-        // Mantém o LED aceso e fixo
         StatusFeedback::set(Component::WIFI, State::OK);
     }
 }

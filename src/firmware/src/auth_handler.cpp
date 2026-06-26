@@ -45,7 +45,7 @@ AuthState AuthHandler::requestAccess(const char* uid) {
     cloudRequestStartTime = millis();
     currentState = AuthState::PENDING_CLOUD;
     
-    Serial.printf("[AUTH] UID %s desconhecida. Consultando Node-RED...\n", uid);
+    Serial.printf("[AUTH] UID %s desconhecida. Consultando Servidor...\n", uid);
     return AuthState::PENDING_CLOUD;
 }
 

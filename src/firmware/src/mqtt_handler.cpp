@@ -156,8 +156,13 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
         }
 
         // Extrai os dados seguindo o contrato esperado do Node-RED
-        const char *uid = doc["uid"];
-        bool isAuthorized = doc["autorizado"];
+        const char *uid = doc["uuid"];
+        bool isAuthorized = doc["authorized"];
+
+        Serial.print("O usuário ");
+        Serial.print(uid);
+        Serial.print(" está ");
+        Serial.print(isAuthorized?"autorizado":"não autorizado");
 
         if (uid != nullptr)
         {

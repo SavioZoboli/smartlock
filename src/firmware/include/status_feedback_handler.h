@@ -13,7 +13,9 @@ enum class State {
     CONNECTING,   
     OK,           
     ERROR,        
-    DIRTY_OFFLINE 
+    DIRTY_OFFLINE,
+    OPEN,
+    CLOSED
 };
 
 class StatusFeedback {
