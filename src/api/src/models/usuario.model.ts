@@ -17,7 +17,16 @@ interface UsuarioAttributes {
 interface UsuarioCreationAttributes extends Optional<UsuarioAttributes, 'id' | 'ativo'> {}
 
 // 3. Inicialização da Classe do Model
-class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes>{}
+class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes>{
+  declare id: number;
+  declare uid_rfid: string;
+  declare nome: string;
+  declare matricula: string;
+  declare unidade_lotacao_id: number;
+  declare ativo: boolean;
+  declare createdAt?: Date;
+  declare updatedAt?: Date;
+}
 
 // 4. Mapeamento para o Banco de Dados
 Usuario.init(
