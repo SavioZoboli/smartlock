@@ -1,9 +1,6 @@
 #include "hardware_io_handler.h"
-#include "config.h" 
-// Garanta que no seu config.h existam:
-// #define RELE_PIN 26
-// #define SENSOR_PORTA_PIN 14
-// #define TEMPO_ABERTURA_MS 5000 
+#include "config.h"
+#include "status_feedback_handler.h"
 
 namespace {
     // --- Variáveis do Relé ---
@@ -23,13 +20,11 @@ namespace {
 void HardwareIOHandler::init() {
     // Configuração do Relé
     pinMode(RELE_PIN, OUTPUT);
-    lockDoor(); // Garante que a fechadura inicia trancada!
+    lockDoor();
 
-    // Configuração do Sensor com Pull-Up interno (Evita resistor externo)
+    // Configuração do Sensor com Pull-Up interno
     pinMode(SENSOR_PORTA_PIN, INPUT_PULLUP);
 
-    // Faz a leitura inicial
-    // Com INPUT_PULLUP: Sensor encostado (porta fechada) = LOW. Sensor afastado (aberta) = HIGH.
     currentDoorState = (digitalRead(SENSOR_PORTA_PIN) == HIGH);
     lastDoorReading = currentDoorState;
 }
@@ -83,17 +78,17 @@ void HardwareIOHandler::unlockDoor() {
     digitalWrite(RELE_PIN, HIGH); 
     relayIsActive = true;
     relayOpenedAt = millis();
+    StatusFeedback::set(Component::PORTA,State::OPEN);
     Serial.println("[HARDWARE] Relé Acionado (Porta Destrancada).");
 }
 
 void HardwareIOHandler::lockDoor() {
-    // Mude para HIGH aqui se o seu relé for ativo baixo.
     digitalWrite(RELE_PIN, LOW);
+    StatusFeedback::set(Component::PORTA,State::CLOSED);
     relayIsActive = false;
 }
 
-bool HardwareIOHandler::isDoorOpen() {
-    return false;
+bool HardwareIOHandler::isDoorOpen() { 
     return currentDoorState;
 }
 

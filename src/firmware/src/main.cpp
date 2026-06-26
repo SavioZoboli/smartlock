@@ -10,6 +10,7 @@
 #include "buzzer_handler.h"
 #include "inventory_manager.h"
 #include "storage_handler.h"
+#include "state_handler.h"
 
 bool esperandoNuvem = false;
 
@@ -17,10 +18,17 @@ void setup()
 {
     Serial.begin(115200);
 
+    // Inicia a máquina de estados do sistema.
+    StateHandler::init();
+
     // Inicia o feedback visual e sonoro
     StatusFeedback::init();
     BuzzerHandler::init();
     DisplayHandler::init();
+
+
+    //Inicializa a fechadura
+    HardwareIOHandler::init();
 
     // Inicializa com tudo desconectado
     DisplayHandler::setIndicators(false, false, false);
@@ -42,11 +50,10 @@ void setup()
     // Inicializa a storage
     StorageHandler::init();
 
-    // Delay de inicialização
-    // delay(1500);
-
     // Finaliza a inicialização
     DisplayHandler::setFixedMessage("SMART LOCK", "Aproxime o\nCracha");
+
+    StateHandler::setState(SystemState::IDLE);
 }
 
 void loop()
@@ -67,9 +74,8 @@ void loop()
 
     char uidLida[16] = {0};
 
-    // Serial.println("[LOOP] Aguardando leitura...");
-    //  REGRA 1: NOVO CRACHÁ DETECTADO E NÃO ESTAMOS ESPERANDO NADA
-    if (!esperandoNuvem && RfidHfHandler::readTag(uidLida, sizeof(uidLida)))
+    //  NOVO CRACHÁ DETECTADO E NÃO ESTAMOS ESPERANDO NADA
+    if (StateHandler::getState() == SystemState::IDLE && RfidHfHandler::readTag(uidLida, sizeof(uidLida)))
     {
         Serial.print("UID Lida:");
         Serial.println(uidLida);
@@ -79,57 +85,61 @@ void loop()
         {
             HardwareIOHandler::unlockDoor();
             BuzzerHandler::play(SoundEffect::OP_SUCCESS);
+            StateHandler::setState(SystemState::IN_PROCESS);
             DisplayHandler::setTimeoutMessage("SUCESSO", "Autorizado", 5000);
         }
         else if (status == AuthState::DENIED || status == AuthState::ERROR_OFFLINE)
         {
             BuzzerHandler::play(SoundEffect::OP_FAIL);
+            StateHandler::setState(SystemState::IDLE);
             DisplayHandler::setTimeoutMessage("NEGADO", "Negado", 3000);
         }
         else if (status == AuthState::PENDING_CLOUD)
         {
-            esperandoNuvem = true;
-            // CORREÇÃO 1: Texto com no máximo 10 letras por linha para caber nos 128px
             DisplayHandler::setFixedMessage("AGUARDE...", "Validando\nNuvem");
         }
     }
 
-    // REGRA 2: ESTAMOS ESPERANDO A RESPOSTA DO NODE-RED CHEGAR
-    if (esperandoNuvem)
+    // ESTAMOS ESPERANDO A RESPOSTA DO WORKER CHEGAR
+    if (StateHandler::getState() == SystemState::AWAITING_CLOUD)
     {
         AuthState asyncStatus = AuthHandler::getAsyncStatus();
 
         // Se a nuvem respondeu algo (Sucesso, Negado ou Timeout) sai do estado Pending
         if (asyncStatus != AuthState::PENDING_CLOUD)
         {
-            esperandoNuvem = false;
-
-            // CORREÇÃO 2: Restaura a tela "padrão" silenciosamente no background ANTES de dar o veredito
+            
+            // Restaura a tela padrão
             DisplayHandler::setFixedMessage("SMART LOCK", "Aproxime o\nCracha");
 
             if (asyncStatus == AuthState::GRANTED)
             {
                 HardwareIOHandler::unlockDoor();
                 BuzzerHandler::play(SoundEffect::OP_SUCCESS);
+                StateHandler::setState(SystemState::IN_PROCESS);
                 DisplayHandler::setTimeoutMessage("SUCESSO", "Autorizado", 5000);
             }
             else if (asyncStatus == AuthState::DENIED)
             {
                 BuzzerHandler::play(SoundEffect::OP_FAIL);
+                StateHandler::setState(SystemState::IDLE);
                 DisplayHandler::setTimeoutMessage("NEGADO", "Negado", 3000);
             }
             else if (asyncStatus == AuthState::TIMEOUT_CLOUD)
             {
                 BuzzerHandler::play(SoundEffect::OP_FAIL);
+                StateHandler::setState(SystemState::IDLE);
                 DisplayHandler::setTimeoutMessage("FALHA REDE", "Sem Resposta", 3000);
             }
         }
     }
-    // 1. Porta fechou: lemos, calculamos o diff, salvamos o evento
+    
     if (HardwareIOHandler::doorJustClosed())
     {
         // Liga o leitor e espera terminar (bloqueante por 4s aqui ou por máquina de estados)
         InventoryManager::startScanFor(4000);
+        StatusFeedback::set(Component::PORTA,State::CLOSED);
+        StateHandler::setState(SystemState::READING);
     }
 
     // 2. Scan terminou: processa a diferença e salva na Fila Offline
@@ -141,7 +151,8 @@ void loop()
         {
             String jsonEventos = InventoryManager::serializeEvents(eventos); // Transforma em JSON
             StorageHandler::pushEventToQueue(jsonEventos.c_str());           // Empilha na fila (Flash)
-            InventoryManager::commitInventory();                             // Atualiza o estado atual
+            InventoryManager::commitInventory();   
+            StateHandler::setState(SystemState::IDLE);                          // Atualiza o estado atual
         }
     }
 
@@ -163,4 +174,6 @@ void loop()
             }
         }
     }
+
+    Serial.println(StateHandler::getStateString());
 }

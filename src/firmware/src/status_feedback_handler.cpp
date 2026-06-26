@@ -48,6 +48,16 @@ void StatusFeedback::set(Component comp, State state) {
         case State::DIRTY_OFFLINE:
             targetLed->blinkInterval = 1000; // Pisca lento (1000ms)
             break;
+        case State::OPEN:
+            targetLed->blinkInterval = 0;
+            targetLed->ledPhysicalState = true;
+            digitalWrite(targetLed->pin,HIGH);
+            break;
+        case State::CLOSED:
+            targetLed->blinkInterval = 0;
+            targetLed->ledPhysicalState = false;
+            digitalWrite(targetLed->pin,LOW);
+            break;
     }
 }
 
