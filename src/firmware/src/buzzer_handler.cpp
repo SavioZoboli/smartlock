@@ -44,6 +44,7 @@ void BuzzerHandler::buzzerTask(void* parameter) {
         case SoundEffect::OP_FAIL:      soundOperationFail(); break;
         case SoundEffect::LOGOFF:       soundLogoff(); break;
         case SoundEffect::STARTUP:      soundStartup();break;
+        case SoundEffect::TAG_READ:     soundTagRead();break;
     }
 
     // Desliga o buzzer por segurança ao terminar
@@ -108,4 +109,8 @@ void BuzzerHandler::soundStartup(){
     // Nota 3: Longa e marcante (nãã)
     tone(BUZZER_PIN, 784, 350); // NOTE_G5 (Sol)
     delay(350);
+}
+
+void BuzzerHandler::soundTagRead(){
+    tone(BUZZER_PIN, NOTE_A4, 100); delay(120);
 }

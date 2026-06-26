@@ -21,12 +21,11 @@ void setup()
     StatusFeedback::init();
     BuzzerHandler::init();
     DisplayHandler::init();
-    
 
     // Inicializa com tudo desconectado
     DisplayHandler::setIndicators(false, false, false);
     DisplayHandler::setFixedMessage("SMART LOCK", "Inicializando");
-
+    delay(1000);
     // Inicia a rotina de rede (Se estiver sem internet, o portal sobe instantaneamente)
     WiFiHandler::init();
 
@@ -40,12 +39,11 @@ void setup()
     // Inicializa o módulo de autenticação
     AuthHandler::init();
 
-    //Inicializa a storage
+    // Inicializa a storage
     StorageHandler::init();
 
-    //Delay de inicialização
-    delay(1500);
-
+    // Delay de inicialização
+    // delay(1500);
 
     // Finaliza a inicialização
     DisplayHandler::setFixedMessage("SMART LOCK", "Aproxime o\nCracha");
@@ -62,7 +60,6 @@ void loop()
     WiFiHandler::update();
     MqttHandler::update();
 
-
     DisplayHandler::setIndicators(
         WiFiHandler::isConnected(),
         MqttHandler::isConnected(),
@@ -70,11 +67,14 @@ void loop()
 
     char uidLida[16] = {0};
 
-    // REGRA 1: NOVO CRACHÁ DETECTADO E NÃO ESTAMOS ESPERANDO NADA
+    // Serial.println("[LOOP] Aguardando leitura...");
+    //  REGRA 1: NOVO CRACHÁ DETECTADO E NÃO ESTAMOS ESPERANDO NADA
     if (!esperandoNuvem && RfidHfHandler::readTag(uidLida, sizeof(uidLida)))
     {
+        Serial.print("UID Lida:");
+        Serial.println(uidLida);
         AuthState status = AuthHandler::requestAccess(uidLida);
-
+        BuzzerHandler::play(SoundEffect::TAG_READ);
         if (status == AuthState::GRANTED)
         {
             HardwareIOHandler::unlockDoor();
@@ -100,10 +100,10 @@ void loop()
         AuthState asyncStatus = AuthHandler::getAsyncStatus();
 
         // Se a nuvem respondeu algo (Sucesso, Negado ou Timeout) sai do estado Pending
-        if (asyncStatus != AuthState::PENDING_CLOUD) 
+        if (asyncStatus != AuthState::PENDING_CLOUD)
         {
             esperandoNuvem = false;
-            
+
             // CORREÇÃO 2: Restaura a tela "padrão" silenciosamente no background ANTES de dar o veredito
             DisplayHandler::setFixedMessage("SMART LOCK", "Aproxime o\nCracha");
 

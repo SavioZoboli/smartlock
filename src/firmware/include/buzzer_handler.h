@@ -9,7 +9,8 @@ enum class SoundEffect {
     OP_SUCCESS,
     OP_FAIL,
     LOGOFF,
-    STARTUP
+    STARTUP,
+    TAG_READ
 };
 
 class BuzzerHandler {
@@ -35,4 +36,5 @@ private:
     static void soundOperationFail();
     static void soundLogoff();
     static void soundStartup();
+    static void soundTagRead();
 };
