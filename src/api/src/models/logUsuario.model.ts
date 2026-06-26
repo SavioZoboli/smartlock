@@ -3,7 +3,7 @@ import sequelize from '../config/database';
 
 interface LogUsuarioAttributes {
   id: number;
-  usuario_id?: number;
+  usuario_id: number|null;
   smartlock_id: number;
   uid_lido: string;
   operacao: string;
@@ -12,7 +12,7 @@ interface LogUsuarioAttributes {
 
 interface LogUsuarioCreationAttributes extends Optional<
   LogUsuarioAttributes,
-  "id" | "usuario_id"
+  "id" | "usuario_id" | 'timestamp'
 > {}
 
 class LogUsuario extends Model<

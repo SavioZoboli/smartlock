@@ -4,6 +4,7 @@ const router = require("express").Router();
 
 const smartlockRouter = require("./smartlock.routes")
 const unidadeRouter = require("./unidade.routes")
+const usuarioRouter = require("./usuario.routes")
 
 router.get('/',(req:Request,res:Response)=>{
     res.status(200).json({message:"API acessível"})
@@ -11,5 +12,6 @@ router.get('/',(req:Request,res:Response)=>{
 
 router.use(`/smartlock`,smartlockRouter)
 router.use(`/unidade`,unidadeRouter)
+router.use(`/usuario`,usuarioRouter)
 
 module.exports = router;
