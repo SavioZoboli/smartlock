@@ -1,4 +1,5 @@
 import { roteiaMqttSistema } from "./sistema.topic";
+import { usuarioRoutesMQTT } from "./usuario.topic";
 
 export const rotearMensagemMQTT = async (topico: string, payload: any) => {
   
@@ -24,8 +25,8 @@ export const rotearMensagemMQTT = async (topico: string, payload: any) => {
 
   try {
     switch (partesTopico[1]){
-        case 'usuario':
-            console.log("Mensagem recebida para o usuário")
+        case 'usuarios':
+            usuarioRoutesMQTT(partesTopico[2]||'',macAddress,payload)
             return;
         case 'equipamento':
             console.log("Mensagem recebida para o equipamento")
