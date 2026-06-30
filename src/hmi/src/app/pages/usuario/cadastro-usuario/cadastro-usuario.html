@@ -1,1 +1,61 @@
-<p>cadastro-usuario works!</p>
+<div class="page-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Usuários</div>
+      <h2>Novo Usuário</h2>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <form [formGroup]="userForm" (ngSubmit)="salvar()">
+      
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Nome</mat-label>
+          <input matInput formControlName="nome">
+          <mat-icon matPrefix>person</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Sobrenome</mat-label>
+          <input matInput formControlName="sobrenome">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>UID (Identificador Único)</mat-label>
+          <input matInput formControlName="uid">
+          <mat-icon matPrefix>fingerprint</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Matrícula</mat-label>
+          <input matInput formControlName="matricula" mask="00000" placeholder="00000">
+          <mat-icon matPrefix>badge</mat-icon>
+          <mat-hint>Apenas 5 dígitos numéricos</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Unidade de Lotação</mat-label>
+          <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
+          <mat-icon matPrefix>business</mat-icon>
+          <mat-autocomplete #auto="matAutocomplete">
+            @for (unidade of filteredUnidades | async; track unidade) {
+              <mat-option [value]="unidade">{{ unidade }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+
+      <div class="form-actions">
+        <button mat-stroked-button type="button">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="userForm.invalid">
+          Cadastrar Usuário
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

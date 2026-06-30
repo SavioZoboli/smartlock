@@ -2,10 +2,12 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
+import { provideEnvironmentNgxMask } from 'ngx-mask';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes)
+    provideRouter(routes),
+    provideEnvironmentNgxMask()
   ]
 };

@@ -1,1 +1,59 @@
-<p>cadastro-smartlock works!</p>
+<div class="page-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Infraestrutura</div>
+      <h2>Novo SmartLock</h2>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <form [formGroup]="slForm" (ngSubmit)="salvar()">
+      
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Unidade Operacional</mat-label>
+          <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
+          <mat-icon matPrefix>business</mat-icon>
+          <mat-autocomplete #auto="matAutocomplete">
+            @for (unidade of filteredUnidades | async; track unidade) {
+              <mat-option [value]="unidade">{{ unidade }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Apelido do Armário (Ex: Recepção 01)</mat-label>
+          <input matInput formControlName="apelido">
+          <mat-icon matPrefix>badge</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>MAC Address do Hardware</mat-label>
+          <input matInput formControlName="macAddress" 
+                 mask="XX:XX:XX:XX:XX:XX" 
+                 [dropSpecialCharacters]="false"
+                 placeholder="00:00:00:00:00:00">
+          <mat-icon matPrefix>lan</mat-icon>
+          <mat-hint>Formato hexadecimal de 48 bits</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row toggle-row">
+        <mat-slide-toggle formControlName="temEquipamentos" color="primary">
+          Possui equipamentos para empréstimo neste armário?
+        </mat-slide-toggle>
+      </div>
+
+      <div class="form-actions">
+        <button mat-stroked-button type="button">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="slForm.invalid">
+          Cadastrar Hardware
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

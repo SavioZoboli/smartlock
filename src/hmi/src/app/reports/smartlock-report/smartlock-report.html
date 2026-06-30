@@ -1,0 +1,69 @@
+<div class="dashboard-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Monitoramento / Inventário</div>
+      <h2>Visão Geral de Hardware</h2>
+    </div>
+
+    <div class="header-controls">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-filter-field">
+        <mat-label>Unidade Operacional</mat-label>
+        <input type="text" matInput [formControl]="unidadeCtrl" [matAutocomplete]="autoUnidade" />
+        <mat-icon matPrefix class="filter-icon">business</mat-icon>
+        <mat-autocomplete #autoUnidade="matAutocomplete">
+          @for (unidade of filteredUnidades | async; track unidade) {
+            <mat-option [value]="unidade">{{ unidade }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-filter-field">
+        <mat-label>Armário / SmartLock</mat-label>
+        <input
+          type="text"
+          matInput
+          [formControl]="smartlockCtrl"
+          [matAutocomplete]="autoSmartlock"
+        />
+        <mat-icon matPrefix class="filter-icon">dns</mat-icon>
+        <mat-autocomplete #autoSmartlock="matAutocomplete">
+          @for (sl of filteredSmartlocks | async; track sl) {
+            <mat-option [value]="sl">{{ sl }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <button mat-icon-button class="refresh-btn" matTooltip="Forçar varredura RFID">
+        <mat-icon>sync</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="equipment-grid">
+    @for (item of equipamentos; track item.id) {
+      <mat-card class="equipment-card" [ngClass]="item.disponivel ? 'status-green' : 'status-gray'">
+        <div class="status-indicator"></div>
+        <div class="card-content">
+          <div class="card-header">
+            <mat-icon class="eq-icon">{{
+              item.tipo === 'NOTEBOOK' ? 'laptop_mac' : 'build'
+            }}</mat-icon>
+            <span class="eq-code">{{ item.tipo }} - {{ item.patrimonio }}</span>
+          </div>
+          <div class="card-body">
+            @if (item.disponivel) {
+              <div class="status-badge available">
+                <mat-icon class="sm-icon">check_circle</mat-icon> Disponível
+              </div>
+            } @else {
+              <div class="status-badge unavailable">
+                <mat-icon class="sm-icon">person</mat-icon> Em uso
+              </div>
+              <div class="employee-name">{{ item.retiradoPor }}</div>
+            }
+          </div>
+        </div>
+      </mat-card>
+    }
+  </div>
+</div>
