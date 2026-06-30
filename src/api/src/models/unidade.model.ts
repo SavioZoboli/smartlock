@@ -6,6 +6,7 @@ interface UnidadesAttributes {
   nome: string;
   regional: string;
   ativo: boolean;
+  entidade:string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -19,6 +20,7 @@ class Unidade extends Model<UnidadesAttributes, UnidadeCreationAttributes> {
   declare id: number;
   declare nome: string;
   declare regional: string;
+  declare entidade:string;
   declare ativo: boolean;
 }
 
@@ -38,6 +40,10 @@ Unidade.init(
       type: DataTypes.STRING(24),
       allowNull: false,
       unique: false,
+    },
+    entidade:{
+      type:DataTypes.STRING,
+      allowNull:false
     },
     ativo: {
       type: DataTypes.BOOLEAN,
