@@ -7,6 +7,7 @@ import { MainLayoutComponent } from './components/main-layout.component/main-lay
 import { CadastroEquipamento } from './pages/equipamento/cadastro-equipamento/cadastro-equipamento';
 import { CadastroSmartlock } from './pages/smartlock/cadastro-smartlock/cadastro-smartlock';
 import { CadastroUnidade } from './pages/unidade/cadastro-unidade/cadastro-unidade';
+import { ListaUnidade } from './pages/unidade/lista-unidade/lista-unidade';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
@@ -23,11 +24,16 @@ export const routes: Routes = [
       // Tela de Dashboard
       { path: 'dashboard', component: SmartlockReport },
       
+      {path:'unidades/lista',component:ListaUnidade},
+
+
+
       // Telas de Cadastros
-      { path: 'cadastro/usuarios', component: CadastroUsuario },
-      { path: 'cadastro/equipamentos', component: CadastroEquipamento },
-      { path: 'cadastro/smartlocks', component: CadastroSmartlock },
-      {path:'cadastro/unidades',component:CadastroUnidade},
+      { path: 'usuarios/cadastro', component: CadastroUsuario },
+      { path: 'equipamentos/cadastro', component: CadastroEquipamento },
+      { path: 'smartlocks/cadastro', component: CadastroSmartlock },
+      {path:'unidades/cadastro',component:CadastroUnidade},
+      {path:'unidades/editar/:id',component:CadastroUnidade},
     ]
   },
 

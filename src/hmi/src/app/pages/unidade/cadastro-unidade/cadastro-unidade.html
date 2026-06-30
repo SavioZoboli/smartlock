@@ -2,16 +2,24 @@
   <div class="page-header-container">
     <div class="title-area">
       <div class="breadcrumb">Gerenciamento / Unidades</div>
-      <h2>Cadastro de Unidade</h2>
+      <h2>{{ unidadeId ? 'Edição de Unidade' : 'Cadastro de Unidade' }}</h2>
     </div>
   </div>
 
   <div class="form-container">
+
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+    }
+
+
     <form [formGroup]="unidadeForm" (ngSubmit)="onSubmit()" class="cadastro-form">
       <div class="form-row">
         <label class="section-label">Entidade</label>
         <mat-chip-listbox
-          formControlName="empresa"
+          formControlName="entidade"
           aria-label="Seleção de Empresa"
           class="custom-chip-list"
         >
@@ -59,11 +67,12 @@
       </div>
 
       <div class="form-actions">
-        <button mat-stroked-button type="button" class="btn-cancel" (click)="onCancelar()">
+        <button mat-stroked-button type="button" class="btn-cancel" (click)="onCancelar()" [disabled]="isLoading">
           Cancelar
         </button>
-        <button mat-flat-button color="primary" type="submit" class="btn-save">
-          <mat-icon>save</mat-icon> Salvar Unidade
+        <button mat-flat-button color="primary" type="submit" class="btn-save" [disabled]="isLoading">
+          <mat-icon>save</mat-icon> 
+          {{ unidadeId ? 'Atualizar Unidade' : 'Salvar Unidade' }}
         </button>
       </div>
     </form>

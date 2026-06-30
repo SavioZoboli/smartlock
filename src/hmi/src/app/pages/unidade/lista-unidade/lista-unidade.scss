@@ -1,0 +1,153 @@
+.page-container {
+  padding: 1.5rem;
+  max-width: 1000px; /* Um pouco mais largo que o form para acomodar colunas da tabela */
+  margin: 0 auto;
+}
+
+/* Cabeçalho estendido do seu modelo original */
+.page-header-container {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.25rem;
+  margin-bottom: 2rem;
+
+  &.with-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .title-area {
+    display: flex;
+    flex-direction: column;
+
+    .breadcrumb {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+  }
+
+  .btn-new {
+    background-color: #0ea5e9; /* Mesmo azul corporativo do seu btn-save */
+    color: white;
+    padding: 0 1.5rem;
+    height: 44px;
+    border-radius: 6px;
+    font-weight: 500;
+
+    &:hover {
+      background-color: #0284c7;
+    }
+    
+    mat-icon {
+      margin-right: 4px;
+    }
+  }
+}
+
+/* Container principal da Tabela */
+.table-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border: 1px solid #e2e8f0;
+  overflow: hidden; /* Mantém os cantos arredondados cobrindo a tabela */
+}
+
+/* Customizações da Tabela Material */
+.custom-table {
+  width: 100%;
+  
+  th.mat-mdc-header-cell {
+    background-color: #f8fafc; /* Fundo leve para o cabeçalho */
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  td.mat-mdc-cell {
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  /* Efeito Hover nas linhas */
+  .custom-row {
+    transition: background-color 0.2s ease;
+    &:hover {
+      background-color: #f8fafc;
+    }
+  }
+}
+
+/* Estilos de Dados e Ícones */
+.fw-500 {
+  font-weight: 500;
+  color: #0f172a !important;
+}
+
+.inline-icon {
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  vertical-align: sub;
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.chip-entidade {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Coluna de ações alinhada à direita */
+.align-right {
+  text-align: right;
+  padding-right: 1.5rem !important;
+}
+
+.action-btn {
+  color: #64748b;
+  transform: scale(0.9);
+  
+  &.edit-btn:hover {
+    color: #0ea5e9;
+    background-color: #e0f2fe;
+  }
+  
+  &.delete-btn:hover {
+    color: #ef4444;
+    background-color: #fee2e2;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem !important;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Paginação adaptada à borda */
+.custom-paginator {
+  border-top: 1px solid #e2e8f0;
+  background-color: #ffffff;
+}
