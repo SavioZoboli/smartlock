@@ -44,6 +44,23 @@ class UsuarioController{
         }
     }
 
+    async getUsuariosAutorizados(req:Request,res:Response){
+        let mac = req.params.mac as string|undefined;
+        if(!mac){
+            return res.status(400).json({message:"Não é possível buscar sem o MAC"})
+        }
+
+        try{
+
+            let usuarios = await usuarioService.getUsersSmartlock(mac)
+            console.log(usuarios)
+            res.status(200).json({usuarios})
+        }catch(e){
+            console.error(e)
+            return res.status(500).json({message:"Erro interno do servidor"})
+        }
+    }
+
 }
 
 export default new UsuarioController();
