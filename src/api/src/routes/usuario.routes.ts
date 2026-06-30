@@ -7,6 +7,8 @@ router.post('/',usuarioController.create)
 
 router.post('/login',usuarioController.login)
 
+router.get('/:mac',usuarioController.getUsuariosAutorizados)
+
 
 
 

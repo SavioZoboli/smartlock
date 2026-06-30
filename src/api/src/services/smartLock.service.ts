@@ -1,11 +1,12 @@
 import sequelize from "../config/database";
 import { SmartLock } from "../models/index.model";
+import Smartlock from "../models/smartlock.model";
 import logSmartLockService from "./logSmartLock.service";
 
 class SmartLockService{
-    async getSmartlockByMac(mac:string):Promise<any>{
+    async getSmartlockByMac(mac:string):Promise<Smartlock>{
         try{
-            let smartlock = await SmartLock.findOne({where:{mac_address:mac},attributes:['id']})
+            let smartlock = await SmartLock.findOne({where:{mac_address:mac}})
             if(!smartlock){
                 throw new Error("SMARTLOCK_NOT_FOUND")
             }

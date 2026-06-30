@@ -1,4 +1,5 @@
 import { Usuario, LogUsuario } from "../models/index.model";
+import Smartlock from "../models/smartlock.model";
 import smartLockService from "./smartLock.service";
 
 class UsuarioService {
@@ -46,6 +47,21 @@ class UsuarioService {
       throw e;
     }
   }
+
+
+  async getUsersSmartlock(mac:string):Promise<Usuario[]>{
+    try{
+        const smartlock:Smartlock = await smartLockService.getSmartlockByMac(mac)
+        if(!smartlock){
+            throw new Error("SMARTLOCK_NOT_FOUND")
+        }
+        let usuarios = await Usuario.findAll({where:{unidade_lotacao_id:smartlock.unidade_id,ativo:true},attributes:[['uid_rfid','uuid'],'nome'],raw:true})
+        return usuarios;
+    }catch(e){
+        throw e;
+    }
+  }
+
 }
 
 export default new UsuarioService();
