@@ -9,7 +9,7 @@ class SmartLockController {
       console.log(`MAC: ${body.mac}`);
       console.log(`Online?: ${body.status}`);
       return res
-        .status(401)
+        .status(400)
         .json({ message: "Status ou Mac inválidos, impossível adicionar" });
     }
 

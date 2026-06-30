@@ -34,11 +34,29 @@
 
 /* Container do Formulário */
 .form-container {
+  position: relative;
   background-color: #ffffff;
   border-radius: 8px;
   padding: 2rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   border: 1px solid #e2e8f0;
+  
+  /* Impede que o fundo do overlay vaze para fora dos cantos arredondados */
+  overflow: hidden; 
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.75); /* Fundo branco semi-transparente */
+  backdrop-filter: blur(2px); /* Efeito de desfoque elegante no formulário atrás */
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .cadastro-form {
