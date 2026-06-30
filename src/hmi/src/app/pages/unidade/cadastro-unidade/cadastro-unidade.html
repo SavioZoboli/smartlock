@@ -1,0 +1,71 @@
+<div class="page-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Unidades</div>
+      <h2>Cadastro de Unidade</h2>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <form [formGroup]="unidadeForm" (ngSubmit)="onSubmit()" class="cadastro-form">
+      <div class="form-row">
+        <label class="section-label">Entidade</label>
+        <mat-chip-listbox
+          formControlName="empresa"
+          aria-label="Seleção de Empresa"
+          class="custom-chip-list"
+        >
+          @for (empresa of empresas; track empresa) {
+            <mat-chip-option [value]="empresa">{{ empresa }}</mat-chip-option>
+          }
+        </mat-chip-listbox>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="form-field full-width"
+        >
+          <mat-label>Nome da Unidade (Apelido)</mat-label>
+          <input matInput type="text" formControlName="nome" placeholder="Ex: SENAI Blumenau" />
+          <mat-icon matPrefix class="field-icon">business</mat-icon>
+          @if (unidadeForm.get('nome')?.hasError('required') && unidadeForm.get('nome')?.touched) {
+            <mat-error>O nome da unidade é obrigatório.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="form-field full-width"
+        >
+          <mat-label>Regional</mat-label>
+          <mat-select formControlName="regional">
+            @for (regional of regionais; track regional) {
+              <mat-option [value]="regional">{{ regional }}</mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix class="field-icon">map</mat-icon>
+          @if (
+            unidadeForm.get('regional')?.hasError('required') &&
+            unidadeForm.get('regional')?.touched
+          ) {
+            <mat-error>Selecione uma regional.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-actions">
+        <button mat-stroked-button type="button" class="btn-cancel" (click)="onCancelar()">
+          Cancelar
+        </button>
+        <button mat-flat-button color="primary" type="submit" class="btn-save">
+          <mat-icon>save</mat-icon> Salvar Unidade
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

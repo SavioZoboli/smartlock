@@ -1,0 +1,18 @@
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Garante que ocupa 100% da altura da janela */
+  background-color: #f1f5f9; /* Fundo cinzento muito claro para contraste com os cartões */
+}
+
+.main-content {
+  flex: 1; /* Faz com que a área principal ocupe todo o espaço restante abaixo da navbar */
+  overflow-y: auto; /* Permite scroll nesta área caso existam muitos equipamentos */
+  
+  /* Se quiser que o conteúdo não encoste nas bordas em monitores ultrawide, pode adicionar: */
+  /* display: flex; */
+  /* justify-content: center; */
+}
+
+/* O padding interno já foi resolvido dentro do próprio smartlock-report.component, 
+   por isso não precisamos de forçar margens aqui. */

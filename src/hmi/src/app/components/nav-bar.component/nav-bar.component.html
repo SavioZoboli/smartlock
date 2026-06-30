@@ -1,0 +1,59 @@
+<mat-toolbar class="main-navbar mat-elevation-z1">
+  <div class="navbar-left">
+    <div class="brand-logo" routerLink="/">
+      <mat-icon class="brand-icon">vanguard</mat-icon> <img src="img/logo.svg" alt="SmartLock">
+    </div>
+    
+    <div class="divider-vertical"></div>
+    
+    <nav class="navbar-menu">
+      <a routerLink="/dashboard" routerLinkActive="active-menu-item" class="menu-item">
+        <mat-icon>dashboard</mat-icon> Dashboard
+      </a>
+      <button class="menu-item" [matMenuTriggerFor]="cadastrosMenu">
+        <mat-icon>settings_applications</mat-icon> Gerenciamento <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+      </button>
+    </nav>
+  </div>
+
+  <mat-menu #cadastrosMenu="matMenu" class="custom-navbar-menu">
+    <a mat-menu-item routerLink="/cadastro/usuarios">
+      <mat-icon>badge</mat-icon> <span>Usuários</span>
+    </a>
+    <a mat-menu-item routerLink="/cadastro/unidades">
+      <mat-icon>apartment</mat-icon> <span>Unidades</span>
+    </a>
+    <a mat-menu-item routerLink="/cadastro/equipamentos">
+      <mat-icon>devices</mat-icon> <span>Equipamentos</span>
+    </a>
+    <a mat-menu-item routerLink="/cadastro/smartlocks">
+      <mat-icon>dns</mat-icon> <span>SmartLocks</span>
+    </a>
+  </mat-menu>
+
+  <div class="navbar-right">
+    <button mat-icon-button class="icon-notification-btn" aria-label="Notificações">
+      <mat-icon matBadge="3" matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
+    </button>
+
+    <div class="divider-vertical"></div>
+
+    <div class="profile-section" [matMenuTriggerFor]="profileMenu">
+      <div class="user-avatar">AD</div>
+      <div class="user-meta">
+        <span class="user-name">Admin TI</span>
+        <span class="user-role">Unidade Indaial</span>
+      </div>
+      <mat-icon class="arrow-icon-profile">expand_more</mat-icon>
+    </div>
+
+    <mat-menu #profileMenu="matMenu">
+      <button mat-menu-item>
+        <mat-icon>account_circle</mat-icon> <span>Meu Perfil</span>
+      </button>
+      <button mat-menu-item>
+        <mat-icon>exit_to_app</mat-icon> <span>Sair do Sistema</span>
+      </button>
+    </mat-menu>
+  </div>
+</mat-toolbar>

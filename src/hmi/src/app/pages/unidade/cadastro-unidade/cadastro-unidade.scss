@@ -1,4 +1,3 @@
-
 .page-container {
   padding: 1.5rem;
   max-width: 800px; /* Limita a largura para formulários não ficarem esticados demais */
@@ -63,58 +62,23 @@
   }
 }
 
-.file-upload-row {
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.03);
-  padding: 12px 16px;
-  border-radius: 4px;
-  border: 1px dashed rgba(0, 0, 0, 0.2);
-
-  .upload-btn {
-    white-space: nowrap;
-  }
-
-  .file-name {
-    font-size: 14px;
-    color: rgba(0, 0, 0, 0.87);
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-
-    &.placeholder {
-      color: rgba(0, 0, 0, 0.42);
-    }
+.custom-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  
+  /* Ajuste para garantir que o chip selected tenha a cor do tema */
+  ::ng-deep .mat-mdc-chip-option.mat-mdc-chip-selected {
+    background-color: #0ea5e9 !important;
+    color: white !important;
   }
 }
 
-.preview-container {
-  margin-top: 24px;
-  margin-bottom: 24px;
-  width: 100%; /* Garante que ocupe toda a largura do form-container */
-
-  h3 {
-    font-size: 14px;
-    font-weight: 500;
-    color: rgba(0, 0, 0, 0.6);
-    margin-bottom: 12px;
-  }
-
-  .table-wrapper {
-    max-height: 250px;
-    overflow-y: auto; /* CORRIGIDO: Força o scroll vertical se passar de 250px */
-    overflow-x: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 4px;
-    width: 100%;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse; /* Evita comportamentos estranhos de renderização */
-  }
+/* Opcional: Se quiser que os chips fiquem mais densos/compactos */
+::ng-deep .mat-mdc-chip-option {
+  --mdc-chip-label-text-size: 0.85rem;
+  --mdc-chip-container-height: 36px;
 }
-
-
 
 .full-width {
   width: 100%;
@@ -157,6 +121,10 @@
   }
 }
 
+/* ESTILOS GLOBAIS DA NOTIFICAÇÃO (SNACKBAR)
+  Nota: Como o SnackBar é injetado no <body> do HTML pelo Angular,
+  se esses estilos não aplicarem, mova estas duas classes para o seu styles.scss global.
+*/
 ::ng-deep .success-snackbar {
   --mdc-snackbar-container-color: #10b981; /* Fundo Verde */
   --mdc-snackbar-supporting-text-color: #ffffff;
@@ -168,4 +136,3 @@
   --mdc-snackbar-supporting-text-color: #ffffff;
   font-weight: 500;
 }
-
