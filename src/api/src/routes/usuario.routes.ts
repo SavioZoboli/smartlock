@@ -7,8 +7,15 @@ router.post('/',usuarioController.create)
 
 router.post('/login',usuarioController.login)
 
-router.get('/:mac',usuarioController.getUsuariosAutorizados)
+router.get('/',usuarioController.listAll)
 
+router.get('/:id',usuarioController.getById)
+
+router.put('/',usuarioController.update)
+
+router.delete('/:id',usuarioController.deactivate)
+
+router.post('/finaliza-cadastro',usuarioController.finalizarCadastro)
 
 
 
