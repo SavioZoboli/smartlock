@@ -42,7 +42,6 @@
   .logo-placeholder {
     height: 44px;
     width: auto;
-    background-color: #e2e8f0; 
     border-radius: 6px;
     min-width: 130px;
   }
@@ -62,117 +61,5 @@
     color: #64748b;
     margin: 0;
     font-size: 0.95rem;
-  }
-}
-
-/* --- ESTILIZAÇÃO COMPONENTE GOOGLE --- */
-.google-login-btn {
-  background-color: #ffffff !important;
-  color: #1f2937 !important;
-  border: 1px solid #dadce0 !important;
-  border-radius: 6px !important;
-  padding: 1.5rem 0 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
-  transition: background-color 0.2s, box-shadow 0.2s !important;
-
-  &:hover {
-    background-color: #f8fafc !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.12) !important;
-  }
-
-  .google-btn-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-
-    .google-icon {
-      display: block;
-    }
-
-    .btn-text {
-      font-size: 0.95rem;
-      font-weight: 500;
-      letter-spacing: 0.25px;
-    }
-  }
-}
-
-/* --- DIVISOR VISUAL --- */
-.divider {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  margin: 2rem 0;
-  color: #94a3b8;
-
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  &::before { margin-right: .75em; }
-  &::after { margin-left: .75em; }
-
-  .divider-text {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    font-weight: 500;
-  }
-}
-
-/* Form Secundário */
-form {
-  display: flex;
-  flex-direction: column;
-}
-
-.full-width {
-  width: 100%;
-}
-
-mat-form-field {
-  margin-bottom: 0.75rem;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 1.5rem;
-  margin-top: -0.25rem;
-
-  .forgot-password {
-    color: #0284c7;
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 500;
-
-    &:hover { text-decoration: underline; }
-  }
-}
-
-.manual-submit-btn {
-  padding: 1.35rem 0 !important;
-  font-size: 0.9rem !important;
-  font-weight: 500 !important;
-  color: #475569 !important;
-  border-color: #cbd5e1 !important;
-  border-radius: 6px !important;
-}
-
-.footer-notice {
-  margin-top: 2.5rem;
-  text-align: center;
-  font-size: 0.85rem;
-  color: #64748b;
-
-  a {
-    color: #0284c7;
-    text-decoration: none;
-    font-weight: 600;
-
-    &:hover { text-decoration: underline; }
   }
 }

@@ -1,10 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, NgZone, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { environment } from '../../../environments/environment';
+import { AuthService } from '../../services/auth.service';
+import { GoogleIdentityService } from '../../services/google-identity.service';
+import { Router } from '@angular/router';
+import { SystemNotificationService } from '../../services/system-notification.service';
 
 @Component({
   selector: 'app-login',
@@ -15,34 +20,76 @@ import { MatIconModule } from '@angular/material/icon';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
   ],
   templateUrl: './login.html',
-  styleUrls: ['./login.scss']
+  styleUrls: ['./login.scss'],
 })
 export class LoginComponent {
-  loginForm: FormGroup;
-  hidePassword = true;
+  constructor(
+    private ngZone: NgZone,
+    private authService: AuthService,
+    private googleIdentityService: GoogleIdentityService,
+    private router: Router,
+    private sns: SystemNotificationService,
+  ) {}
 
-  constructor(private fb: FormBuilder) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
-    });
-  }
-
-  // Ação Principal: Login Institucional Google
-  loginWithGoogle(): void {
-    console.log('Iniciando fluxo de autenticação OAuth2 com o Google...');
-    // Aqui você irá chamar seu serviço de autenticação Google
-  }
-
-  // Ação Secundária: Formulário manual
-  onSubmit(): void {
-    if (this.loginForm.valid) {
-      console.log('Dados do login manual:', this.loginForm.value);
-    } else {
-      this.loginForm.markAllAsTouched();
+  async ngOnInit(): Promise<void> {
+    try {
+      // Aguarda o SDK do Google ficar disponível, em vez de depender do
+      // window.onload (que só dispara uma vez por carregamento de página
+      // e não funciona em revisitas via navegação client-side do Angular).
+      await this.googleIdentityService.aguardarCarregamento();
+    } catch {
+      this.sns.notificar('Não foi possível carregar o login com Google', 'erro');
+      return;
     }
+
+    // @ts-ignore
+    google.accounts.id.initialize({
+      client_id: environment.google_api_token,
+      callback: this.handleCredentialResponse.bind(this),
+    });
+
+    // @ts-ignore
+    google.accounts.id.renderButton(
+      document.getElementById('google-btn'),
+      { theme: 'outline', size: 'large', width: 300 }, // width é numérico (px), não aceita string com "px"
+    );
+  }
+
+  handleCredentialResponse(response: any) {
+    const token = response.credential;
+
+    this.ngZone.run(() => {
+      // 1. Chama o seu backend passando o token do Google
+      this.authService.validarGoogleAuth(token).subscribe({
+        next: (resBackend) => {
+          if (resBackend.cadastrado) {
+            console.log("Cadastrado")
+            // Cenário A: Usuário existe e o cookie foi setado pelo backend
+            this.sns.notificar('Autenticado, redirecionando...', 'sucesso');
+            this.router.navigate(['/dashboard']);
+          } else {
+            console.log(resBackend)
+            let {nome,email,avatar,signupToken} = resBackend.userData;
+            console.log("Finalizar cadastro")
+            this.sns.notificar('É necessário finalizar o cadastro', 'sucesso');
+            this.router.navigate(['/concluir-cadastro'], {
+              state: {
+                nome: nome,
+                email: email,
+                avatar: avatar,
+                signupToken: resBackend.signupToken,
+              },
+            });
+          }
+        },
+        error: (err) => {
+          console.log(err)
+          this.sns.notificar('Erro ao validar a autenticação', 'erro');
+        },
+      });
+    });
   }
 }

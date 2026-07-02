@@ -38,20 +38,26 @@
 
     <div class="divider-vertical"></div>
 
-    <div class="profile-section" [matMenuTriggerFor]="profileMenu">
-      <div class="user-avatar">AD</div>
-      <div class="user-meta">
-        <span class="user-name">Admin TI</span>
-        <span class="user-role">Unidade Indaial</span>
+    @if (usuario$ | async; as usuario) {
+      <div class="profile-section" [matMenuTriggerFor]="profileMenu">
+        @if (usuario.avatar) {
+          <img [src]="usuario.avatar" [alt]="usuario.nome" class="user-avatar">
+        } @else {
+          <div class="user-avatar">{{ obterIniciais(usuario.nome) }}</div>
+        }
+        <div class="user-meta">
+          <span class="user-name">{{ usuario.nome }}</span>
+          <span class="user-role">{{ usuario.email }}</span>
+        </div>
+        <mat-icon class="arrow-icon-profile">expand_more</mat-icon>
       </div>
-      <mat-icon class="arrow-icon-profile">expand_more</mat-icon>
-    </div>
+    }
 
     <mat-menu #profileMenu="matMenu">
       <button mat-menu-item>
         <mat-icon>account_circle</mat-icon> <span>Meu Perfil</span>
       </button>
-      <button mat-menu-item>
+      <button mat-menu-item (click)="logout()">
         <mat-icon>exit_to_app</mat-icon> <span>Sair do Sistema</span>
       </button>
     </mat-menu>

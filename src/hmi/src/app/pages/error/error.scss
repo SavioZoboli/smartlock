@@ -1,0 +1,58 @@
+.error-page-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #f8fafc;
+}
+
+.error-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 420px;
+  padding: 2.5rem 2rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.error-icon {
+  font-size: 56px;
+  width: 56px;
+  height: 56px;
+  color: #ef4444;
+  margin-bottom: 0.5rem;
+}
+
+.error-codigo {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.error-titulo {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.error-mensagem {
+  margin: 0 0 1.75rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.error-actions {
+  display: flex;
+  gap: 0.75rem;
+
+  button mat-icon {
+    margin-right: 4px;
+  }
+}

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import cookieParser from 'cookie-parser';
 
 // Garante o carregamento das variáveis de ambiente
 dotenv.config();
@@ -9,8 +10,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares globais para o caso de você criar um painel web (Frontend) futuramente
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:4200', 
+  credentials: true,
+}));
 app.use(express.json());
+
+app.use(cookieParser());
 
 // Rota HTTP simples apenas para teste de sanidade da API
 app.get("/status", (req, res) => {
