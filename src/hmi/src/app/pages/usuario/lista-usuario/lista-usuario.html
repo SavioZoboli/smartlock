@@ -1,0 +1,102 @@
+<div class="page-container">
+  <div class="page-header-container with-actions">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Usuários</div>
+      <h2>Usuários Cadastrados</h2>
+    </div>
+    
+    <div class="action-area">
+      <button mat-flat-button class="btn-new" (click)="onNovoUsuario()">
+        <mat-icon>add</mat-icon> Novo Usuário
+      </button>
+    </div>
+  </div>
+
+  <div class="filtros-container" [formGroup]="filtros">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-nome">
+      <mat-label>Buscar por nome</mat-label>
+      <input matInput formControlName="nome" placeholder="Digite o nome">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Unidade</mat-label>
+      <mat-select formControlName="unidade">
+        <mat-option value="">Todas</mat-option>
+        @for (unidade of unidadesDisponiveis; track unidade) {
+          <mat-option [value]="unidade">{{ unidade }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Regional</mat-label>
+      <mat-select formControlName="regional">
+        <mat-option value="">Todas</mat-option>
+        @for (regional of regionaisDisponiveis; track regional) {
+          <mat-option [value]="regional">{{ regional }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-stroked-button type="button" class="btn-limpar" (click)="limparFiltros()">
+      <mat-icon>filter_alt_off</mat-icon> Limpar
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" class="mat-elevation-z0 custom-table">
+      
+      <ng-container matColumnDef="nome">
+        <th mat-header-cell *matHeaderCellDef> Nome </th>
+        <td mat-cell *matCellDef="let element" class="fw-500"> 
+          {{ element.nome }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef> E-mail </th>
+        <td mat-cell *matCellDef="let element" class="fw-500"> {{ element.email }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="unidade">
+        <th mat-header-cell *matHeaderCellDef> Unidade </th>
+        <td mat-cell *matCellDef="let element" class="fw-500"> {{ element.unidade }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="regional">
+        <th mat-header-cell *matHeaderCellDef> Regional </th>
+        <td mat-cell *matCellDef="let element"> 
+          <mat-icon class="inline-icon">map</mat-icon> {{ element.regional }} 
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acoes">
+        <th mat-header-cell *matHeaderCellDef class="align-right"> Ações </th>
+        <td mat-cell *matCellDef="let element" class="align-right">
+          <button mat-icon-button class="action-btn edit-btn" matTooltip="Editar" (click)="onEditar(element)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button class="action-btn delete-btn" matTooltip="Excluir" (click)="onExcluir(element)">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="custom-row"></tr>
+      
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-state" colspan="5">
+          Nenhum usuário cadastrado
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator 
+      [pageSizeOptions]="[10, 20, 50]" 
+      showFirstLastButtons
+      class="custom-paginator">
+    </mat-paginator>
+  </div>
+</div>

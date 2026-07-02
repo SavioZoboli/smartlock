@@ -1,0 +1,20 @@
+<div class="error-page-container">
+  <div class="error-card">
+    <mat-icon class="error-icon">{{ icone }}</mat-icon>
+
+    <div class="error-codigo">{{ codigo }}</div>
+    <h1 class="error-titulo">{{ titulo }}</h1>
+    <p class="error-mensagem">{{ mensagem }}</p>
+
+    <div class="error-actions">
+      @if (podeVoltar) {
+        <button mat-stroked-button (click)="voltar()">
+          <mat-icon>arrow_back</mat-icon> Voltar
+        </button>
+      }
+      <button mat-flat-button color="primary" (click)="irParaInicio()">
+        <mat-icon>home</mat-icon> Ir para o início
+      </button>
+    </div>
+  </div>
+</div>

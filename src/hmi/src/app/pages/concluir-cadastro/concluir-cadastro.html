@@ -1,0 +1,75 @@
+<div class="auth-layout-wrapper">
+  <div class="page-container">
+    <div class="page-header-container">
+      <div class="title-area">
+        @if (dadosGoogle?.avatar) {
+          <img [src]="dadosGoogle.avatar" alt="Foto de Perfil" class="google-avatar">
+        }
+        <h2>Falta pouco!</h2>
+        <p class="subtitle">Complete seus dados institucionais para acessar o sistema Smart Lock.</p>
+      </div>
+    </div>
+
+    <div class="form-container">
+      <form [formGroup]="userForm" (ngSubmit)="salvar()">
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+            <mat-label>Nome</mat-label>
+            <input matInput formControlName="nome">
+            <mat-icon matPrefix>person</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+            <mat-label>Sobrenome</mat-label>
+            <input matInput formControlName="sobrenome">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+            <mat-label>E-mail (Verificado pelo Google)</mat-label>
+            <input matInput formControlName="email">
+            <mat-icon matPrefix>verified_user</mat-icon>
+            <mat-hint>O e-mail validado não pode ser alterado.</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>UUID</mat-label>
+            <input matInput formControlName="uuid">
+            <mat-icon matPrefix>fingerprint</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+            <mat-label>Matrícula</mat-label>
+            <input matInput formControlName="matricula" mask="00000" placeholder="00000">
+            <mat-icon matPrefix>badge</mat-icon>
+            <mat-hint>Apenas 5 dígitos numéricos</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Unidade de Lotação</mat-label>
+          <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
+          <mat-icon matPrefix>business</mat-icon>
+          <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUnidade">
+            @for (unidade of filteredUnidades | async; track unidade) {
+              <mat-option [value]="unidade">{{ unidade.nome }} / <span class="fs-small">{{unidade.regional}}</span></mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+
+        <div class="form-actions">
+          <button mat-stroked-button type="button" routerLink="/login">Cancelar</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="userForm.invalid">
+            Finalizar Cadastro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

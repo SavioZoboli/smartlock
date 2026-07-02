@@ -7,6 +7,13 @@
   </div>
 
   <div class="form-container">
+
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+    }
+
     <form [formGroup]="userForm" (ngSubmit)="salvar()">
       
       <div class="form-row">
@@ -21,11 +28,18 @@
           <input matInput formControlName="sobrenome">
         </mat-form-field>
       </div>
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>E-mail</mat-label>
+          <input matInput formControlName="email">
+          <mat-icon matPrefix>mail</mat-icon>
+        </mat-form-field>
+      </div>
 
       <div class="form-row">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>UID (Identificador Único)</mat-label>
-          <input matInput formControlName="uid">
+          <input matInput formControlName="uuid">
           <mat-icon matPrefix>fingerprint</mat-icon>
         </mat-form-field>
 
@@ -42,18 +56,18 @@
           <mat-label>Unidade de Lotação</mat-label>
           <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
           <mat-icon matPrefix>business</mat-icon>
-          <mat-autocomplete #auto="matAutocomplete">
+          <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUnidade">
             @for (unidade of filteredUnidades | async; track unidade) {
-              <mat-option [value]="unidade">{{ unidade }}</mat-option>
+              <mat-option [value]="unidade">{{ unidade.nome }} / <span class="fs-small">{{unidade.regional}}</span></mat-option>
             }
           </mat-autocomplete>
         </mat-form-field>
       </div>
 
       <div class="form-actions">
-        <button mat-stroked-button type="button">Cancelar</button>
+        <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
         <button mat-flat-button color="primary" type="submit" [disabled]="userForm.invalid">
-          Cadastrar Usuário
+          {{this.usuario_id?"Salvar":"Cadastrar"}} Usuário
         </button>
       </div>
     </form>
