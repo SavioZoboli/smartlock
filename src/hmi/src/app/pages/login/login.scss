@@ -8,11 +8,9 @@
 /* Lado da Imagem (Mantido responsivo) */
 .login-image-section {
   flex: 1.2; /* Dá uma fração levemente maior para a arte em telas gigantes */
-  background-image: url('https://via.placeholder.com/1000x1000?text=Smart+Lock+System');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-color:#64748b;
   display: none;
+  opacity: 0.2;
 
   @media (min-width: 960px) {
     display: block;

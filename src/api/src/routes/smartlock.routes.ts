@@ -4,15 +4,20 @@ import usuarioController from "../controllers/usuario.controller";
 
 const router = require("express").Router();
 
-router.get('/',(req:Request,res:Response)=>{
-    res.status(200).json({message:"Rota Smartlock acessível"})
-})
 
 router.post("/setStatus",smartLockController.setStatus)
 
 router.post("/",smartLockController.create)
 
 router.get('/usuariosAutorizados/:mac',usuarioController.getUsuariosAutorizados)
+
+router.get('/',smartLockController.listAll)
+
+router.get('/:id',smartLockController.getById)
+
+router.put('/',smartLockController.update)
+
+router.delete('/:id',smartLockController.delete)
 
 
 module.exports = router;

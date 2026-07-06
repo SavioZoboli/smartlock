@@ -12,6 +12,7 @@ import { ListaUsuario } from './pages/usuario/lista-usuario/lista-usuario';
 import { ConcluirCadastro } from './pages/concluir-cadastro/concluir-cadastro';
 import { authGuard } from '../guards/auth.guard';
 import { ErrorPageComponent } from './pages/error/error';
+import { ListaSmartlock } from './pages/smartlock/lista-smartlock/lista-smartlock';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
@@ -32,6 +33,7 @@ export const routes: Routes = [
 
       { path: 'unidades/lista', component: ListaUnidade },
       { path: 'usuarios/lista', component: ListaUsuario },
+      {path:'smartlocks/lista',component:ListaSmartlock},
 
       // Telas de Cadastros
       { path: 'usuarios/cadastro', component: CadastroUsuario },
@@ -40,6 +42,7 @@ export const routes: Routes = [
       { path: 'equipamentos/cadastro', component: CadastroEquipamento },
 
       { path: 'smartlocks/cadastro', component: CadastroSmartlock },
+      {path:'smartlocks/editar/:id',component:CadastroSmartlock},
 
       { path: 'unidades/cadastro', component: CadastroUnidade },
       { path: 'unidades/editar/:id', component: CadastroUnidade },
