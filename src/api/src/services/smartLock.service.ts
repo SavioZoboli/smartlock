@@ -1,5 +1,6 @@
+import { Sequelize } from "sequelize";
 import sequelize from "../config/database";
-import { SmartLock } from "../models/index.model";
+import { Equipamento, SmartLock, Unidade } from "../models/index.model";
 import Smartlock from "../models/smartlock.model";
 import logSmartLockService from "./logSmartLock.service";
 
@@ -44,7 +45,7 @@ class SmartLockService{
         }
     }
 
-    async create(mac_address:string,apelido:string,unidade_id:string,has_equipamentos:boolean):Promise<number>{
+    async create(mac_address:string,apelido:string,unidade_id:number,has_equipamentos:boolean):Promise<number>{
         try{
             let smartlock = await SmartLock.create({
                 mac_address,
@@ -55,6 +56,81 @@ class SmartLockService{
                 ativo:true
             })
             return smartlock.id
+        }catch(e){
+            throw e;
+        }
+    }
+
+    async listAll(){
+        try{
+            let smartlocks = await Smartlock.findAll({
+                where:{ativo:true},
+                attributes: [
+          "id",
+          "apelido",
+          "is_online",
+          "has_equipamentos",
+          [Sequelize.col("unidade.nome"), "unidade"],
+          [Sequelize.col("unidade.regional"), "regional"],
+        ],
+        include: [
+          {
+            model: Unidade,
+            as: "unidade",
+            attributes: [], // Array vazio para não gerar um objeto "unidadeLotacao" aninhado extra
+          },
+        ],
+        raw: true,
+            })
+            return smartlocks
+        }catch(e){
+            throw e;
+        }
+    }
+
+    async getById(id:number){
+        try{
+            let smartlock = await Smartlock.findByPk(id)
+            return smartlock;
+        }catch(e){
+            throw e
+        }
+    }
+
+    async update(id:number,apelido:string,mac_address:string,unidade_id:number,has_equipamentos:boolean):Promise<Smartlock>{
+        try{
+            let smartlock = await Smartlock.findByPk(id)
+            if(!smartlock) throw new Error("SMARTLOCK_NOT_FOUND")
+            smartlock.apelido = apelido
+            smartlock.mac_address = mac_address
+            smartlock.unidade_id = unidade_id
+
+            if(smartlock.has_equipamentos != has_equipamentos && has_equipamentos == false){
+                let count = await Equipamento.count({where:{smartlock_base_id:smartlock.id}})
+                if(count>0) throw new Error("ERR_HAS_EQUIPAMENTOS")
+            }
+
+            smartlock.has_equipamentos = has_equipamentos
+            await smartlock.save()
+
+            return smartlock;
+        }catch(e){
+            throw e
+        }
+    }
+
+    async deactivate(id:number):Promise<void>{
+        try{
+            let smartlock = await SmartLock.findByPk(id)
+            if(!smartlock){
+                throw new Error("ERR_NOT_FOUND")
+            }
+            if(await Equipamento.count({where:{smartlock_base_id:smartlock.id}})){
+                throw new Error("ERR_EQUIPAMENTOS_VINCULADOS")
+            }
+            smartlock.ativo = false;
+            await smartlock.save()
+
         }catch(e){
             throw e;
         }

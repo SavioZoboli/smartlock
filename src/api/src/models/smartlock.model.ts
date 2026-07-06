@@ -5,7 +5,7 @@ interface SmartlockAttributes {
   id: number;
   mac_address: string;
   apelido: string;
-  unidade_id: string;
+  unidade_id: number;
   is_online: boolean;
   has_equipamentos: boolean;
   ativo: boolean;
@@ -26,7 +26,7 @@ class Smartlock extends Model<
   declare id: number;
   declare mac_address: string;
   declare apelido: string;
-  declare unidade_id: string;
+  declare unidade_id: number;
   declare is_online: boolean;
   declare has_equipamentos: boolean;
   declare ativo: boolean;
