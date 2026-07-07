@@ -1,0 +1,73 @@
+<div class="page-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Equipamentos</div>
+      <h2>Editar Equipamento {{ eqForm.get('patrimonio')?.value ? '- ' + eqForm.get('patrimonio')?.value : '' }}</h2>
+    </div>
+  </div>
+
+  <div class="form-container">
+
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+    }
+
+    <form [formGroup]="eqForm" (ngSubmit)="salvar()">
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>SmartLock</mat-label>
+          <input type="text" matInput formControlName="smartlock" [matAutocomplete]="auto">
+          <mat-icon matPrefix>lock</mat-icon>
+          <mat-autocomplete #auto="matAutocomplete" [displayWith]="displaySmartlock">
+            @for (smartlock of filteredSmartlocks | async; track smartlock) {
+              <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Patrimônio</mat-label>
+          <input matInput formControlName="patrimonio">
+          <mat-icon matPrefix>inventory_2</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Tag RFID</mat-label>
+          <input matInput formControlName="tag">
+          <mat-icon matPrefix>nfc</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Tipo</mat-label>
+          <mat-select formControlName="tipo">
+            @for (tipo of tipos; track tipo) {
+              <mat-option [value]="tipo">{{ tipo }}</mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix>category</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-actions">
+        <button mat-stroked-button type="button" color="warn" (click)="onExcluir()">
+          <mat-icon>delete</mat-icon>
+          Excluir
+        </button>
+        <span class="spacer"></span>
+        <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="eqForm.invalid">
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

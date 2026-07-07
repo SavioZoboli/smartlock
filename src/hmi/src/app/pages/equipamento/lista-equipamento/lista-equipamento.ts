@@ -167,6 +167,10 @@ export class ListaEquipamento {
     this.router.navigate(['/equipamentos/cadastro']);
   }
 
+  onRedirectEquipamentos(): void {
+    this.router.navigate(['/equipamentos/transferir']);
+  }
+
   onEditar(equipamento: Equipamento): void {
     this.router.navigate(['/equipamentos/editar', equipamento.id]);
   }

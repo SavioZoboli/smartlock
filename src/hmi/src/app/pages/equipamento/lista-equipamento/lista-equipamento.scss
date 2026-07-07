@@ -1,6 +1,6 @@
 .page-container {
   padding: 1.5rem;
-  max-width: 1000px;
+  width: fit-content;
   margin: 0 auto;
 }
 
@@ -9,6 +9,7 @@
   padding-bottom: 1.25rem;
   margin-bottom: 2rem;
 
+    
   &.with-actions {
     display: flex;
     justify-content: space-between;
@@ -36,6 +37,11 @@
     }
   }
 
+  .action-area{
+    display: flex;
+    gap:12px;
+  }
+
   .btn-new {
     background-color: #0ea5e9;
     color: white;
@@ -46,6 +52,23 @@
 
     &:hover {
       background-color: #0284c7;
+    }
+
+    mat-icon {
+      margin-right: 4px;
+    }
+  }
+
+  .btn-discrete {
+    background-color: transparent;
+    color: #1C1C1C;
+    padding: 0 1.5rem;
+    height: 44px;
+    border-radius: 6px;
+    font-weight: 500;
+    border:1px #1C1C1C solid;
+    &:hover {
+      border-width: 2px;
     }
 
     mat-icon {

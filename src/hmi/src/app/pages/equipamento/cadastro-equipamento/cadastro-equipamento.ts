@@ -22,6 +22,7 @@ import { SystemNotificationService } from '../../../services/system-notification
 import { UnidadeService } from '../../../services/unidade.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { Router } from '@angular/router';
+import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
 
 export interface Unidade {
   id: number;
@@ -32,10 +33,6 @@ export interface SmartlockOption {
   id: number;
   apelido: string;
 }
-
-// Hardcoded por enquanto; candidato a virar endpoint (ex: TipoEquipamentoService)
-// quando surgir necessidade de administrar os tipos dinamicamente.
-const TIPOS_EQUIPAMENTO: string[] = ['Notebook', 'Óculos de Realidade Virtual', 'Tablet'];
 
 @Component({
   selector: 'app-cadastro-equipamento',
@@ -58,7 +55,7 @@ export class CadastroEquipamento implements OnInit {
   importForm!: FormGroup;
   novoItemForm!: FormGroup;
 
-  tiposEquipamento = TIPOS_EQUIPAMENTO;
+  tiposEquipamento = TIPO_EQUIPAMENTOS;
 
   unidadesDisponiveis: Unidade[] = [];
   smartlocksDisponiveis: SmartlockOption[] = [];
@@ -89,7 +86,7 @@ export class CadastroEquipamento implements OnInit {
     });
 
     this.novoItemForm = this.fb.group({
-      rfid: ['', Validators.required],
+      tag: ['', Validators.required],
       patrimonio: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
       tipo: ['', Validators.required],
     });
@@ -175,20 +172,20 @@ export class CadastroEquipamento implements OnInit {
       return;
     }
 
-    const { rfid, patrimonio, tipo } = this.novoItemForm.value;
-    this.equipamentosArray.push(this.criarItemGroup(rfid, patrimonio, tipo));
+    const { tag, patrimonio, tipo } = this.novoItemForm.value;
+    this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipo));
 
     // Mantém o tipo selecionado para agilizar o cadastro de vários itens do mesmo tipo em sequência
-    this.novoItemForm.reset({ rfid: '', patrimonio: '', tipo });
+    this.novoItemForm.reset({ tag: '', patrimonio: '', tipo });
   }
 
   removerItem(index: number): void {
     this.equipamentosArray.removeAt(index);
   }
 
-  private criarItemGroup(rfid: string, patrimonio: string, tipo: string): FormGroup {
+  private criarItemGroup(tag: string, patrimonio: string, tipo: string): FormGroup {
     return this.fb.group({
-      rfid: [rfid, Validators.required],
+      tag: [tag, Validators.required],
       patrimonio: [patrimonio, [Validators.required, Validators.pattern(/^\d{6}$/)]],
       tipo: [tipo, Validators.required],
     });
@@ -239,9 +236,9 @@ export class CadastroEquipamento implements OnInit {
       const colunas = linha.includes(';') ? linha.split(';') : linha.split(',');
 
       if (colunas.length >= 2) {
-        const rfid = colunas[0].trim();
+        const tag = colunas[0].trim();
         const patrimonio = colunas[1].trim();
-        this.equipamentosArray.push(this.criarItemGroup(rfid, patrimonio, tipoGlobal));
+        this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipoGlobal));
         importados++;
       }
     }
@@ -257,9 +254,9 @@ export class CadastroEquipamento implements OnInit {
       return;
     }
 
-    const { unidade, smartlock, equipamentos } = this.importForm.getRawValue();
+    const { smartlock, equipamentos } = this.importForm.getRawValue();
 
-    this.equipamentoService.bulkCreate(unidade.id,smartlock.id,equipamentos).subscribe({
+    this.equipamentoService.bulkCreate(smartlock.id,equipamentos).subscribe({
       next: (res) => {
         if (res.contagem == this.equipamentosArray.length) {
           this.router.navigate(['/equipamentos/lista']);
@@ -273,5 +270,10 @@ export class CadastroEquipamento implements OnInit {
         this.sns.notificar(`Erro: ${err.message}`,'erro');
       }
     });
+  }
+
+  onCancelar(){
+    this.importForm.reset()
+    this.router.navigate(['/equipamentos/lista'])
   }
 }

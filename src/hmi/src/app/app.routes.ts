@@ -14,6 +14,8 @@ import { authGuard } from '../guards/auth.guard';
 import { ErrorPageComponent } from './pages/error/error';
 import { ListaSmartlock } from './pages/smartlock/lista-smartlock/lista-smartlock';
 import { ListaEquipamento } from './pages/equipamento/lista-equipamento/lista-equipamento';
+import { UpdateEquipamento } from './pages/equipamento/update-equipamento/update-equipamento';
+import { RedirectEquipamento } from './pages/equipamento/redirect-equipamento/redirect-equipamento';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
@@ -42,6 +44,8 @@ export const routes: Routes = [
       { path: 'usuarios/editar/:id', component: CadastroUsuario },
 
       { path: 'equipamentos/cadastro', component: CadastroEquipamento },
+      {path:'equipamentos/editar/:id',component:UpdateEquipamento},
+      {path:'equipamentos/transferir',component:RedirectEquipamento},
 
       { path: 'smartlocks/cadastro', component: CadastroSmartlock },
       { path: 'smartlocks/editar/:id', component: CadastroSmartlock },
