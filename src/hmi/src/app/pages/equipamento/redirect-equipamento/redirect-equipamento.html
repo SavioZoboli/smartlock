@@ -1,0 +1,115 @@
+<div class="page-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Equipamentos</div>
+      <h2>Redirecionar Equipamentos</h2>
+    </div>
+  </div>
+
+  <div class="form-container">
+
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="salvar()">
+
+      <div class="boxes-row">
+
+        <!-- BOX ORIGEM -->
+        <div class="smartlock-box">
+          <div class="box-title">Origem</div>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+            <mat-label>SmartLock de origem</mat-label>
+            <input type="text" matInput formControlName="origem" [matAutocomplete]="autoOrigem">
+            <mat-icon matPrefix>lock</mat-icon>
+            <mat-autocomplete #autoOrigem="matAutocomplete" [displayWith]="displaySmartlock" (optionSelected)="onOrigemSelecionada()">
+              @for (smartlock of filteredOrigem | async; track smartlock.id) {
+                <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <div class="box-list">
+            @if (isLoadingEquipamentos) {
+              <div class="box-list-loading">
+                <mat-spinner diameter="28"></mat-spinner>
+              </div>
+            } @else if (!origemSelecionada) {
+              <div class="box-list-empty">Selecione um smartlock de origem.</div>
+            } @else if (equipamentosDisponiveis.length === 0) {
+              <div class="box-list-empty">Nenhum equipamento disponível.</div>
+            } @else {
+
+              <div class="box-list-actions">
+                <button mat-button type="button" [disabled]="!temSelecionados" (click)="enviarSelecionadosParaDestino()">
+                  <mat-icon>arrow_forward</mat-icon>
+                  Enviar selecionados
+                </button>
+              </div>
+
+              <mat-list>
+                @for (equipamento of equipamentosDisponiveis; track equipamento.id) {
+                  <mat-list-item>
+                    <mat-checkbox [(ngModel)]="equipamento.selecionado" [ngModelOptions]="{standalone: true}" matListItemIcon></mat-checkbox>
+                    <div matListItemTitle>{{ equipamento.patrimonio }}</div>
+                    <div matListItemLine>{{ equipamento.tipo }} • Tag {{ equipamento.tag }}</div>
+                    <button mat-icon-button matListItemMeta type="button" (click)="enviarParaDestino(equipamento)" matTooltip="Enviar para destino">
+                      <mat-icon>chevron_right</mat-icon>
+                    </button>
+                  </mat-list-item>
+                  <mat-divider></mat-divider>
+                }
+              </mat-list>
+            }
+          </div>
+        </div>
+
+        <!-- BOX DESTINO -->
+        <div class="smartlock-box">
+          <div class="box-title">Destino</div>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+            <mat-label>SmartLock de destino</mat-label>
+            <input type="text" matInput formControlName="destino" [matAutocomplete]="autoDestino">
+            <mat-icon matPrefix>lock</mat-icon>
+            <mat-autocomplete #autoDestino="matAutocomplete" [displayWith]="displaySmartlock" (optionSelected)="onDestinoSelecionada()">
+              @for (smartlock of filteredDestino | async; track smartlock.id) {
+                <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <div class="box-list">
+            @if (equipamentosParaTransferir.length === 0) {
+              <div class="box-list-empty">Nenhum equipamento selecionado para transferência.</div>
+            } @else {
+              <mat-list>
+                @for (equipamento of equipamentosParaTransferir; track equipamento.id) {
+                  <mat-list-item>
+                    <div matListItemTitle>{{ equipamento.patrimonio }}</div>
+                    <div matListItemLine>{{ equipamento.tipo }} • Tag {{ equipamento.tag }}</div>
+                    <button mat-icon-button matListItemMeta type="button" (click)="removerDoDestino(equipamento)" matTooltip="Remover do destino">
+                      <mat-icon>chevron_left</mat-icon>
+                    </button>
+                  </mat-list-item>
+                  <mat-divider></mat-divider>
+                }
+              </mat-list>
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+        <span class="spacer"></span>
+        <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!destinoSelecionado || equipamentosParaTransferir.length === 0">
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -10,6 +10,7 @@ import { AuthService } from '../../services/auth.service';
 import { GoogleIdentityService } from '../../services/google-identity.service';
 import { Router } from '@angular/router';
 import { SystemNotificationService } from '../../services/system-notification.service';
+import { Logo } from "../../components/logo/logo";
 
 @Component({
   selector: 'app-login',
@@ -21,7 +22,8 @@ import { SystemNotificationService } from '../../services/system-notification.se
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-  ],
+    Logo
+],
   templateUrl: './login.html',
   styleUrls: ['./login.scss'],
 })

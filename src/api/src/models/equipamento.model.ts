@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from '../config/database';
 
-interface EquipamentoAttributes {
+export interface EquipamentoAttributes {
   id: number;
   tag: string;
   patrimonio: string;
@@ -23,6 +23,16 @@ class Equipamento extends Model<
   EquipamentoAttributes,
   EquipamentoCreationAttributes
 > {
+  declare id: number;
+  declare tag: string;
+  declare patrimonio: string;
+  declare tipo: string;
+  declare smartlock_base_id: number;
+  declare status_atual: string;
+  declare usuario_atual_id?: number;
+  declare ativo: boolean;
+  declare createdAt?: Date;
+  declare updatedAt?: Date;
 }
 
 Equipamento.init(

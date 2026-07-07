@@ -1,132 +1,279 @@
-import { AsyncPipe } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AsyncPipe, CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import {
+  AbstractControl,
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatTableModule } from '@angular/material/table';
-import { Observable, startWith, map, of } from 'rxjs';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { map, Observable, startWith } from 'rxjs';
+import { SmartlockService } from '../../../services/smartlock.service';
+import { SystemNotificationService } from '../../../services/system-notification.service';
+import { UnidadeService } from '../../../services/unidade.service';
+import { EquipamentoService } from '../../../services/equipamento.service';
+import { Router } from '@angular/router';
+import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
 
-interface EquipamentoCSV {
-  uid: string;
-  tipo: string;
-  patrimonio: string;
+export interface Unidade {
+  id: number;
+  nome: string;
+}
+
+export interface SmartlockOption {
+  id: number;
+  apelido: string;
 }
 
 @Component({
   selector: 'app-cadastro-equipamento',
   imports: [
-    MatTableModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatAutocompleteModule,
+    CommonModule,
     AsyncPipe,
     ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatSelectModule,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    MatTooltipModule,
   ],
   templateUrl: './cadastro-equipamento.html',
   styleUrl: './cadastro-equipamento.scss',
 })
 export class CadastroEquipamento implements OnInit {
   importForm!: FormGroup;
+  novoItemForm!: FormGroup;
 
-  // Dados fictícios para os autocompletes
-  unidades: string[] = ['Unidade Timbó', 'Unidade Indaial', 'Unidade Blumenau', 'SENAI CETI'];
-  smartlocks: string[] = ['SmartLock Recepção 01', 'SmartLock Lab 03', 'SmartLock Almoxarifado'];
+  tiposEquipamento = TIPO_EQUIPAMENTOS;
 
-  filteredUnidades!: Observable<string[]>;
-  filteredSmartlocks!: Observable<string[]>;
+  unidadesDisponiveis: Unidade[] = [];
+  smartlocksDisponiveis: SmartlockOption[] = [];
 
-  // Estrutura para a tabela de visualização do CSV
-  dadosImportados: EquipamentoCSV[] = [];
-  displayedColumns: string[] = ['uid', 'tipo', 'patrimonio'];
-  nomeArquivoSelecionado: string = '';
+  filteredUnidades!: Observable<Unidade[]>;
+  filteredSmartlocks!: Observable<SmartlockOption[]>;
 
-  constructor(private fb: FormBuilder,private cdr:ChangeDetectorRef) {}
+  nomeArquivoSelecionado = '';
+
+  constructor(
+    private fb: FormBuilder,
+    private unidadeService: UnidadeService,
+    private smartlockService: SmartlockService,
+    private sns: SystemNotificationService,
+    private equipamentoService:EquipamentoService,
+    private router:Router
+  ) {}
 
   ngOnInit(): void {
     this.importForm = this.fb.group({
-      unidade: ['', Validators.required],
-      smartlock: ['', Validators.required],
-      file: [null, Validators.required],
+      unidade: [null, [Validators.required, this.objetoSelecionadoValidator]],
+      smartlock: [
+        { value: null, disabled: true },
+        [Validators.required, this.objetoSelecionadoValidator],
+      ],
+      tipoGlobal: [''],
+      equipamentos: this.fb.array([]),
     });
+
+    this.novoItemForm = this.fb.group({
+      tag: ['', Validators.required],
+      patrimonio: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
+      tipo: ['', Validators.required],
+    });
+
+    this.carregarUnidades();
 
     this.filteredUnidades = this.importForm.get('unidade')!.valueChanges.pipe(
       startWith(''),
-      map((value) => this._filter(value || '', this.unidades)),
+      map((valor) => this.filtrar(valor, this.unidadesDisponiveis, 'nome')),
     );
 
     this.filteredSmartlocks = this.importForm.get('smartlock')!.valueChanges.pipe(
       startWith(''),
-      map((value) => this._filter(value || '', this.smartlocks)),
+      map((valor) => this.filtrar(valor, this.smartlocksDisponiveis, 'apelido')),
     );
   }
 
-  private _filter(value: string, lista: string[]): string[] {
-    const filterValue = value.toLowerCase();
-    return lista.filter((option) => option.toLowerCase().includes(filterValue));
+  get equipamentosArray(): FormArray {
+    return this.importForm.get('equipamentos') as FormArray;
   }
+
+  private carregarUnidades(): void {
+    this.unidadeService.listAll().subscribe({
+      next: (res) => {
+        console.log(res);
+        this.unidadesDisponiveis = res;
+      },
+      error: (err) => {
+        console.log(err);
+        this.sns.notificar('Não foi possível carregar as unidades', 'erro');
+      },
+    });
+  }
+
+  // Garante que o valor do controle seja o objeto selecionado no autocomplete
+  // (com id), e não apenas o texto digitado sem uma opção escolhida.
+  private objetoSelecionadoValidator(control: AbstractControl): ValidationErrors | null {
+    const valor = control.value;
+    return valor && typeof valor === 'object' && 'id' in valor ? null : { objetoInvalido: true };
+  }
+
+  private filtrar<T extends Record<string, any>>(
+    valor: T | string,
+    lista: T[],
+    campo: string,
+  ): T[] {
+    const texto = typeof valor === 'string' ? valor : (valor?.[campo] ?? '');
+    const filtro = texto.toLowerCase();
+    return lista.filter((item) => item[campo].toLowerCase().includes(filtro));
+  }
+
+  unidadeDisplayFn(unidade: Unidade): string {
+    return unidade?.nome ?? '';
+  }
+
+  smartlockDisplayFn(smartlock: SmartlockOption): string {
+    return smartlock?.apelido ?? '';
+  }
+
+  onUnidadeSelecionada(unidade: Unidade): void {
+    this.smartlocksDisponiveis = [];
+    const smartlockControl = this.importForm.get('smartlock')!;
+    smartlockControl.reset(null);
+    smartlockControl.disable();
+
+    this.smartlockService.listByUnidade(unidade.id).subscribe({
+      next: (res) => {
+        this.smartlocksDisponiveis = res;
+        smartlockControl.enable();
+      },
+      error: (err) => {
+        console.log(err);
+        this.sns.notificar('Não foi possível carregar os smartlocks da unidade', 'erro');
+      },
+    });
+  }
+
+  // --- ITENS: adição manual ---
+
+  adicionarItem(): void {
+    if (this.novoItemForm.invalid) {
+      this.novoItemForm.markAllAsTouched();
+      return;
+    }
+
+    const { tag, patrimonio, tipo } = this.novoItemForm.value;
+    this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipo));
+
+    // Mantém o tipo selecionado para agilizar o cadastro de vários itens do mesmo tipo em sequência
+    this.novoItemForm.reset({ tag: '', patrimonio: '', tipo });
+  }
+
+  removerItem(index: number): void {
+    this.equipamentosArray.removeAt(index);
+  }
+
+  private criarItemGroup(tag: string, patrimonio: string, tipo: string): FormGroup {
+    return this.fb.group({
+      tag: [tag, Validators.required],
+      patrimonio: [patrimonio, [Validators.required, Validators.pattern(/^\d{6}$/)]],
+      tipo: [tipo, Validators.required],
+    });
+  }
+
+  // --- TIPO GLOBAL ---
+
+  aplicarTipoGlobal(): void {
+    const tipo = this.importForm.get('tipoGlobal')!.value;
+    if (!tipo) return;
+
+    this.equipamentosArray.controls.forEach((grupo) => grupo.get('tipo')!.setValue(tipo));
+  }
+
+  // --- IMPORTAÇÃO CSV ---
 
   onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       this.nomeArquivoSelecionado = file.name;
-      this.importForm.patchValue({ file: file });
-
-      // Leitura automática do CSV ao selecionar
       this.lerCSV(file);
+      // Permite selecionar o mesmo arquivo novamente em uma importação futura
+      input.value = '';
     }
   }
 
-  lerCSV(file: File): void {
+  private lerCSV(file: File): void {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      this.processarDadosCSV(text);
+      const texto = e.target?.result as string;
+      this.processarDadosCSV(texto);
     };
     reader.readAsText(file, 'UTF-8');
   }
 
-  processarDadosCSV(text: string): void {
-    const linhas = text.split('\n');
-    const resultado: EquipamentoCSV[] = [];
+  private processarDadosCSV(texto: string): void {
+    const linhas = texto.split('\n');
+    const tipoGlobal = this.importForm.get('tipoGlobal')!.value ?? '';
+    let importados = 0;
 
     // Ignora o cabeçalho (i = 1)
     for (let i = 1; i < linhas.length; i++) {
       const linha = linhas[i].trim();
-      if (linha) {
-        // Suporta separação por vírgula ou ponto-e-vírgula comum no Excel em PT-BR
-        const colunas = linha.includes(';') ? linha.split(';') : linha.split(',');
+      if (!linha) continue;
 
-        if (colunas.length >= 3) {
-          resultado.push({
-            uid: colunas[0].trim(),
-            tipo: colunas[1].trim(),
-            patrimonio: colunas[2].trim(),
-          });
-        }
+      // Suporta separação por vírgula ou ponto-e-vírgula comum no Excel em PT-BR
+      const colunas = linha.includes(';') ? linha.split(';') : linha.split(',');
+
+      if (colunas.length >= 2) {
+        const tag = colunas[0].trim();
+        const patrimonio = colunas[1].trim();
+        this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipoGlobal));
+        importados++;
       }
     }
-    // Força a atualização da referência do array para disparar a mudança na tabela
-    this.dadosImportados = [...resultado];
 
-    this.cdr.detectChanges();
+    this.sns.notificar(`${importados} equipamento(s) importado(s) do CSV`, 'sucesso');
   }
 
-  salvar(): void {
-    if (this.importForm.valid && this.dadosImportados.length > 0) {
-      const payload = {
-        unidade: this.importForm.value.unidade,
-        smartlock: this.importForm.value.smartlock,
-        equipamentos: this.dadosImportados,
-      };
+  // --- SALVAR ---
 
-      console.log('Dados prontos para envio ao servidor:', payload);
-      // Aqui você injetaria seu serviço HTTP para salvar no backend
+  salvar(): void {
+    if (this.importForm.invalid || this.equipamentosArray.length === 0) {
+      this.importForm.markAllAsTouched();
+      return;
     }
+
+    const { smartlock, equipamentos } = this.importForm.getRawValue();
+
+    this.equipamentoService.bulkCreate(smartlock.id,equipamentos).subscribe({
+      next: (res) => {
+        if (res.contagem == this.equipamentosArray.length) {
+          this.router.navigate(['/equipamentos/lista']);
+          this.sns.notificar(`${res.contagem} equipamentos adicionados`,'sucesso');
+          return;
+        }
+        this.sns.notificar(`Nenhum erro registrado, mas contagem não confere. ${res.contagem}`,'sucesso');
+      },
+      error:(err:any)=>{
+        console.error(err)
+        this.sns.notificar(`Erro: ${err.message}`,'erro');
+      }
+    });
+  }
+
+  onCancelar(){
+    this.importForm.reset()
+    this.router.navigate(['/equipamentos/lista'])
   }
 }

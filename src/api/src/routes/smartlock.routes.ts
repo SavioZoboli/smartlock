@@ -19,5 +19,7 @@ router.put('/',smartLockController.update)
 
 router.delete('/:id',smartLockController.delete)
 
+router.get('/listByUnidade/:unidade_id',smartLockController.listByUnidade)
+
 
 module.exports = router;

@@ -2,20 +2,30 @@
   <div class="page-header-container">
     <div class="title-area">
       <div class="breadcrumb">Gerenciamento / Infraestrutura</div>
-      <h2>Importar Equipamentos</h2>
+      <h2>Cadastrar Equipamentos</h2>
     </div>
   </div>
 
   <div class="form-container">
-    <form [formGroup]="importForm" (ngSubmit)="salvar()">
+    <form class="cadastro-form" [formGroup]="importForm" (ngSubmit)="salvar()">
+
       <div class="form-row">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-          <mat-label>Unidade Operacional</mat-label>
-          <input type="text" matInput formControlName="unidade" [matAutocomplete]="autoUnidade" />
+          <mat-label>Unidade</mat-label>
+          <input
+            type="text"
+            matInput
+            formControlName="unidade"
+            [matAutocomplete]="autoUnidade"
+          />
           <mat-icon matPrefix>business</mat-icon>
-          <mat-autocomplete #autoUnidade="matAutocomplete">
-            @for (unidade of filteredUnidades | async; track unidade) {
-              <mat-option [value]="unidade">{{ unidade }}</mat-option>
+          <mat-autocomplete
+            #autoUnidade="matAutocomplete"
+            [displayWith]="unidadeDisplayFn"
+            (optionSelected)="onUnidadeSelecionada($event.option.value)"
+          >
+            @for (unidade of filteredUnidades | async; track unidade.id) {
+              <mat-option [value]="unidade">{{ unidade.nome }}</mat-option>
             }
           </mat-autocomplete>
         </mat-form-field>
@@ -24,16 +34,61 @@
       <div class="form-row">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>SmartLock de Destino</mat-label>
-          <input type="text" matInput formControlName="smartlock" [matAutocomplete]="autoLock" />
+          <input
+            type="text"
+            matInput
+            formControlName="smartlock"
+            [matAutocomplete]="autoLock"
+            [placeholder]="importForm.get('smartlock')?.disabled ? 'Selecione uma unidade primeiro' : ''"
+          />
           <mat-icon matPrefix>lock</mat-icon>
-          <mat-autocomplete #autoLock="matAutocomplete">
-            @for (lock of filteredSmartlocks | async; track lock) {
-              <mat-option [value]="lock">{{ lock }}</mat-option>
+          <mat-autocomplete #autoLock="matAutocomplete" [displayWith]="smartlockDisplayFn">
+            @for (lock of filteredSmartlocks | async; track lock.id) {
+              <mat-option [value]="lock">{{ lock.apelido }}</mat-option>
             }
           </mat-autocomplete>
         </mat-form-field>
       </div>
 
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Tipo (aplicar a todos os itens)</mat-label>
+          <mat-select formControlName="tipoGlobal" (selectionChange)="aplicarTipoGlobal()">
+            @for (tipo of tiposEquipamento; track tipo) {
+              <mat-option [value]="tipo">{{ tipo }}</mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix>category</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <!-- Adição manual de itens -->
+      <div class="form-row novo-item-row" [formGroup]="novoItemForm">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item-rfid">
+          <mat-label>Tag RFID</mat-label>
+          <input matInput formControlName="tag" placeholder="Ex: A1B2C3D4">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item-patrimonio">
+          <mat-label>Patrimônio</mat-label>
+          <input matInput formControlName="patrimonio" maxlength="6" placeholder="000000">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item-tipo">
+          <mat-label>Tipo</mat-label>
+          <mat-select formControlName="tipo">
+            @for (tipo of tiposEquipamento; track tipo) {
+              <mat-option [value]="tipo">{{ tipo }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-flat-button type="button" class="btn-add-item" (click)="adicionarItem()">
+          <mat-icon>add</mat-icon> Adicionar
+        </button>
+      </div>
+
+      <!-- Importação via CSV -->
       <div class="form-row file-upload-row">
         <input
           type="file"
@@ -45,60 +100,73 @@
 
         <button mat-stroked-button type="button" (click)="fileInput.click()" class="upload-btn">
           <mat-icon>upload_file</mat-icon>
-          Selecionar Arquivo CSV
+          Importar via CSV
         </button>
 
-        <span class="file-name">
-          @if(nomeArquivoSelecionado){
-            {{ nomeArquivoSelecionado }}
-        }@else {
-            {{noFile}}
-        }
+        <span class="file-name" [class.placeholder]="!nomeArquivoSelecionado">
+          {{ nomeArquivoSelecionado || 'Nenhum arquivo selecionado (Formatos aceitos: .csv com RFID e patrimônio)' }}
         </span>
-        <ng-template #noFile>
-          <span class="file-name placeholder"
-            >Nenhum arquivo selecionado (Formatos aceitos: .csv)</span
-          >
-        </ng-template>
       </div>
 
-      @if (dadosImportados.length > 0) {
+      <!-- Tabela de itens (manuais + importados) -->
+      @if (equipamentosArray.controls.length > 0) {
         <div class="preview-container">
-          <h3>Dados detectados no arquivo ({{ dadosImportados.length }} itens):</h3>
+          <h3>Itens a cadastrar ({{ equipamentosArray.controls.length }}):</h3>
 
-          <div class="table-wrapper">
-            <table mat-table [dataSource]="dadosImportados" class="mat-elevation-z1">
-              <ng-container matColumnDef="uid">
-                <th mat-header-cell *matHeaderCellDef>UID</th>
-                <td mat-cell *matCellDef="let element">{{ element.uid }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="tipo">
-                <th mat-header-cell *matHeaderCellDef>Tipo de Equipamento</th>
-                <td mat-cell *matCellDef="let element">{{ element.tipo }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="patrimonio">
-                <th mat-header-cell *matHeaderCellDef>Número de Patrimônio</th>
-                <td mat-cell *matCellDef="let element">{{ element.patrimonio }}</td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          <div class="table-wrapper" formArrayName="equipamentos">
+            <table>
+              <thead>
+                <tr>
+                  <th>RFID</th>
+                  <th>Patrimônio</th>
+                  <th>Tipo</th>
+                  <th class="col-acoes"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of equipamentosArray.controls; track item; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <input matInput formControlName="tag">
+                      </mat-form-field>
+                    </td>
+                    <td>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <input matInput formControlName="patrimonio" maxlength="6">
+                      </mat-form-field>
+                    </td>
+                    <td>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-select formControlName="tipo">
+                          @for (tipo of tiposEquipamento; track tipo) {
+                            <mat-option [value]="tipo">{{ tipo }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    </td>
+                    <td class="col-acoes">
+                      <button mat-icon-button type="button" matTooltip="Remover" (click)="removerItem(i)">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
             </table>
           </div>
         </div>
       }
 
       <div class="form-actions">
-        <button mat-stroked-button type="button">Cancelar</button>
+        <button mat-stroked-button type="button" class="btn-cancel" (click)="onCancelar()">Cancelar</button>
         <button
           mat-flat-button
-          color="primary"
+          class="btn-save"
           type="submit"
-          [disabled]="importForm.invalid || dadosImportados.length === 0"
+          [disabled]="importForm.invalid || equipamentosArray.controls.length === 0"
         >
-          Confirmar Importação
+          Salvar Equipamentos
         </button>
       </div>
     </form>

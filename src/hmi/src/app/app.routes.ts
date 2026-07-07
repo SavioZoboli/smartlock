@@ -13,16 +13,19 @@ import { ConcluirCadastro } from './pages/concluir-cadastro/concluir-cadastro';
 import { authGuard } from '../guards/auth.guard';
 import { ErrorPageComponent } from './pages/error/error';
 import { ListaSmartlock } from './pages/smartlock/lista-smartlock/lista-smartlock';
+import { ListaEquipamento } from './pages/equipamento/lista-equipamento/lista-equipamento';
+import { UpdateEquipamento } from './pages/equipamento/update-equipamento/update-equipamento';
+import { RedirectEquipamento } from './pages/equipamento/redirect-equipamento/redirect-equipamento';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
   { path: 'login', component: LoginComponent },
-  {path:'concluir-cadastro',component:ConcluirCadastro},
+  { path: 'concluir-cadastro', component: ConcluirCadastro },
 
   // 2. Rotas Privadas (Padrão de Layout)
   {
     path: '',
-    canActivate:[authGuard],
+    canActivate: [authGuard],
     component: MainLayoutComponent, // O Layout Base com a Navbar
     children: [
       // Se acessar a raiz vazia, joga pro dashboard
@@ -33,16 +36,19 @@ export const routes: Routes = [
 
       { path: 'unidades/lista', component: ListaUnidade },
       { path: 'usuarios/lista', component: ListaUsuario },
-      {path:'smartlocks/lista',component:ListaSmartlock},
+      { path: 'smartlocks/lista', component: ListaSmartlock },
+      { path: 'equipamentos/lista', component: ListaEquipamento },
 
       // Telas de Cadastros
       { path: 'usuarios/cadastro', component: CadastroUsuario },
-      {path:'usuarios/editar/:id',component:CadastroUsuario},
+      { path: 'usuarios/editar/:id', component: CadastroUsuario },
 
       { path: 'equipamentos/cadastro', component: CadastroEquipamento },
+      {path:'equipamentos/editar/:id',component:UpdateEquipamento},
+      {path:'equipamentos/transferir',component:RedirectEquipamento},
 
       { path: 'smartlocks/cadastro', component: CadastroSmartlock },
-      {path:'smartlocks/editar/:id',component:CadastroSmartlock},
+      { path: 'smartlocks/editar/:id', component: CadastroSmartlock },
 
       { path: 'unidades/cadastro', component: CadastroUnidade },
       { path: 'unidades/editar/:id', component: CadastroUnidade },
@@ -50,7 +56,7 @@ export const routes: Routes = [
   },
 
   // Rota coringa (caso o usuário digite um link que não existe)
-   {
+  {
     path: '**', // captura qualquer rota não mapeada
     component: ErrorPageComponent,
     data: {

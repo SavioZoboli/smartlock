@@ -120,6 +120,23 @@ class SmartLockController {
     }
   }
 
+  async listByUnidade(req:Request,res:Response){
+    let rawId = req.params.unidade_id
+    if(!rawId || typeof rawId != 'string'){
+      return res.status(400).json({message:"Dados faltando para a consulta"})
+    }
+    let unidade_id = Number(rawId)
+    if(isNaN(unidade_id)){
+      return res.status(400).json({message:"O código da unidade não é numérico"})
+    }
+    try{
+      let smartlocks = await smartLockService.listByUnidade(unidade_id)
+      return res.status(200).json(smartlocks)
+    }catch(e){
+      return res.status(500).json({message:"Erro interno do Servidor"})
+    }
+  }
+
 }
 
 export default new SmartLockController()
