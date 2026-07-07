@@ -1,0 +1,128 @@
+<div class="page-container">
+  <div class="page-header-container with-actions">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Equipamentos</div>
+      <h2>Equipamentos Cadastrados</h2>
+    </div>
+
+    <div class="action-area">
+      <button mat-flat-button class="btn-new" (click)="onNovoEquipamento()">
+        <mat-icon>add</mat-icon> Novo Equipamento
+      </button>
+    </div>
+  </div>
+
+  <div class="filtros-container" [formGroup]="filtros">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-nome">
+      <mat-label>Buscar por usuário, patrimônio ou tipo</mat-label>
+      <input matInput formControlName="geral" placeholder="Digite para buscar">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Unidade</mat-label>
+      <mat-select formControlName="unidade">
+        <mat-option value="">Todas</mat-option>
+        @for (unidade of unidadesDisponiveis; track unidade) {
+          <mat-option [value]="unidade">{{ unidade }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Smartlock</mat-label>
+      <mat-select formControlName="smartlock">
+        <mat-option value="">Todos</mat-option>
+        @for (smartlock of smartlocksDisponiveis; track smartlock) {
+          <mat-option [value]="smartlock">{{ smartlock }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status">
+        <mat-option value="">Todos</mat-option>
+        @for (opcao of statusOpcoes; track opcao.value) {
+          <mat-option [value]="opcao.value">{{ opcao.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-stroked-button type="button" class="btn-limpar" (click)="limparFiltros()">
+      <mat-icon>filter_alt_off</mat-icon> Limpar
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" class="mat-elevation-z0 custom-table">
+
+      <ng-container matColumnDef="patrimonio">
+        <th mat-header-cell *matHeaderCellDef> Patrimônio </th>
+        <td mat-cell *matCellDef="let element" class="fw-500">
+          {{ element.patrimonio }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="tipo">
+        <th mat-header-cell *matHeaderCellDef> Tipo </th>
+        <td mat-cell *matCellDef="let element"> {{ element.tipo }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="smartlock">
+        <th mat-header-cell *matHeaderCellDef> Smartlock </th>
+        <td mat-cell *matCellDef="let element">
+          <mat-icon class="inline-icon">lock</mat-icon> {{ element.smartlock }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="unidade">
+        <th mat-header-cell *matHeaderCellDef> Unidade </th>
+        <td mat-cell *matCellDef="let element"> {{ element.unidade }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef> Status </th>
+        <td mat-cell *matCellDef="let element">
+          <span class="status-chip" [ngClass]="element.status">
+            {{ statusLabel(element.status) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="usuarioAtual">
+        <th mat-header-cell *matHeaderCellDef> Usuário Atual </th>
+        <td mat-cell *matCellDef="let element">
+          {{ element.usuario_atual ?? '—' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acoes">
+        <th mat-header-cell *matHeaderCellDef class="align-right"> Ações </th>
+        <td mat-cell *matCellDef="let element" class="align-right">
+          <button mat-icon-button class="action-btn edit-btn" matTooltip="Editar" (click)="onEditar(element)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button class="action-btn delete-btn" matTooltip="Excluir" (click)="onExcluir(element)">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="custom-row"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-state" colspan="7">
+          Nenhum equipamento cadastrado
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      [pageSizeOptions]="[10, 20, 50]"
+      showFirstLastButtons
+      class="custom-paginator">
+    </mat-paginator>
+  </div>
+</div>

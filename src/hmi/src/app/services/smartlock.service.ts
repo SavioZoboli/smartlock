@@ -30,4 +30,8 @@ export class SmartlockService {
   public update(id:number,apelido:string,mac_address:string,has_equipamentos:boolean,unidade_id:string){
     return this.http.put(`${this.api_url}/api/smartlock`,{id,apelido,mac_address,unidade_id,has_equipamentos},{withCredentials:true})
   }
+
+  public listByUnidade(unidade_id:number):Observable<any>{
+    return this.http.get(`${this.api_url}/api/smartlock/listByUnidade/${unidade_id}`,{withCredentials:true})
+  }
 }

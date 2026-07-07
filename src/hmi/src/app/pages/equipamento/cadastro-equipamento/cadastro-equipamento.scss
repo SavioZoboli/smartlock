@@ -1,11 +1,9 @@
-
 .page-container {
   padding: 1.5rem;
-  max-width: 800px; /* Limita a largura para formulários não ficarem esticados demais */
+  width:fit-content;
   margin: 0 auto;
 }
 
-/* Cabeçalho padronizado */
 .page-header-container {
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 1.25rem;
@@ -33,7 +31,6 @@
   }
 }
 
-/* Container do Formulário */
 .form-container {
   background-color: #ffffff;
   border-radius: 8px;
@@ -45,10 +42,9 @@
 .cadastro-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Espaçamento uniforme entre as linhas do formulário */
+  gap: 1.5rem;
 }
 
-/* Ajustes para a nova seção de Chips */
 .form-row {
   display: flex;
   flex-direction: column;
@@ -60,6 +56,41 @@
     font-weight: 600;
     color: #475569;
     margin-bottom: 0.5rem;
+  }
+}
+
+/* Linha de adição manual de itens */
+.novo-item-row {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .item-rfid {
+    flex: 1 1 200px;
+  }
+
+  .item-patrimonio {
+    flex: 0 1 140px;
+  }
+
+  .item-tipo {
+    flex: 1 1 220px;
+  }
+
+  .btn-add-item {
+    height: 56px;
+    background-color: #0ea5e9;
+    color: white;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #0284c7;
+    }
+
+    mat-icon {
+      margin-right: 4px;
+    }
   }
 }
 
@@ -90,7 +121,7 @@
 .preview-container {
   margin-top: 24px;
   margin-bottom: 24px;
-  width: 100%; /* Garante que ocupe toda a largura do form-container */
+  width: 100%;
 
   h3 {
     font-size: 14px;
@@ -100,8 +131,8 @@
   }
 
   .table-wrapper {
-    max-height: 250px;
-    overflow-y: auto; /* CORRIGIDO: Força o scroll vertical se passar de 250px */
+    max-height: 320px;
+    overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid rgba(0, 0, 0, 0.12);
     border-radius: 4px;
@@ -110,11 +141,37 @@
 
   table {
     width: 100%;
-    border-collapse: collapse; /* Evita comportamentos estranhos de renderização */
+    border-collapse: collapse;
+
+    th {
+      position: sticky;
+      top: 0;
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    td {
+      padding: 6px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+
+      mat-form-field {
+        width: 100%;
+      }
+    }
+
+    .col-acoes {
+      width: 48px;
+      text-align: center;
+    }
   }
 }
-
-
 
 .full-width {
   width: 100%;
@@ -125,7 +182,6 @@
   margin-right: 8px;
 }
 
-/* Botões de Ação */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -136,7 +192,7 @@
   border-top: 1px solid #f1f5f9;
 
   button {
-    padding: 1.5rem 1.5rem; /* Aumenta a área de clique */
+    padding: 1.5rem 1.5rem;
     font-size: 0.95rem;
     font-weight: 500;
     border-radius: 6px;
@@ -148,7 +204,7 @@
   }
 
   .btn-save {
-    background-color: #0ea5e9; /* Azul confiável corporativo */
+    background-color: #0ea5e9;
     color: white;
 
     &:hover {
@@ -158,14 +214,13 @@
 }
 
 ::ng-deep .success-snackbar {
-  --mdc-snackbar-container-color: #10b981; /* Fundo Verde */
+  --mdc-snackbar-container-color: #10b981;
   --mdc-snackbar-supporting-text-color: #ffffff;
   font-weight: 500;
 }
 
 ::ng-deep .error-snackbar {
-  --mdc-snackbar-container-color: #ef4444; /* Fundo Vermelho */
+  --mdc-snackbar-container-color: #ef4444;
   --mdc-snackbar-supporting-text-color: #ffffff;
   font-weight: 500;
 }
-
