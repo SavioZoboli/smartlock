@@ -136,6 +136,15 @@ class SmartLockService{
         }
     }
 
+    async listByUnidade(unidade_id:number):Promise<Smartlock[]>{
+        try{
+            let smartlocks = await Smartlock.findAll({where:{ativo:true,unidade_id},attributes:['id','apelido']})
+            return smartlocks;
+        }catch(e){
+            throw e;
+        }
+    }
+
 }
 
 export default new SmartLockService();
