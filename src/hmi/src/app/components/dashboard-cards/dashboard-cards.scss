@@ -1,0 +1,91 @@
+.kpi-container {
+  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+}
+
+::ng-deep .kpi-menu {
+  .kpi-menu-title {
+    padding: 8px 16px 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+  }
+
+  .mat-mdc-menu-item {
+    height: auto;
+    min-height: 40px;
+    padding: 2px 8px;
+
+    .mat-mdc-checkbox {
+      width: 100%;
+
+      label {
+        font-size: 0.85rem;
+        color: #1e293b;
+      }
+    }
+  }
+}
+
+.state-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  padding: 1rem;
+
+  mat-icon {
+    color: #cbd5e1;
+  }
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+
+  .kpi-icon {
+    font-size: 28px;
+    height: 28px;
+    width: 28px;
+    color: #e84910;
+    flex-shrink: 0;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .kpi-label {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+}

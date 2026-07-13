@@ -1,22 +1,26 @@
 import equipamentoController from "../controllers/equipamento.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = require('express').Router();
 
+router.get('/comigo',authMiddleware,equipamentoController.equipamentosComigo)
+
+router.post('/bulkCreate',authMiddleware,equipamentoController.bulkCreate)
+
+router.get('/:id',authMiddleware,equipamentoController.getById)
+
+router.get('/',authMiddleware,equipamentoController.listAll)
 
 
-router.get('/',equipamentoController.listAll)
+router.put('/',authMiddleware,equipamentoController.update)
 
-router.post('/bulkCreate',equipamentoController.bulkCreate)
+router.put('/redirect',authMiddleware,equipamentoController.redirect)
 
-router.get('/:id',equipamentoController.getById)
+router.delete('/:id',authMiddleware,equipamentoController.deactivate)
 
-router.put('/',equipamentoController.update)
+router.get('/listBySmartlock/:smartlock_id',authMiddleware,equipamentoController.listBySmartlock)
 
-router.put('/redirect',equipamentoController.redirect)
 
-router.delete('/:id',equipamentoController.deactivate)
-
-router.get('/listBySmartlock/:smartlock_id',equipamentoController.listBySmartlock)
 
 
 

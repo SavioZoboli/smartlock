@@ -3,15 +3,20 @@
     <div class="brand-logo" routerLink="/">
       <app-logo></app-logo>
     </div>
-    
+
     <div class="divider-vertical"></div>
-    
+
     <nav class="navbar-menu">
       <a routerLink="/dashboard" routerLinkActive="active-menu-item" class="menu-item">
         <mat-icon>dashboard</mat-icon> Dashboard
       </a>
+      <button class="menu-item" [matMenuTriggerFor]="relatoriosMenu">
+        <mat-icon>analytics</mat-icon> Relatórios
+        <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+      </button>
       <button class="menu-item" [matMenuTriggerFor]="cadastrosMenu">
-        <mat-icon>settings_applications</mat-icon> Gerenciamento <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+        <mat-icon>settings_applications</mat-icon> Gerenciamento
+        <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
       </button>
     </nav>
   </div>
@@ -31,6 +36,12 @@
     </a>
   </mat-menu>
 
+  <mat-menu #relatoriosMenu="matMenu" class="custom-navbar-menu">
+    <a mat-menu-item routerLink="/relatorios/disponibilidade">
+      <mat-icon>inventory</mat-icon> <span>Disponibilidade</span>
+    </a>
+  </mat-menu>
+
   <div class="navbar-right">
     <button mat-icon-button class="icon-notification-btn" aria-label="Notificações">
       <mat-icon matBadge="3" matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
@@ -41,7 +52,7 @@
     @if (usuario$ | async; as usuario) {
       <div class="profile-section" [matMenuTriggerFor]="profileMenu">
         @if (usuario.avatar) {
-          <img [src]="usuario.avatar" [alt]="usuario.nome" class="user-avatar">
+          <img [src]="usuario.avatar" [alt]="usuario.nome" class="user-avatar" />
         } @else {
           <div class="user-avatar">{{ obterIniciais(usuario.nome) }}</div>
         }
@@ -54,9 +65,7 @@
     }
 
     <mat-menu #profileMenu="matMenu">
-      <button mat-menu-item>
-        <mat-icon>account_circle</mat-icon> <span>Meu Perfil</span>
-      </button>
+      <button mat-menu-item><mat-icon>account_circle</mat-icon> <span>Meu Perfil</span></button>
       <button mat-menu-item (click)="logout()">
         <mat-icon>exit_to_app</mat-icon> <span>Sair do Sistema</span>
       </button>
