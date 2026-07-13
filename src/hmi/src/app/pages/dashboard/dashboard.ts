@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { NavbarComponent } from "../../components/nav-bar.component/nav-bar.component";
-import { SmartlockReport } from "../../reports/smartlock-report/smartlock-report";
+import { DashboardCards } from "../../components/dashboard-cards/dashboard-cards";
+import { EquipamentosComigoReport } from "../../reports/equipamentos-comigo-report/equipamentos-comigo-report";
 
 @Component({
   selector: 'app-dashboard',
-  imports: [NavbarComponent, SmartlockReport],
+  imports: [ DashboardCards, EquipamentosComigoReport],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

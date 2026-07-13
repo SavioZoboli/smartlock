@@ -32,7 +32,10 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
       // Tela de Dashboard
-      { path: 'dashboard', component: SmartlockReport },
+      { path: 'dashboard', component: Dashboard },
+
+      //Telas de relatório
+      {path:'relatorios/disponibilidade',component:SmartlockReport},
 
       { path: 'unidades/lista', component: ListaUnidade },
       { path: 'usuarios/lista', component: ListaUsuario },

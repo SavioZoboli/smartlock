@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { NavbarComponent } from '../nav-bar.component/nav-bar.component';
+import { NavbarComponent } from '../nav-bar/nav-bar.component';
 
 @Component({
   selector: 'app-main-layout',

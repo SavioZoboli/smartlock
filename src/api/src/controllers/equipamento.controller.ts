@@ -114,6 +114,22 @@ class EquipamentoController {
     }
   }
 
+  async equipamentosComigo(req:Request,res:Response){
+    let usuario_id = req.user?.id
+    if(!usuario_id){
+      return res.status(400).json({message:"Não consegui te identificar"})
+    }
+
+    try{
+      let equipamentos = await equipamentoService.getEmprestadosUsuario(usuario_id)
+      res.status(200).json(equipamentos)
+    }catch(e){
+      console.log(e)
+      return res.status(500).json({message:"Erro interno do servidor"})
+    }
+
+  }
+
 }
 
 export default new EquipamentoController();

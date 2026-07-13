@@ -1,0 +1,42 @@
+<div class="dashboard-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Meus Empréstimos</div>
+      <h2>Equipamentos Comigo</h2>
+    </div>
+  </div>
+
+  @if (carregando()) {
+    <div class="state-message">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Carregando seus equipamentos...</span>
+    </div>
+  } @else if (equipamentos.length === 0) {
+    <div class="state-message">
+      <mat-icon>inbox</mat-icon>
+      <span>Você não está com nenhum equipamento no momento.</span>
+    </div>
+  } @else {
+    <div class="equipment-grid">
+      @for (item of equipamentos; track item.id) {
+        <mat-card class="equipment-card">
+          <div class="status-indicator"></div>
+          <div class="card-content">
+            <div class="card-header">
+              <mat-icon class="eq-icon">{{
+                item.tipo === 'Notebook' ? 'laptop_mac' : 'build'
+              }}</mat-icon>
+              <span class="eq-code">{{ item.tipo }} - {{ item.patrimonio }}</span>
+            </div>
+            <div class="card-body">
+              <div class="localizacao">{{ item.smartlock }}</div>
+              <div class="datas">
+                <span>Retirado em {{ item.dataRetirada | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

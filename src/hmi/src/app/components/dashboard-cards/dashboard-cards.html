@@ -1,0 +1,43 @@
+<div class="kpi-container">
+  <div class="kpi-header">
+    <h3>Indicadores</h3>
+    <button mat-icon-button [matMenuTriggerFor]="kpiMenu" matTooltip="Configurar indicadores">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #kpiMenu="matMenu" class="kpi-menu">
+      <div class="kpi-menu-title">Configurar indicadores</div>
+      @for (kpi of catalogo; track kpi.id) {
+        <button mat-menu-item (click)="$event.stopPropagation()">
+          <mat-checkbox
+            [checked]="isSelecionado(kpi.id)"
+            (change)="toggleKpi(kpi.id)"
+            (click)="$event.stopPropagation()"
+          >
+            {{ kpi.label }}
+          </mat-checkbox>
+        </button>
+      }
+    </mat-menu>
+  </div>
+
+  @if (kpisExibidos().length === 0) {
+    <div class="state-message">
+      <mat-icon>tune</mat-icon>
+      <span>Selecione ao menos um indicador para exibir.</span>
+    </div>
+  } @else {
+    <div class="kpi-grid">
+      @for (kpi of kpisExibidos(); track kpi.id) {
+        <mat-card class="kpi-card">
+          <mat-icon class="kpi-icon">{{ kpi.icon }}</mat-icon>
+
+          <span class="kpi-value">{{ kpi.valor != undefined ? kpi.valor : '--' }}</span>
+
+          <span class="kpi-label">{{ kpi.label }}</span>
+
+          
+        </mat-card>
+      }
+    </div>
+  }
+</div>

@@ -3,6 +3,7 @@ import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Equipamento } from '../pages/equipamento/lista-equipamento/lista-equipamento';
+import { EquipamentoComigo } from '../models/equipamento.model';
 
 export type EquipamentoCreateAttributes={
   rfid:string;
@@ -44,5 +45,9 @@ export class EquipamentoService {
 
   public redirect(smartlock_destino_id:number,equipamentos:number[]):Observable<any>{
     return this.http.put(`${this.api_url}/redirect`,{smartlock_destino_id,equipamentos},{withCredentials:true})
+  }
+
+  buscarEquipamentosComigo(): Observable<any> {
+    return this.http.get(`${this.api_url}/comigo`,{withCredentials:true});
   }
 }
