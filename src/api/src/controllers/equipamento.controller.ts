@@ -14,6 +14,7 @@ class EquipamentoController {
 
   async bulkCreate(req: Request, res: Response) {
     let { smartlock_id, equipamentos } = req.body;
+    console.log(equipamentos)
     if (!smartlock_id || equipamentos.length == 0) {
       return res.status(400).json({ message: "Requisição com dados faltando" });
     }
@@ -61,12 +62,12 @@ class EquipamentoController {
   }
 
   async update(req: Request, res: Response) {
-    let { id, smartlock_id, tag, patrimonio, tipo } = req.body;
+    let { id, smartlock_id, tag, patrimonio, tipo,apelido } = req.body;
     if (!id || !smartlock_id || !tag || !patrimonio || !tipo) {
       return res.status(400).json({ message: "Dados obrigatórios faltando" });
     }
     try {
-      await equipamentoService.update(id, tag, patrimonio, tipo, smartlock_id);
+      await equipamentoService.update(id, tag, patrimonio, tipo, smartlock_id,apelido);
       return res.status(200).json({ message: "Alterado" });
     } catch (e) {
       return res.status(500).json({ message: "Erro interno do servidor" });

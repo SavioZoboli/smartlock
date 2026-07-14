@@ -30,8 +30,8 @@ export class EquipamentoService {
     return this.http.get(`${this.api_url}/${id}`,{withCredentials:true})
   }
 
-  public update(id:number,patrimonio:string,tag:string,tipo:string,smartlock_id:string):Observable<any>{
-    return this.http.put(`${this.api_url}/`,{id,patrimonio,tag,tipo,smartlock_id},{withCredentials:true})
+  public update(id:number,patrimonio:string,tag:string,tipo:string,smartlock_id:string,apelido:string):Observable<any>{
+    return this.http.put(`${this.api_url}/`,{id,patrimonio,tag,tipo,smartlock_id,apelido},{withCredentials:true})
   }
 
   public delete(id:number):Observable<any>{

@@ -2,6 +2,7 @@
 export interface Equipamento {
   id: string;
   tipo: string;
+  apelido?:string;
   patrimonio: string;
   disponivel: boolean;
   responsavel?: string;
@@ -17,7 +18,9 @@ export interface TipoEquipamento {
 export interface EquipamentoComigo {
   id: string;
   tipo: string;
+  apelido?:string;
   patrimonio: string;
   dataRetirada: string;        // ISO date
   smartlock: string;         // unidade / smartlock de origem
+  icone?:string
 }

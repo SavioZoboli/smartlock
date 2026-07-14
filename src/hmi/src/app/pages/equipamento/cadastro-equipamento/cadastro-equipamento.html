@@ -79,6 +79,11 @@
           </mat-select>
         </mat-form-field>
 
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Apelido</mat-label>
+          <input matInput formControlName="apelido" />
+        </mat-form-field>
+
         <button mat-flat-button type="button" class="btn-add-item" (click)="adicionarItem()">
           <mat-icon>add</mat-icon> Adicionar
         </button>
@@ -119,6 +124,7 @@
                   <th>RFID</th>
                   <th>Patrimônio</th>
                   <th>Tipo</th>
+                  <th>Apelido</th>
                   <th class="col-acoes"></th>
                 </tr>
               </thead>
@@ -145,6 +151,11 @@
                             <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
                           }
                         </mat-select>
+                      </mat-form-field>
+                    </td>
+                    <td>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <input matInput formControlName="apelido" />
                       </mat-form-field>
                     </td>
                     <td class="col-acoes">

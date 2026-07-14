@@ -3,6 +3,7 @@ import sequelize from '../config/database';
 
 export interface EquipamentoAttributes {
   id: number;
+  apelido?:string;
   tag: string;
   patrimonio: string;
   tipo: string;
@@ -24,6 +25,7 @@ class Equipamento extends Model<
   EquipamentoCreationAttributes
 > {
   declare id: number;
+  declare apelido?:string;
   declare tag: string;
   declare patrimonio: string;
   declare tipo: string;
@@ -41,6 +43,10 @@ Equipamento.init(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+    },
+    apelido:{
+      type:DataTypes.STRING,
+      allowNull:true
     },
     tag: {
       type: DataTypes.STRING,

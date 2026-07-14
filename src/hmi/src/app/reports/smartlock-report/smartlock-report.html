@@ -64,10 +64,12 @@
           <div class="status-indicator"></div>
           <div class="card-content">
             <div class="card-header">
-              <mat-icon class="eq-icon">{{ item.icone }}</mat-icon>
-              <span class="eq-code">{{ item.tipo }}</span>
-            </div>
+                <mat-icon class="eq-icon">{{ item.icone }}</mat-icon>
+                <span class="eq-code">{{ item.apelido?item.apelido:'' }}</span>
+              </div>
+
             <div class="card-body">
+              <span>{{ item.tipo }}</span>
               <span>Patrimônio: {{ item.patrimonio }}</span>
               @if (item.disponivel) {
                 <div class="status-badge available">

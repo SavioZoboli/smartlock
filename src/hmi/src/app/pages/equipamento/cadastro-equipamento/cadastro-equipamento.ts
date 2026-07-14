@@ -90,6 +90,7 @@ export class CadastroEquipamento implements OnInit {
       tag: ['', Validators.required],
       patrimonio: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
       tipo: ['', Validators.required],
+      apelido:['']
     });
 
     this.carregarUnidades();
@@ -173,22 +174,23 @@ export class CadastroEquipamento implements OnInit {
       return;
     }
 
-    const { tag, patrimonio, tipo } = this.novoItemForm.value;
-    this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipo));
+    const { tag, patrimonio, tipo,apelido } = this.novoItemForm.value;
+    this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipo,apelido));
 
     // Mantém o tipo selecionado para agilizar o cadastro de vários itens do mesmo tipo em sequência
-    this.novoItemForm.reset({ tag: '', patrimonio: '', tipo });
+    this.novoItemForm.reset({ tag: '', patrimonio: '', tipo ,apelido:''});
   }
 
   removerItem(index: number): void {
     this.equipamentosArray.removeAt(index);
   }
 
-  private criarItemGroup(tag: string, patrimonio: string, tipo: string): FormGroup {
+  private criarItemGroup(tag: string, patrimonio: string, tipo: string,apelido:string): FormGroup {
     return this.fb.group({
       tag: [tag, Validators.required],
       patrimonio: [patrimonio, [Validators.required, Validators.pattern(/^\d{6}$/)]],
       tipo: [tipo, Validators.required],
+      apelido:[apelido]
     });
   }
 
@@ -239,7 +241,7 @@ export class CadastroEquipamento implements OnInit {
       if (colunas.length >= 2) {
         const tag = colunas[0].trim();
         const patrimonio = colunas[1].trim();
-        this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipoGlobal));
+        this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipoGlobal,''));
         importados++;
       }
     }

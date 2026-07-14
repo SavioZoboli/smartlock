@@ -43,6 +43,7 @@ class EquipamentoService {
           "patrimonio",
           ["status_atual", "status"],
           "tipo",
+          "apelido",
           [Sequelize.col("smartlockBase.apelido"), "smartlock"],
           [Sequelize.col("smartlockBase.unidade.nome"), "unidade"],
           [Sequelize.col("usuarioAtual.nome"), "usuario"],
@@ -82,6 +83,7 @@ class EquipamentoService {
           "patrimonio",
           "tag",
           "tipo",
+          "apelido",
           ["smartlock_base_id", "smartlock_id"],
         ],
       });
@@ -100,6 +102,7 @@ class EquipamentoService {
     patrimonio: string,
     tipo: string,
     smartlock_id: number,
+    apelido:string
   ): Promise<void> {
     try {
       let equipamento = await Equipamento.findByPk(id);
@@ -110,6 +113,7 @@ class EquipamentoService {
       equipamento.patrimonio = patrimonio;
       equipamento.tipo = tipo;
       equipamento.smartlock_base_id = smartlock_id;
+      equipamento.apelido = apelido
       await equipamento.save();
       return;
     } catch (e) {
@@ -164,6 +168,7 @@ class EquipamentoService {
       let equipamentos = await Equipamento.findAll({
         attributes: [
           "patrimonio",
+          "apelido",
           "tipo",
           [Sequelize.col("smartlockBase.apelido"), "smartlock"],
         ],
@@ -172,7 +177,8 @@ class EquipamentoService {
           model:SmartLock,
           as:'smartlockBase',
           attributes:[]
-        }]
+        }],
+        order:[['apelido','asc'],['patrimonio','asc']],
       });
       return equipamentos;
     } catch (e) {
@@ -185,6 +191,7 @@ class EquipamentoService {
       let relatorio = await Equipamento.findAll({
         attributes:[
           'id',
+          "apelido",
           'tipo',
           'patrimonio',
           [Sequelize.col('usuarioAtual.nome'),'responsavel']
@@ -198,6 +205,7 @@ class EquipamentoService {
           }
         ],
         where:{ativo:true,smartlock_base_id:smartlock_id},
+        order:[['apelido','asc'],['patrimonio','asc']],
         raw:true
       })
       relatorio = relatorio.map((l:any)=>{return {...l,disponivel:l.responsavel==null}})
