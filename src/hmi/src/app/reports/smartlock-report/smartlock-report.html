@@ -10,9 +10,9 @@
         <mat-label>Unidade Operacional</mat-label>
         <input type="text" matInput [formControl]="unidadeCtrl" [matAutocomplete]="autoUnidade" />
         <mat-icon matPrefix class="filter-icon">business</mat-icon>
-        <mat-autocomplete #autoUnidade="matAutocomplete">
-          @for (unidade of filteredUnidades | async; track unidade) {
-            <mat-option [value]="unidade">{{ unidade }}</mat-option>
+        <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="_displayWithUnidade">
+          @for (unidade of filteredUnidades(); track unidade.id) {
+            <mat-option [value]="unidade">{{ unidade.nome }}</mat-option>
           }
         </mat-autocomplete>
       </mat-form-field>
@@ -26,9 +26,9 @@
           [matAutocomplete]="autoSmartlock"
         />
         <mat-icon matPrefix class="filter-icon">dns</mat-icon>
-        <mat-autocomplete #autoSmartlock="matAutocomplete">
-          @for (sl of filteredSmartlocks | async; track sl) {
-            <mat-option [value]="sl">{{ sl }}</mat-option>
+        <mat-autocomplete #autoSmartlock="matAutocomplete" [displayWith]="_displayWithSmartlock">
+          @for (sl of filteredSmartlocks(); track sl.id) {
+            <mat-option [value]="sl">{{ sl.apelido }}</mat-option>
           }
         </mat-autocomplete>
       </mat-form-field>
@@ -39,7 +39,7 @@
     </div>
   </div>
 
-  @if (carregando) {
+  @if (carregando()) {
     <div class="state-message">
       <mat-spinner diameter="32"></mat-spinner>
       <span>Carregando equipamentos...</span>
