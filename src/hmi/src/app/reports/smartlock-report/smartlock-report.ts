@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,94 +13,136 @@ import { Equipamento } from '../../models/equipamento.model';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { UnidadeService } from '../../services/unidade.service';
 import { SmartlockService } from '../../services/smartlock.service';
+import { Unidade } from '../../pages/unidade/lista-unidade/lista-unidade';
+import { Smartlock } from '../../pages/smartlock/lista-smartlock/lista-smartlock';
+import { SystemNotificationService } from '../../services/system-notification.service';
+import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 
 @Component({
   selector: 'app-smartlock-report',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, MatFormFieldModule,
-    MatInputModule, MatAutocompleteModule, MatCardModule,
-    MatIconModule, MatChipsModule, MatProgressSpinnerModule
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatCardModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './smartlock-report.html',
-  styleUrls: ['./smartlock-report.scss']
+  styleUrls: ['./smartlock-report.scss'],
 })
 export class SmartlockReport implements OnInit {
-  unidadeCtrl = new FormControl('');
-  smartlockCtrl = new FormControl('');
+  unidadeCtrl = new FormControl();
+  smartlockCtrl = new FormControl();
 
-  unidades: string[] = [];
-  smartlocks: string[] = [];
+  unidades: Unidade[] = [];
+  smartlocks: Smartlock[] = [];
 
-  filteredUnidades!: Observable<string[]>;
-  filteredSmartlocks!: Observable<string[]>;
+  filteredUnidades = signal<Unidade[]>([]);
+  filteredSmartlocks = signal<Smartlock[]>([]);
 
   equipamentos: Equipamento[] = [];
-  carregando = false;
+  carregando = signal<boolean>(false);
+
+  tiposEquipamentos = TIPO_EQUIPAMENTOS;
 
   constructor(
     private equipamentoService: EquipamentoService,
-    private unidadeService:UnidadeService,
-    private smartlockService:SmartlockService
+    private unidadeService: UnidadeService,
+    private smartlockService: SmartlockService,
+    private sns: SystemNotificationService,
   ) {}
 
   ngOnInit() {
+    this.carregando.set(true);
     this.unidadeService.listAll().subscribe({
-      next:(res)=>{
+      next: (res) => {
+        this.carregando.set(false);
         this.unidades = res;
-      }
-    })
-
-    this.filteredUnidades = this.unidadeCtrl.valueChanges.pipe(
-      startWith(''),
-      map(value => this._filter(value || '', this.unidades))
-    );
-
-    // Ao trocar de unidade, recarrega a lista de smartlocks
-    this.unidadeCtrl.valueChanges.subscribe(unidade => {
-      this.smartlockCtrl.setValue('');
-      if (!unidade) {
-        this.smartlocks = [];
-        return;
-      }
-      //this.smartlockService.listByUnidade(unidade).subscribe({
-      //  next:(res)=>{
-      //    this.smartlocks = res
-      //  }
-      //});
+        this.filteredUnidades.set(res);
+      },
+      error: (e) => {
+        this.sns.notificar('Erro ao buscar unidades', 'erro');
+        this.carregando.set(false);
+        console.error(e);
+      },
     });
 
-    this.filteredSmartlocks = this.smartlockCtrl.valueChanges.pipe(
-      startWith(''),
-      map(value => this._filter(value || '', this.smartlocks))
-    );
+    this.unidadeCtrl.valueChanges.subscribe((val: string | Unidade) => {
+      this.filteredUnidades.set(this._filterUnidade(val || ''));
+      if (val && typeof val !== 'string') {
+        this.smartlocks = [];
+        this.filteredSmartlocks.set([]);
+        this.smartlockCtrl.reset();
+        this.buscaSmartlock(val.id);
+      }
+    });
 
-    // Dispara a busca de disponibilidade sempre que unidade + smartlock estiverem preenchidos
-    //combineLatest([
-    //  this.unidadeCtrl.valueChanges.pipe(startWith('')),
-    //  this.smartlockCtrl.valueChanges.pipe(startWith(''))
-    //]).pipe(
-    //  switchMap(([unidade, smartlock]) => {
-    //    if (!unidade || !smartlock) {
-    //      return of([]);
-    //    }
-    //    this.carregando = true;
-    //    return this.equipamentoService.listBySmartlock(smartlock);
-    //  })
-    //).subscribe({
-    //  next: (equipamentos) => {
-    //    this.equipamentos = equipamentos;
-    //    this.carregando = false;
-    //  },
-    //  error: () => {
-    //    // TODO: tratar erro de carregamento da disponibilidade
-    //    this.carregando = false;
-    //  }
-    //});
+    this.smartlockCtrl.valueChanges.subscribe((val: string | Smartlock) => {
+      this.filteredSmartlocks.set(this._filterSmartlock(val || ''));
+      if (val && typeof val !== 'string') {
+        this.buscarRelatorio(val.id);
+      }
+    });
   }
 
-  private _filter(value: string, list: string[]): string[] {
-    const filterValue = value.toLowerCase();
-    return list.filter(option => option.toLowerCase().includes(filterValue));
+  buscaSmartlock(unidade_id: number) {
+    this.carregando.set(true);
+    this.smartlockService.listByUnidade(unidade_id).subscribe({
+      next: (res) => {
+        this.carregando.set(false);
+        this.smartlocks = res;
+        this.filteredSmartlocks.set(res);
+      },
+      error: (e) => {
+        this.carregando.set(false);
+        this.sns.notificar('Erro ao buscar Smartlocks da Unidade', 'erro');
+        console.error(e);
+      },
+    });
+  }
+
+  buscarRelatorio(smartlock_id: number) {
+    this.carregando.set(true);
+    this.equipamentoService.buscarRelatorioDisponibilidade(smartlock_id).subscribe({
+      next: (res) => {
+        if (res.length > 0) {
+          this.equipamentos = res.map(linha=>{return {...linha,icone:this.tiposEquipamentos.find(t=>t.descricao==linha.tipo)?.icone}});
+        }
+
+        this.carregando.set(false);
+      },
+      error: (e) => {
+        this.sns.notificar('Erro ao buscar equipamentos', 'erro');
+        this.carregando.set(false);
+        console.error(e);
+      },
+    });
+  }
+
+  private _filterUnidade(value: string | Unidade): Unidade[] {
+    return this.unidades.filter((option) =>
+      option.nome.toLowerCase().includes(typeof value == 'string' ? value : value.nome),
+    );
+  }
+
+  private _filterSmartlock(value: string | Smartlock): Smartlock[] {
+    return this.smartlocks.filter((option) =>
+      option.apelido.toLowerCase().includes(typeof value == 'string' ? value : value.apelido),
+    );
+  }
+
+  public _displayWithUnidade(valor: string | Unidade): string {
+    if (!valor) return '';
+    return typeof valor === 'string' ? valor : valor.nome;
+  }
+
+  public _displayWithSmartlock(valor: string | Smartlock): string {
+    if (!valor) return '';
+    return typeof valor === 'string' ? valor : valor.apelido;
   }
 }

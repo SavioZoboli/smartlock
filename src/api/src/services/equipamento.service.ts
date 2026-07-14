@@ -10,11 +10,28 @@ import {
 class EquipamentoService {
   async bulkCreate(equipamentos: EquipamentoAttributes[]): Promise<number> {
     try {
-      let createdEquipamentos = await Equipamento.bulkCreate(equipamentos);
-      return createdEquipamentos.length;
-    } catch (e) {
-      throw e;
+    const patrimonios = equipamentos.map(e => e.patrimonio);
+    const existentes = await Equipamento.findAll({
+      where: { patrimonio: { [Op.in]: patrimonios } },
+      attributes: ['patrimonio'],
+      raw: true,
+    });
+
+    if (existentes.length > 0) {
+      const erro: any = new Error('ERR_DUPLICATE');
+      erro.duplicados = existentes.map((e: any) => e.patrimonio);
+      throw erro;
     }
+
+    let created = await Equipamento.bulkCreate(equipamentos);
+    return created.length;
+  } catch (e: any) {
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      e.duplicados = e.errors?.map((err: any) => err.value) ?? [];
+      e.message = 'ERR_DUPLICATE';
+    }
+    throw e;
+  }
   }
 
   async listAll(): Promise<Equipamento[]> {
@@ -159,6 +176,33 @@ class EquipamentoService {
       });
       return equipamentos;
     } catch (e) {
+      throw e;
+    }
+  }
+
+  async getRelatorioDisponibilidade(smartlock_id:number){
+    try{
+      let relatorio = await Equipamento.findAll({
+        attributes:[
+          'id',
+          'tipo',
+          'patrimonio',
+          [Sequelize.col('usuarioAtual.nome'),'responsavel']
+        ],
+        include:[
+          {
+            model:Usuario,
+            as:"usuarioAtual",
+            attributes:[],
+            required:false
+          }
+        ],
+        where:{ativo:true,smartlock_base_id:smartlock_id},
+        raw:true
+      })
+      relatorio = relatorio.map((l:any)=>{return {...l,disponivel:l.responsavel==null}})
+      return relatorio
+    }catch(e){
       throw e;
     }
   }

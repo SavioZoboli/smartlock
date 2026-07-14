@@ -49,8 +49,8 @@
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>Tipo</mat-label>
           <mat-select formControlName="tipo">
-            @for (tipo of tipos; track tipo) {
-              <mat-option [value]="tipo">{{ tipo }}</mat-option>
+            @for (tipo of tipos; track tipo.descricao) {
+              <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>

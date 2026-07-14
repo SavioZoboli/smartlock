@@ -20,6 +20,8 @@ router.delete('/:id',authMiddleware,equipamentoController.deactivate)
 
 router.get('/listBySmartlock/:smartlock_id',authMiddleware,equipamentoController.listBySmartlock)
 
+router.get('/relatorio/disponibilidade/:smartlock_id',authMiddleware,equipamentoController.reportDisponibilidade)
+
 
 
 

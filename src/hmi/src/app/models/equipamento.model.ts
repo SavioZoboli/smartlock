@@ -4,7 +4,13 @@ export interface Equipamento {
   tipo: string;
   patrimonio: string;
   disponivel: boolean;
-  retiradoPor?: string;
+  responsavel?: string;
+  icone?:string;
+}
+
+export interface TipoEquipamento {
+  descricao:string;
+  icone:string;
 }
 
 // Equipamento que está com o usuário logado (report "comigo")

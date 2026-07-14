@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Equipamento } from '../pages/equipamento/lista-equipamento/lista-equipamento';
-import { EquipamentoComigo } from '../models/equipamento.model';
+import { Equipamento } from '../models/equipamento.model';
 
 export type EquipamentoCreateAttributes={
   rfid:string;
@@ -49,5 +48,9 @@ export class EquipamentoService {
 
   buscarEquipamentosComigo(): Observable<any> {
     return this.http.get(`${this.api_url}/comigo`,{withCredentials:true});
+  }
+
+  buscarRelatorioDisponibilidade(smartlock_id:number):Observable<Equipamento[]>{
+    return this.http.get<Equipamento[]>(`${this.api_url}/relatorio/disponibilidade/${smartlock_id}`,{withCredentials:true})
   }
 }
