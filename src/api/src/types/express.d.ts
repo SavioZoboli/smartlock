@@ -6,6 +6,7 @@ export interface UsuarioToken {
   nome: string;
   email: string;
   avatar: string;
+  is_admin:boolean;
 }
 
 declare global {

@@ -42,7 +42,9 @@ class AuthService {
 
         user = await usuarioService.updateAvatar(user.id,avatar);
 
-        let sessionToken = this.geraToken(user.id, user.email,user.nome+" "+user.sobrenome,user.avatar);
+        let is_admin = user.role == "ADMIN";
+
+        let sessionToken = this.geraToken(user.id, user.email,user.nome+" "+user.sobrenome,user.avatar,is_admin);
 
         return {
           sessionToken,
@@ -60,9 +62,9 @@ class AuthService {
     return jwt.sign({ email: email ,nome:nome,avatar:avatar}, this.JWT_SECRET, { expiresIn: "15min" });
   }
 
-  public geraToken(id: number, email: string,nome:string,avatar:string): string {
+  public geraToken(id: number, email: string,nome:string,avatar:string,is_admin:boolean): string {
     return jwt.sign(
-      { id, email,nome,avatar}, // Payload da nossa aplicação
+      { id, email,nome,avatar,is_admin}, // Payload da nossa aplicação
       this.JWT_SECRET,
       { expiresIn: this.JWT_EXPIRATION },
     );

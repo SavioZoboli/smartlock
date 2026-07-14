@@ -12,6 +12,7 @@ interface UsuarioAttributes {
   ativo: boolean;
   email:string;
   avatar:string|null;
+  role:string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -30,6 +31,7 @@ class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes>{
   declare ativo: boolean;
   declare email:string;
   declare avatar:string;
+  declare role:string;
   declare createdAt?: Date;
   declare updatedAt?: Date;
 }
@@ -54,6 +56,11 @@ Usuario.init(
     nome: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    role:{
+      type:DataTypes.STRING,
+      allowNull:false,
+      defaultValue:"USER"
     },
     matricula: {
       type: DataTypes.STRING,
