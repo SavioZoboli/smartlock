@@ -5,6 +5,12 @@ export interface Equipamento {
   patrimonio: string;
   disponivel: boolean;
   retiradoPor?: string;
+  icone?:string;
+}
+
+export interface TipoEquipamento {
+  descricao:string;
+  icone:string;
 }
 
 // Equipamento que está com o usuário logado (report "comigo")

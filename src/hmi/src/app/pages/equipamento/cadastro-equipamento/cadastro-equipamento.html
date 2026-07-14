@@ -54,8 +54,8 @@
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>Tipo (aplicar a todos os itens)</mat-label>
           <mat-select formControlName="tipoGlobal" (selectionChange)="aplicarTipoGlobal()">
-            @for (tipo of tiposEquipamento; track tipo) {
-              <mat-option [value]="tipo">{{ tipo }}</mat-option>
+            @for (tipo of tiposEquipamento; track tipo.descricao) {
+              <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
@@ -77,8 +77,8 @@
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item-tipo">
           <mat-label>Tipo</mat-label>
           <mat-select formControlName="tipo">
-            @for (tipo of tiposEquipamento; track tipo) {
-              <mat-option [value]="tipo">{{ tipo }}</mat-option>
+            @for (tipo of tiposEquipamento; track tipo.descricao) {
+              <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -139,8 +139,8 @@
                     <td>
                       <mat-form-field appearance="outline" subscriptSizing="dynamic">
                         <mat-select formControlName="tipo">
-                          @for (tipo of tiposEquipamento; track tipo) {
-                            <mat-option [value]="tipo">{{ tipo }}</mat-option>
+                          @for (tipo of tiposEquipamento; track tipo.descricao) {
+                            <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
                           }
                         </mat-select>
                       </mat-form-field>

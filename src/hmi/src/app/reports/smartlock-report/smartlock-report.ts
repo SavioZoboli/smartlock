@@ -16,6 +16,7 @@ import { SmartlockService } from '../../services/smartlock.service';
 import { Unidade } from '../../pages/unidade/lista-unidade/lista-unidade';
 import { Smartlock } from '../../pages/smartlock/lista-smartlock/lista-smartlock';
 import { SystemNotificationService } from '../../services/system-notification.service';
+import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 
 @Component({
   selector: 'app-smartlock-report',
@@ -46,6 +47,8 @@ export class SmartlockReport implements OnInit {
 
   equipamentos: Equipamento[] = [];
   carregando = signal<boolean>(false);
+
+  tiposEquipamentos = TIPO_EQUIPAMENTOS;
 
   constructor(
     private equipamentoService: EquipamentoService,
@@ -107,8 +110,10 @@ export class SmartlockReport implements OnInit {
     this.carregando.set(true);
     this.equipamentoService.buscarRelatorioDisponibilidade(smartlock_id).subscribe({
       next: (res) => {
-        
-        this.equipamentos = res;
+        if (res.length > 0) {
+          this.equipamentos = res.map(linha=>{return {...linha,icone:this.tiposEquipamentos.find(t=>t.descricao==linha.tipo)?.icone}});
+        }
+
         this.carregando.set(false);
       },
       error: (e) => {
@@ -132,12 +137,12 @@ export class SmartlockReport implements OnInit {
   }
 
   public _displayWithUnidade(valor: string | Unidade): string {
-    if(!valor) return ''
+    if (!valor) return '';
     return typeof valor === 'string' ? valor : valor.nome;
   }
 
   public _displayWithSmartlock(valor: string | Smartlock): string {
-    if(!valor) return ''
+    if (!valor) return '';
     return typeof valor === 'string' ? valor : valor.apelido;
   }
 }
