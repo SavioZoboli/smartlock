@@ -23,15 +23,14 @@
           <div class="status-indicator"></div>
           <div class="card-content">
             <div class="card-header">
-              <mat-icon class="eq-icon">{{
-                item.tipo === 'Notebook' ? 'laptop_mac' : 'build'
-              }}</mat-icon>
-              <span class="eq-code">{{ item.tipo }} - {{ item.patrimonio }}</span>
+              <mat-icon class="eq-icon">{{ item.icone }}</mat-icon>
+              <span class="eq-code">{{ item.apelido ? item.apelido : item.tipo }}</span>
             </div>
             <div class="card-body">
+              <span>Patrimônio:{{ item.patrimonio }}</span>
               <div class="localizacao">{{ item.smartlock }}</div>
               <div class="datas">
-                <span>Retirado em {{ item.dataRetirada | date:'dd/MM/yyyy' }}</span>
+                <span>Retirado em {{ item.dataRetirada | date: 'dd/MM/yyyy' }}</span>
               </div>
             </div>
           </div>

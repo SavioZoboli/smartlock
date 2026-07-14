@@ -47,6 +47,7 @@ export interface Equipamento {
 export class ListaEquipamento {
   displayedColumns: string[] = [
     'patrimonio',
+    'apelido',
     'tipo',
     'smartlock',
     'unidade',

@@ -56,6 +56,13 @@
           <mat-icon matPrefix>category</mat-icon>
         </mat-form-field>
       </div>
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Apelido</mat-label>
+          <input matInput formControlName="apelido">
+          <mat-icon matPrefix>tag</mat-icon>
+        </mat-form-field>
+      </div>
 
       <div class="form-actions">
         <button mat-stroked-button type="button" color="warn" (click)="onExcluir()">

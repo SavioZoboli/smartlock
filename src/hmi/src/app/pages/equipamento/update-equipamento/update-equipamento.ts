@@ -27,12 +27,19 @@ interface SmartLock {
   selector: 'app-update-equipamento',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, MatFormFieldModule,
-    MatInputModule, MatAutocompleteModule, MatSelectModule,
-    MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDialogModule
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatDialogModule,
   ],
   templateUrl: './update-equipamento.html',
-  styleUrls: ['./update-equipamento.scss']
+  styleUrls: ['./update-equipamento.scss'],
 })
 export class UpdateEquipamento implements OnInit {
   eqForm: FormGroup;
@@ -52,13 +59,14 @@ export class UpdateEquipamento implements OnInit {
     private smartlockService: SmartlockService,
     private sns: SystemNotificationService,
     private cdr: ChangeDetectorRef,
-    private dialog: MatDialog
+    private dialog: MatDialog,
   ) {
     this.eqForm = this.fb.group({
       smartlock: ['', Validators.required],
       patrimonio: ['', Validators.required],
       tag: ['', Validators.required],
       tipo: ['', Validators.required],
+      apelido: [''],
     });
   }
 
@@ -125,10 +133,13 @@ export class UpdateEquipamento implements OnInit {
         patrimonio: dados.patrimonio,
         tag: dados.tag,
         tipo: dados.tipo,
+        apelido: dados.apelido,
       });
 
       // Smartlocks já garantidos carregados neste ponto (await em inicializaSmartlocks)
-      this.eqForm.get('smartlock')?.setValue(this.smartlocks.find(s => s.id === dados.smartlock_id));
+      this.eqForm
+        .get('smartlock')
+        ?.setValue(this.smartlocks.find((s) => s.id === dados.smartlock_id));
     } catch (err) {
       console.log(err);
       this.sns.notificar('Erro ao carregar Equipamento. Ele pode não existir.', 'erro');
@@ -138,23 +149,25 @@ export class UpdateEquipamento implements OnInit {
 
   salvar(): void {
     if (this.eqForm.valid) {
-      const { smartlock, patrimonio, tag, tipo } = this.eqForm.value;
+      const { smartlock, patrimonio, tag, tipo, apelido } = this.eqForm.value;
 
       this.isLoading = true;
       this.eqForm.disable();
 
-      this.equipamentoService.update(this.equipamento_id, patrimonio, tag, tipo, smartlock.id).subscribe({
-        next: () => {
-          this.sns.notificar('Equipamento atualizado com sucesso!', 'sucesso');
-          this.router.navigate(['/equipamentos/lista']);
-        },
-        error: (err: any) => {
-          console.log(err);
-          this.sns.notificar(err.message, 'erro');
-          this.isLoading = false;
-          this.eqForm.enable();
-        },
-      });
+      this.equipamentoService
+        .update(this.equipamento_id, patrimonio, tag, tipo, smartlock.id, apelido)
+        .subscribe({
+          next: () => {
+            this.sns.notificar('Equipamento atualizado com sucesso!', 'sucesso');
+            this.router.navigate(['/equipamentos/lista']);
+          },
+          error: (err: any) => {
+            console.log(err);
+            this.sns.notificar(err.message, 'erro');
+            this.isLoading = false;
+            this.eqForm.enable();
+          },
+        });
     } else {
       this.eqForm.markAllAsTouched();
       this.sns.notificar('Por favor, verifique os campos.', 'erro');
@@ -162,35 +175,35 @@ export class UpdateEquipamento implements OnInit {
   }
 
   onExcluir(): void {
-      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        width: '400px',
-        data: {
-          titulo: 'Excluir equipamento',
-          mensagem: `Tem certeza que deseja excluir o equipamento de patrimônio "${this.eqForm.value.patrimonio}"? Esta ação não pode ser desfeita.`,
-          textoConfirmar: 'Excluir',
-          textoCancelar: 'Cancelar',
-        },
-      });
-  
-      dialogRef.afterClosed().subscribe((confirmado: boolean) => {
-        if (confirmado) {
-          this.executarExclusao();
-        }
-      });
-    }
-  
-    private executarExclusao(): void {
-      this.equipamentoService.delete(this.equipamento_id).subscribe({
-        next: () => {
-          this.sns.notificar('Equipamento removido com sucesso', 'sucesso');
-          this.router.navigate(['/equipamentos/lista']);
-        },
-        error: (err) => {
-          console.log(err);
-          this.sns.notificar(err.message, 'erro');
-        },
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        titulo: 'Excluir equipamento',
+        mensagem: `Tem certeza que deseja excluir o equipamento de patrimônio "${this.eqForm.value.patrimonio}"? Esta ação não pode ser desfeita.`,
+        textoConfirmar: 'Excluir',
+        textoCancelar: 'Cancelar',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmado: boolean) => {
+      if (confirmado) {
+        this.executarExclusao();
+      }
+    });
+  }
+
+  private executarExclusao(): void {
+    this.equipamentoService.delete(this.equipamento_id).subscribe({
+      next: () => {
+        this.sns.notificar('Equipamento removido com sucesso', 'sucesso');
+        this.router.navigate(['/equipamentos/lista']);
+      },
+      error: (err) => {
+        console.log(err);
+        this.sns.notificar(err.message, 'erro');
+      },
+    });
+  }
 
   onCancelar(): void {
     this.router.navigate(['/equipamentos/lista']);

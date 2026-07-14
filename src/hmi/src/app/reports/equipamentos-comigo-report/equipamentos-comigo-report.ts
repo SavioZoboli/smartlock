@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { EquipamentoComigo } from '../../models/equipamento.model';
+import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 
 @Component({
   selector: 'app-equipamentos-comigo-report',
@@ -20,6 +21,7 @@ import { EquipamentoComigo } from '../../models/equipamento.model';
 export class EquipamentosComigoReport implements OnInit {
   equipamentos: EquipamentoComigo[] = [];
   carregando = signal(false)
+  private tiposEquipamentos = TIPO_EQUIPAMENTOS
 
   constructor(private equipamentoService: EquipamentoService) {}
 
@@ -30,8 +32,8 @@ export class EquipamentosComigoReport implements OnInit {
   carregar() {
     this.carregando.update(()=>true);
     this.equipamentoService.buscarEquipamentosComigo().subscribe({
-      next: (equipamentos) => {
-        this.equipamentos = equipamentos;
+      next: (res) => {
+        this.equipamentos = res.map((linha:any)=>{return {...linha,icone:this.tiposEquipamentos.find(t=>t.descricao==linha.tipo)?.icone}});
         this.carregando.update(()=>false);
       },
       error: (e) => {
