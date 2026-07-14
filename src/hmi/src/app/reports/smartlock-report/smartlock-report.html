@@ -57,16 +57,18 @@
   } @else {
     <div class="equipment-grid">
       @for (item of equipamentos; track item.id) {
-        <mat-card class="equipment-card" [ngClass]="item.disponivel ? 'status-green' : 'status-gray'">
+        <mat-card
+          class="equipment-card"
+          [ngClass]="item.disponivel ? 'status-green' : 'status-gray'"
+        >
           <div class="status-indicator"></div>
           <div class="card-content">
             <div class="card-header">
-              <mat-icon class="eq-icon">{{
-                item.icone
-              }}</mat-icon>
-              <span class="eq-code">{{ item.tipo }} - {{ item.patrimonio }}</span>
+              <mat-icon class="eq-icon">{{ item.icone }}</mat-icon>
+              <span class="eq-code">{{ item.tipo }}</span>
             </div>
             <div class="card-body">
+              <span>Patrimônio: {{ item.patrimonio }}</span>
               @if (item.disponivel) {
                 <div class="status-badge available">
                   <mat-icon class="sm-icon">check_circle</mat-icon> Disponível
@@ -75,7 +77,7 @@
                 <div class="status-badge unavailable">
                   <mat-icon class="sm-icon">person</mat-icon> Em uso
                 </div>
-                <div class="employee-name">{{ item.retiradoPor }}</div>
+                <div class="employee-name">{{ item.responsavel }}</div>
               }
             </div>
           </div>

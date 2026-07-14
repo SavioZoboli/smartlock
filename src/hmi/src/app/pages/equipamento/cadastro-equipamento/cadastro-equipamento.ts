@@ -23,6 +23,7 @@ import { UnidadeService } from '../../../services/unidade.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { Router } from '@angular/router';
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
+import { HttpErrorResponse } from '@angular/common/http';
 
 export interface Unidade {
   id: number;
@@ -70,8 +71,8 @@ export class CadastroEquipamento implements OnInit {
     private unidadeService: UnidadeService,
     private smartlockService: SmartlockService,
     private sns: SystemNotificationService,
-    private equipamentoService:EquipamentoService,
-    private router:Router
+    private equipamentoService: EquipamentoService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -256,24 +257,42 @@ export class CadastroEquipamento implements OnInit {
 
     const { smartlock, equipamentos } = this.importForm.getRawValue();
 
-    this.equipamentoService.bulkCreate(smartlock.id,equipamentos).subscribe({
+    this.equipamentoService.bulkCreate(smartlock.id, equipamentos).subscribe({
       next: (res) => {
         if (res.contagem == this.equipamentosArray.length) {
           this.router.navigate(['/equipamentos/lista']);
-          this.sns.notificar(`${res.contagem} equipamentos adicionados`,'sucesso');
+          this.sns.notificar(`${res.contagem} equipamentos adicionados`, 'sucesso');
           return;
         }
-        this.sns.notificar(`Nenhum erro registrado, mas contagem não confere. ${res.contagem}`,'sucesso');
+        this.sns.notificar(
+          `Nenhum erro registrado, mas contagem não confere. ${res.contagem}`,
+          'sucesso',
+        );
       },
-      error:(err:any)=>{
-        console.error(err)
-        this.sns.notificar(`Erro: ${err.message}`,'erro');
-      }
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 409 && err.error?.duplicados) {
+          this.destacarDuplicados(err.error.duplicados);
+          this.sns.notificar(err.error.message, 'erro');
+          return;
+        }
+        console.error(err);
+        this.sns.notificar(`Erro: ${err.error?.message ?? err.message}`, 'erro');
+      },
     });
   }
 
-  onCancelar(){
-    this.importForm.reset()
-    this.router.navigate(['/equipamentos/lista'])
+  private destacarDuplicados(duplicados: string[]): void {
+  this.equipamentosArray.controls.forEach((grupo) => {
+    const control = grupo.get('patrimonio');
+    if (duplicados.includes(control?.value)) {
+      control?.setErrors({ duplicado: true });
+      control?.markAsTouched();
+    }
+  });
+}
+
+  onCancelar() {
+    this.importForm.reset();
+    this.router.navigate(['/equipamentos/lista']);
   }
 }

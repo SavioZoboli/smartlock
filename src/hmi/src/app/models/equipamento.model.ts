@@ -4,7 +4,7 @@ export interface Equipamento {
   tipo: string;
   patrimonio: string;
   disponivel: boolean;
-  retiradoPor?: string;
+  responsavel?: string;
   icone?:string;
 }
 
