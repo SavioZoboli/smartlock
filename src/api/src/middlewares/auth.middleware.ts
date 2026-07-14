@@ -17,3 +17,10 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     res.status(401).json({ message: 'Sessão inválida ou expirada' });
   }
 }
+
+export function handleAdmin(req:Request,res:Response,next:NextFunction){
+  if(!req.user || !req.user.is_admin){
+    return res.status(401).json({message:"Sem permissão para a operação informada"})
+  }
+  next();
+}

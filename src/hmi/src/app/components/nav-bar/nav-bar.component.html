@@ -14,10 +14,14 @@
         <mat-icon>analytics</mat-icon> Relatórios
         <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
       </button>
-      <button class="menu-item" [matMenuTriggerFor]="cadastrosMenu">
-        <mat-icon>settings_applications</mat-icon> Gerenciamento
-        <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
-      </button>
+      @if (usuario$ | async; as usuario) {
+        @if (usuario.is_admin) {
+          <button class="menu-item" [matMenuTriggerFor]="cadastrosMenu">
+            <mat-icon>settings_applications</mat-icon> Gerenciamento
+            <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+          </button>
+        }
+      }
     </nav>
   </div>
 

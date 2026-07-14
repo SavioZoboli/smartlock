@@ -21,7 +21,8 @@ class UsuarioService {
         matricula,
         unidade_lotacao_id,
         email,
-        avatar
+        avatar,
+        role:"USER"
       });
       return usuario;
     } catch (e) {

@@ -1,17 +1,18 @@
 import unidadeController from "../controllers/unidade.controller"
+import { authMiddleware, handleAdmin } from "../middlewares/auth.middleware"
 
 const router = require('express').Router()
 
 
-router.post('/',unidadeController.create)
+router.post('/',authMiddleware,handleAdmin,unidadeController.create)
 
-router.get('/',unidadeController.listAll)
+router.get('/',authMiddleware,unidadeController.listAll)
 
-router.get('/:id',unidadeController.getById)
+router.get('/:id',authMiddleware,unidadeController.getById)
 
-router.put('/',unidadeController.update)
+router.put('/',authMiddleware,handleAdmin,unidadeController.update)
 
-router.delete('/:id',unidadeController.delete)
+router.delete('/:id',authMiddleware,handleAdmin,unidadeController.delete)
 
 
 module.exports = router

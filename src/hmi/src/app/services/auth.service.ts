@@ -6,6 +6,7 @@ export interface UsuarioLogado {
   nome: string;
   email: string;
   avatar: string;
+  is_admin:boolean;
 }
 
 @Injectable({
@@ -45,7 +46,7 @@ export class AuthService {
   }
 
   logout(): Observable<void> {
-    return this.http.post<void>('/api/auth/logout', {}, { withCredentials: true }).pipe(
+    return this.http.post<void>(`${this.auth_url}/api/auth/logout`, {}, { withCredentials: true }).pipe(
       tap(() => this.usuarioSubject.next(null)),
     );
   }

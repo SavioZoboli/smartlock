@@ -37,10 +37,15 @@ export class NavbarComponent{
     return (primeira + ultima).toUpperCase();
   }
 
+
+
   logout(): void {
     this.authService.logout().subscribe({
       next: () => this.router.navigate(['/login']),
-      error: () => this.router.navigate(['/login']), // mesmo se a API falhar, garante o redirect
+      error: (e) => {
+        console.log(e)
+        this.router.navigate(['/login'])
+      }, // mesmo se a API falhar, garante o redirect
     });
   }
 }
