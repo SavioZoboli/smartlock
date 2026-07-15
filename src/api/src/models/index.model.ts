@@ -5,6 +5,7 @@ import Equipamento from './equipamento.model';
 import Movimentacao from './movimentacao.model'; // Mantendo o padrão .models enviado
 import LogUsuario from './logUsuario.model';
 import LogSmartlock from './logSmartlock.model';
+import ItensMovimentacao from './itensMovimentacao.model';
 
 // ============================================================================
 // DEFINIÇÃO DOS RELACIONAMENTOS (ASSOCIATIONS)
@@ -30,9 +31,26 @@ Usuario.hasMany(Equipamento, { foreignKey: 'usuario_atual_id', as: 'equipamentos
 Equipamento.belongsTo(Usuario, { foreignKey: 'usuario_atual_id', as: 'usuarioAtual' });
 
 
-// 4. Relacionamentos de MOVIMENTAÇÃO (Trilha de Auditoria dos Equipamentos)
-Equipamento.hasMany(Movimentacao, { foreignKey: 'equipamento_id', as: 'movimentacoes' });
-Movimentacao.belongsTo(Equipamento, { foreignKey: 'equipamento_id', as: 'equipamento' });
+Movimentacao.belongsToMany(Equipamento, {
+  through: ItensMovimentacao,
+  foreignKey: 'movimentacao_id',
+  otherKey: 'equipamento_id',
+  as: 'equipamentos',
+});
+
+Equipamento.belongsToMany(Movimentacao, {
+  through: ItensMovimentacao,
+  foreignKey: 'equipamento_id',
+  otherKey: 'movimentacao_id',
+  as: 'movimentacoes',
+});
+
+// Relacionamentos diretos com a tabela de junção (úteis para incluir dados extras da linha, ex: quantidade)
+Movimentacao.hasMany(ItensMovimentacao, { foreignKey: 'movimentacao_id', as: 'itens' });
+ItensMovimentacao.belongsTo(Movimentacao, { foreignKey: 'movimentacao_id', as: 'movimentacao' });
+
+Equipamento.hasMany(ItensMovimentacao, { foreignKey: 'equipamento_id', as: 'itensMovimentacao' });
+ItensMovimentacao.belongsTo(Equipamento, { foreignKey: 'equipamento_id', as: 'equipamento' });
 
 Usuario.hasMany(Movimentacao, { foreignKey: 'usuario_id', as: 'movimentacoes' });
 Movimentacao.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'usuario' });

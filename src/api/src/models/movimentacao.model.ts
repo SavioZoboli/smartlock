@@ -3,7 +3,6 @@ import sequelize from "../config/database";
 
 interface MovimentacaoAttributes {
   id: number;
-  equipamento_id: number;
   usuario_id: number;
   smartlock_id: number;
   tipo_movimento: string;
@@ -21,6 +20,13 @@ class Movimentacao extends Model<
   MovimentacaoAttributes,
   MovimentacaoCreationAttributes
 > {
+  declare id: number;
+  declare usuario_id: number;
+  declare smartlock_id: number;
+  declare tipo_movimento: string;
+  declare timestamp: Date;
+  declare createdAt?: Date;
+  declare updatedAt?: Date;
 }
 
 Movimentacao.init(
@@ -29,14 +35,6 @@ Movimentacao.init(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
-    },
-    equipamento_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "equipamentos",
-        key: "id",
-      },
     },
     usuario_id: {
       type: DataTypes.INTEGER,
