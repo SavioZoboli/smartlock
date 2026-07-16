@@ -1,127 +1,41 @@
+@use '../../../../assets/scss/shared-patterns';
+
 .page-container {
-  padding: 1.5rem;
-  max-width: 800px; /* Limita a largura para formulários não ficarem esticados demais */
-  margin: 0 auto;
+  @extend %page-container;
+  max-width: 800px;
 }
 
-/* Cabeçalho padronizado */
 .page-header-container {
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 1.25rem;
-  margin-bottom: 2rem;
-
-  .title-area {
-    display: flex;
-    flex-direction: column;
-
-    .breadcrumb {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #64748b;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-
-    h2 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #0f172a;
-    }
-  }
+  @extend %page-header;
 }
 
-/* Container do Formulário */
 .form-container {
-  background-color: #ffffff;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  border: 1px solid #e2e8f0;
+  @extend %form-container;
 }
 
 .cadastro-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem; /* Espaçamento uniforme entre as linhas do formulário */
+  @extend %cadastro-form;
 }
 
-/* Ajustes para a nova seção de Chips */
 .form-row {
-  display: flex;
-  margin-bottom: 1.5rem;
-  width: 100%;
-  gap:15px;
-
-  .section-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #475569;
-    margin-bottom: 0.5rem;
-  }
+  @extend %form-row;
+  flex-direction: row;
+  gap: 15px;
 }
-
-
 
 .full-width {
-    flex:1;
-  width: 100%;
+  @extend %full-width;
+  flex: 1;
 }
 
 .field-icon {
-  color: #64748b;
-  margin-right: 8px;
+  @extend %field-icon;
 }
 
-/* Botões de Ação */
 .form-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #f1f5f9;
-
-  button {
-    padding: 1.5rem 1.5rem; /* Aumenta a área de clique */
-    font-size: 0.95rem;
-    font-weight: 500;
-    border-radius: 6px;
-  }
-
-  .btn-cancel {
-    color: #475569;
-    border-color: #cbd5e1;
-  }
-
-  .btn-save {
-    background-color: #0ea5e9; /* Azul confiável corporativo */
-    color: white;
-
-    &:hover {
-      background-color: #0284c7;
-    }
-  }
+  @extend %form-actions;
 }
 
-/* ESTILOS GLOBAIS DA NOTIFICAÇÃO (SNACKBAR)
-  Nota: Como o SnackBar é injetado no <body> do HTML pelo Angular,
-  se esses estilos não aplicarem, mova estas duas classes para o seu styles.scss global.
-*/
-::ng-deep .success-snackbar {
-  --mdc-snackbar-container-color: #10b981; /* Fundo Verde */
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  font-weight: 500;
-}
-
-::ng-deep .error-snackbar {
-  --mdc-snackbar-container-color: #ef4444; /* Fundo Vermelho */
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  font-weight: 500;
-}
-
-.fs-small{
+.fs-small {
   font-size: 0.8em;
 }

@@ -3,7 +3,7 @@ import { LoginComponent } from './pages/login/login';
 import { Dashboard } from './pages/dashboard/dashboard';
 import { CadastroUsuario } from './pages/usuario/cadastro-usuario/cadastro-usuario';
 import { SmartlockReport } from './reports/smartlock-report/smartlock-report';
-import { MainLayoutComponent } from './components/main-layout.component/main-layout.component';
+import { MainLayoutComponent } from './components/main-layout/main-layout.component';
 import { CadastroEquipamento } from './pages/equipamento/cadastro-equipamento/cadastro-equipamento';
 import { CadastroSmartlock } from './pages/smartlock/cadastro-smartlock/cadastro-smartlock';
 import { CadastroUnidade } from './pages/unidade/cadastro-unidade/cadastro-unidade';

@@ -1,5 +1,5 @@
 .kpi-container {
-  padding: 1.5rem;
+  padding: var(--app-space-lg);
   max-width: 1600px;
   margin: 0 auto;
 }
@@ -8,13 +8,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--app-space-md);
 
   h3 {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--mat-sys-on-surface);
   }
 }
 
@@ -25,7 +25,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #64748b;
+    color: var(--mat-sys-on-surface-variant);
   }
 
   .mat-mdc-menu-item {
@@ -38,7 +38,7 @@
 
       label {
         font-size: 0.85rem;
-        color: #1e293b;
+        color: var(--mat-sys-on-surface);
       }
     }
   }
@@ -47,20 +47,20 @@
 .state-message {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #64748b;
+  gap: var(--app-space-sm);
+  color: var(--mat-sys-on-surface-variant);
   font-size: 0.9rem;
-  padding: 1rem;
+  padding: var(--app-space-md);
 
   mat-icon {
-    color: #cbd5e1;
+    color: var(--mat-sys-outline);
   }
 }
 
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: var(--app-space-md);
 }
 
 .kpi-card {
@@ -68,24 +68,26 @@
   align-items: center;
   gap: 12px;
   padding: 16px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: var(--app-shadow-sm) !important;
 
   .kpi-icon {
     font-size: 28px;
     height: 28px;
     width: 28px;
-    color: #e84910;
+    // Ícone grande e decorativo: usa o laranja literal da marca (3.89:1,
+    // dentro do mínimo de 3:1 para elementos gráficos/large-scale).
+    color: var(--app-brand-primary);
     flex-shrink: 0;
   }
 
   .kpi-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--mat-sys-on-surface);
   }
 
   .kpi-label {
     font-size: 0.78rem;
-    color: #64748b;
+    color: var(--mat-sys-on-surface-variant);
   }
 }

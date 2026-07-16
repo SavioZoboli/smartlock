@@ -1,0 +1,188 @@
+// =============================================================================
+// _palette.scss
+// -----------------------------------------------------------------------------
+// Paletas tonais M3 (Material 3 / HCT color space), geradas a partir das cores
+// de marca via @material/material-color-utilities (mesma biblioteca que o
+// schematic oficial `ng generate @angular/material:m3-theme` usa por trás).
+// Estrutura e chaves validadas por compilação real contra @angular/material@19.
+//
+// Cores-fonte:
+//   primária:   #e84910  (laranja)
+//   secundária: #164194  (azul marinho)
+//   neutra branca: #FEFEFE
+//   neutra preta:  #1C1C1C
+//
+// Por que os tons não batem com o hex literal da marca:
+// Em M3, cada "role" de cor (primary, secondary...) usa um TOM fixo da rampa
+// (40 no tema claro, 80 no escuro) para garantir contraste mínimo de texto.
+// O laranja #e84910 puro, sobre fundo branco, mede só 3.89:1 de contraste
+// (falha texto normal AA, que exige 4.5:1). Por isso a rampa desloca esse
+// laranja para o tom 40 (#af3000) no papel de "primary" — que já garante
+// 6.47:1. O hex literal da marca continua disponível como $brand-primary
+// (e como var(--app-brand-primary) em _tokens.scss) para uso decorativo
+// (logo, ícones grandes, ilustrações), onde 3:1 já é suficiente.
+// A secundária #164194 já nasce acessível (9.47:1 sobre branco), então o tom
+// 40 dela fica bem próximo do hex original.
+//
+// -----------------------------------------------------------------------------
+// Estrutura exigida pelo Angular Material 19 (mat.theme):
+// - mat.theme() só aceita as chaves `primary` e `tertiary` na config de cor.
+// - `primary` precisa ser um mapa com os 16 tons padrão (0,10,20,25,30,35,40,
+//   50,60,70,80,90,95,98,99,100) MAIS as chaves aninhadas `secondary`,
+//   `neutral`, `neutral-variant` e `error` (cada uma com os mesmos 16 tons).
+// - `neutral` exige 10 tons extras e mais finos (4,6,12,17,22,24,87,92,94,96)
+//   usados internamente para os níveis de superfície
+//   (--mat-sys-surface-container-low/high/highest etc.).
+// - Não existe chave `contrast`: o Angular Material decide internamente qual
+//   tom de texto usar sobre cada tom de fundo, seguindo a especificação M3
+//   (é exatamente esse par de tons — 40/branco no claro, 80/preto no escuro —
+//   que já garante os contrastes verificados acima).
+// - `tertiary` é só a rampa simples de 16 tons (sem aninhados).
+// =============================================================================
+
+@use 'sass:map';
+
+// -----------------------------------------------------------------------------
+// Tokens de marca (uso decorativo / logo / grandes áreas ilustrativas)
+// Não usar para texto normal sobre fundo claro sem checar contraste.
+// -----------------------------------------------------------------------------
+$brand-primary: #e84910;
+$brand-secondary: #164194;
+$brand-white: #fefefe;
+$brand-black: #1c1c1c;
+
+// -----------------------------------------------------------------------------
+// Paleta primária + rampas aninhadas (secondary/neutral/neutral-variant/error)
+// -----------------------------------------------------------------------------
+$app-primary-palette: (
+  0: #000000,
+  10: #3a0a00,
+  20: #5f1600,
+  25: #721c00,
+  30: #862300,
+  35: #9a2a00,
+  40: #af3000,
+  50: #da3f02,
+  60: #fe5821,
+  70: #ff8b68,
+  80: #ffb59f,
+  90: #ffdbd1,
+  95: #ffede8,
+  98: #fff8f6,
+  99: #fffbff,
+  100: #ffffff,
+  secondary: (
+    0: #000000,
+    10: #001847,
+    20: #002c72,
+    25: #003689,
+    30: #174295,
+    35: #284ea1,
+    40: #365bae,
+    50: #5174c9,
+    60: #6c8ee5,
+    70: #88a9ff,
+    80: #b2c5ff,
+    90: #dae2ff,
+    95: #eef0ff,
+    98: #faf8ff,
+    99: #fefbff,
+    100: #ffffff,
+  ),
+  neutral: (
+    0: #000000,
+    10: #201a18,
+    20: #362f2d,
+    25: #413a38,
+    30: #4d4543,
+    35: #59514e,
+    40: #655c5a,
+    50: #7f7572,
+    60: #998e8c,
+    70: #b4a9a6,
+    80: #d0c4c1,
+    90: #ede0dc,
+    95: #fbeeeb,
+    98: #fff8f6,
+    99: #fffbff,
+    100: #ffffff,
+    4: #120d0b,
+    6: #181210,
+    12: #251e1c,
+    17: #2f2827,
+    22: #3b3331,
+    24: #3f3735,
+    87: #e4d7d4,
+    92: #f3e5e2,
+    94: #f8ebe8,
+    96: #fef1ed,
+  ),
+  neutral-variant: (
+    0: #000000,
+    10: #251915,
+    20: #3b2d29,
+    25: #473834,
+    30: #53433f,
+    35: #5f4f4a,
+    40: #6c5b56,
+    50: #85736e,
+    60: #a08c87,
+    70: #bca7a1,
+    80: #d8c2bc,
+    90: #f5ded7,
+    95: #ffede8,
+    98: #fff8f6,
+    99: #fffbff,
+    100: #ffffff,
+  ),
+  error: (
+    0: #000000,
+    10: #410002,
+    20: #690005,
+    25: #7e0007,
+    30: #93000a,
+    35: #a80710,
+    40: #ba1a1a,
+    50: #de3730,
+    60: #ff5449,
+    70: #ff897d,
+    80: #ffb4ab,
+    90: #ffdad6,
+    95: #ffedea,
+    98: #fff8f7,
+    99: #fffbff,
+    100: #ffffff,
+  ),
+);
+
+// -----------------------------------------------------------------------------
+// Paleta terciária (tom derivado: hue da primária + 60°, usada por alguns
+// componentes do Material como acento adicional — datepicker, sliders etc.)
+// -----------------------------------------------------------------------------
+$app-tertiary-palette: (
+  0: #000000,
+  10: #231b00,
+  20: #3a2f05,
+  25: #463a0f,
+  30: #524619,
+  35: #5f5224,
+  40: #6b5d2f,
+  50: #857645,
+  60: #a0905c,
+  70: #bcaa74,
+  80: #d8c68d,
+  90: #f5e1a7,
+  95: #fff0c7,
+  98: #fff8ef,
+  99: #fffbff,
+  100: #ffffff,
+  // Estes 4 mapas aninhados são exigidos apenas pelo validador de "paleta M3
+  // válida" do Angular Material (mesmas chaves do $primary). Na prática,
+  // secondary/neutral/neutral-variant daqui são descartados e substituídos
+  // pelos de $app-primary-palette — só o `error` de $app-primary-palette é
+  // usado; reaproveitamos os mesmos submapas para não duplicar valores.
+  secondary: map.get($app-primary-palette, secondary),
+  neutral: map.get($app-primary-palette, neutral),
+  neutral-variant: map.get($app-primary-palette, neutral-variant),
+  error: map.get($app-primary-palette, error),
+);

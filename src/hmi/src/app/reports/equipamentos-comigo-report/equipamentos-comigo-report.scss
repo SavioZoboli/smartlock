@@ -1,113 +1,37 @@
+@use '../../../assets/scss/shared-patterns';
+
 .dashboard-container {
-  padding: 1.5rem;
-  max-width: 1600px;
-  margin: 0 auto;
+  @extend %report-container;
 }
 
 .page-header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 1.25rem;
-  margin-bottom: 1.5rem;
-
-  .title-area {
-    display: flex;
-    flex-direction: column;
-
-    .breadcrumb {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #64748b;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-
-    h2 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #0f172a;
-    }
-  }
+  @extend %report-header;
 }
 
 .state-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 3rem 1rem;
-  color: #64748b;
-  font-size: 0.9rem;
-
-  mat-icon {
-    font-size: 32px;
-    height: 32px;
-    width: 32px;
-    color: #cbd5e1;
-  }
+  @extend %state-message;
 }
 
 .equipment-grid {
-  display: grid;
+  @extend %equipment-grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
 }
 
 .equipment-card {
-  display: flex;
-  flex-direction: row;
-  padding: 0 !important;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
-  transition: transform 0.2s, box-shadow 0.2s;
+  @extend %equipment-card;
 
-  &:hover {
-    box-shadow: 0 3px 6px rgba(0,0,0,0.16) !important;
-    transform: translateY(-2px);
+  // Indicador lateral: verde = no prazo, vermelho = atrasado
+  &.status-green .status-indicator {
+    background-color: var(--app-success);
   }
 
-  .status-indicator {
-    width: 6px;
-    flex-shrink: 0;
-  }
-
-  &.status-green .status-indicator { background-color: #10b981; }
-  &.status-late .status-indicator { background-color: #ef4444; }
-
-  .card-content {
-    padding: 12px 16px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  &.status-late .status-indicator {
+    background-color: var(--app-danger);
   }
 }
 
 .card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .eq-icon {
-    color: #475569;
-    font-size: 20px;
-    height: 20px;
-    width: 20px;
-  }
-
-  .eq-code {
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #1e293b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  @extend %report-card-header;
 }
 
 .card-body {
@@ -117,33 +41,25 @@
 
   .localizacao {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--mat-sys-on-surface-variant);
   }
 
   .datas {
     display: flex;
     flex-direction: column;
     font-size: 0.8rem;
-    color: #475569;
+    color: var(--mat-sys-on-surface-variant);
 
+    // Era #dc2626 (4.83:1, já passava AA) — unificado com o token de perigo
+    // do resto do app para manter o mesmo vermelho em toda a UI.
     .late-text {
-      color: #dc2626;
+      color: var(--app-danger);
       font-weight: 600;
     }
   }
 
   .status-badge {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    width: fit-content;
-    margin-top: 4px;
+    @extend %report-status-badge;
 
     .sm-icon {
       font-size: 14px;
@@ -151,7 +67,12 @@
       width: 14px;
     }
 
-    &.unavailable { color: #b91c1c; background-color: #fee2e2; }
+    // Era #b91c1c sobre #fee2e2 (5.30:1) — mesmos valores, agora via token
+    // semântico compartilhado com os chips de status das telas de lista.
+    &.unavailable {
+      color: var(--app-danger-soft-on);
+      background-color: var(--app-danger-soft-bg);
+    }
   }
 }
 

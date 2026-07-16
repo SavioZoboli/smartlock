@@ -1,23 +1,25 @@
-/* Wrapper para centralizar a tela de onboarding fora do sistema */
+@use '../shared-patterns';
+
+// Wrapper para centralizar a tela de onboarding fora do layout do sistema
 .auth-layout-wrapper {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8fafc; /* Fundo suave */
-  padding: 2rem;
+  background-color: var(--mat-sys-surface-container-lowest);
+  padding: var(--app-space-xl);
 }
 
 .page-container {
   width: 100%;
-  max-width: 800px; 
+  max-width: 800px;
 }
 
-/* Cabeçalho adaptado para Onboarding */
+// Cabeçalho adaptado para onboarding (centralizado, sem breadcrumb)
 .page-header-container {
   padding-bottom: 1.25rem;
-  margin-bottom: 2rem;
-  text-align: center; /* Centralizado para dar cara de boas-vindas */
+  margin-bottom: var(--app-space-xl);
+  text-align: center;
 
   .title-area {
     display: flex;
@@ -28,78 +30,50 @@
       width: 80px;
       height: 80px;
       border-radius: 50%;
-      margin-bottom: 1rem;
-      border: 3px solid #0ea5e9;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: var(--app-space-md);
+      border: 3px solid var(--mat-sys-primary);
+      box-shadow: var(--app-shadow-sm);
     }
 
     h2 {
       margin: 0;
       font-size: 1.75rem;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--mat-sys-on-surface);
     }
 
     .subtitle {
-      color: #64748b;
+      color: var(--mat-sys-on-surface-variant);
       margin-top: 0.5rem;
       font-size: 1rem;
     }
   }
 }
 
-/* Container do Formulário (Seu código original mantido e refinado) */
 .form-container {
-  background-color: #ffffff;
-  border-radius: 12px;
+  @extend %form-container;
+  border-radius: var(--app-radius-xl);
   padding: 2.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--app-shadow-md);
 }
 
 .form-row {
   display: flex;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--app-space-lg);
   width: 100%;
   gap: 15px;
-  
+
   @media (max-width: 600px) {
-    flex-direction: column; /* Responsividade básica */
+    flex-direction: column;
   }
 }
 
 .full-width {
+  @extend %full-width;
   flex: 1;
-  width: 100%;
 }
 
-/* Botões de Ação */
 .form-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #f1f5f9;
-
-  button {
-    padding: 1.5rem 1.5rem; 
-    font-size: 0.95rem;
-    font-weight: 500;
-    border-radius: 6px;
-  }
-}
-
-/* Notificações de Sucesso/Erro */
-::ng-deep .success-snackbar {
-  --mdc-snackbar-container-color: #10b981; 
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  font-weight: 500;
-}
-
-::ng-deep .error-snackbar {
-  --mdc-snackbar-container-color: #ef4444; 
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  font-weight: 500;
+  @extend %form-actions;
+  margin-top: var(--app-space-xl);
 }
