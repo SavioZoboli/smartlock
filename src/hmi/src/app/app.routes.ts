@@ -16,6 +16,8 @@ import { ListaSmartlock } from './pages/smartlock/lista-smartlock/lista-smartloc
 import { ListaEquipamento } from './pages/equipamento/lista-equipamento/lista-equipamento';
 import { UpdateEquipamento } from './pages/equipamento/update-equipamento/update-equipamento';
 import { RedirectEquipamento } from './pages/equipamento/redirect-equipamento/redirect-equipamento';
+import { ListaMovimentacao } from './pages/movimentacao/lista-movimentacao/lista-movimentacao';
+import { CadastroMovimentacao } from './pages/movimentacao/cadastro-movimentacao/cadastro-movimentacao';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
@@ -37,6 +39,8 @@ export const routes: Routes = [
       //Telas de relatório
       { path: 'relatorios/disponibilidade', component: SmartlockReport },
 
+      {path:'movimentacoes/lista',component:ListaMovimentacao},
+      {path:'movimentacoes/cadastro',component:CadastroMovimentacao}
       
     ],
   },
