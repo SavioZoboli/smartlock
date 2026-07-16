@@ -21,7 +21,7 @@ class EquipamentoController {
     const equipamentosComSmartlock = equipamentos.map((eq: any) => ({
       ...eq,
       smartlock_base_id: smartlock_id,
-      status_atual: "PENDENTE_LEITURA",
+      status_atual: "DISPONIVEL",
     }));
     try {
       let contagem = await equipamentoService.bulkCreate(

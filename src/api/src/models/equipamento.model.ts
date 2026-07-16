@@ -9,7 +9,7 @@ export interface EquipamentoAttributes {
   tipo: string;
   smartlock_base_id: number;
   status_atual: string;
-  usuario_atual_id?: number;
+  usuario_atual_id?: number|null;
   ativo: boolean;
   createdAt?: Date;
   updatedAt?: Date;

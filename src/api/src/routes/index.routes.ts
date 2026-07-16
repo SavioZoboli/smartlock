@@ -8,6 +8,7 @@ const usuarioRouter = require("./usuario.routes")
 const authRouter = require("./auth.routes")
 const equipamentoRouter = require("./equipamentos.routes")
 const kpiRouter = require("./kpi.routes")
+const movimentacaoRouter = require("./movimentacao.routes")
 
 router.get('/',(req:Request,res:Response)=>{
     res.status(200).json({message:"API acessível"})
@@ -19,5 +20,6 @@ router.use(`/usuario`,usuarioRouter)
 router.use(`/auth`,authRouter)
 router.use(`/equipamento`,equipamentoRouter)
 router.use(`/kpi`,kpiRouter)
+router.use('/movimentacao',movimentacaoRouter)
 
 module.exports = router;

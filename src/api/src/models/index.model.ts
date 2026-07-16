@@ -81,5 +81,6 @@ export {
   Equipamento,
   Movimentacao,
   LogUsuario,
-  LogSmartlock
+  LogSmartlock,
+  ItensMovimentacao
 };
