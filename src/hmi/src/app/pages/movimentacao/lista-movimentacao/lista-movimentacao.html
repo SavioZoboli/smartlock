@@ -1,0 +1,142 @@
+<div class="page-container">
+  <div class="page-header-container with-actions">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Movimentações</div>
+      <h2>Relatório de Movimentações</h2>
+    </div>
+
+    <div class="action-area">
+      <button mat-flat-button class="btn-new" (click)="onNovaMovimentacao()">
+        <mat-icon>add</mat-icon> Nova Movimentação
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumo: empréstimos do usuário logado, agrupados por equipamento -->
+  <div class="resumo-container">
+    <div class="resumo-header">
+      <h3>Meus equipamentos emprestados</h3>
+      @if (totalPendentes > 0) {
+        <span class="badge-pendentes">{{ totalPendentes }} pendente(s) de devolução</span>
+      }
+    </div>
+
+    @if (emprestimosDoUsuario().length === 0) {
+      <p class="empty-hint">Você ainda não possui empréstimos registrados.</p>
+    } @else {
+      <div class="emprestimo-list">
+        @for (item of emprestimosDoUsuario(); track item.apelido) {
+          <div class="emprestimo-item" [class.pendente]="item.pendente">
+            <mat-icon class="emprestimo-icone">{{ item.pendente ? 'lock_clock' : 'lock_open' }}</mat-icon>
+
+            <div class="emprestimo-info">
+              <span class="emprestimo-apelido">{{ item.apelido }} · {{ item.patrimonio }}</span>
+              <span class="emprestimo-detalhe">
+                {{ item.smartlock }} · {{ item.unidade }} — retirado em {{ item.data_movimentacao | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+
+            @if (item.pendente) {
+              <span class="tag-pendente">Falta devolver</span>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Filtros do log geral -->
+  <div class="filtros-container" [formGroup]="filtros">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-nome">
+      <mat-label>Buscar por patrimônio</mat-label>
+      <input matInput formControlName="patrimonio" placeholder="Digite o patrimônio">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Unidade</mat-label>
+      <mat-select formControlName="unidade">
+        <mat-option value="">Todas</mat-option>
+        @for (unidade of unidadesDisponiveis; track unidade) {
+          <mat-option [value]="unidade">{{ unidade }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Tipo</mat-label>
+      <mat-select formControlName="tipo">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="emprestimo">Empréstimo</mat-option>
+        <mat-option value="devolucao">Devolução</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-stroked-button type="button" class="btn-limpar" (click)="limparFiltros()">
+      <mat-icon>filter_alt_off</mat-icon> Limpar
+    </button>
+  </div>
+
+  <!-- Log geral de movimentações -->
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" class="mat-elevation-z0 custom-table">
+
+      <ng-container matColumnDef="timestamp">
+        <th mat-header-cell *matHeaderCellDef> Data/Hora </th>
+        <td mat-cell *matCellDef="let element" class="fw-500">
+          {{ element.timestamp | date:'dd/MM/yyyy HH:mm' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="tipo">
+        <th mat-header-cell *matHeaderCellDef> Tipo </th>
+        <td mat-cell *matCellDef="let element">
+          <span class="tipo-chip" [class.saida]="element.tipo === 'emprestimo'" [class.entrada]="element.tipo === 'devolucao'">
+            <mat-icon class="inline-icon">
+              {{ element.tipo.includes('emprestimo') ? 'north_east' : 'south_west' }}
+            </mat-icon>
+            {{ element.tipo.includes('emprestimo') ? 'Empréstimo' : 'Devolução' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="smartlock">
+        <th mat-header-cell *matHeaderCellDef> SmartLock </th>
+        <td mat-cell *matCellDef="let element"> {{ element.smartlock }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="unidade">
+        <th mat-header-cell *matHeaderCellDef> Unidade </th>
+        <td mat-cell *matCellDef="let element">
+          <mat-icon class="inline-icon">business</mat-icon> {{ element.unidade }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="equipamentos">
+        <th mat-header-cell *matHeaderCellDef> Patrimônios </th>
+        <td mat-cell *matCellDef="let element">
+          <mat-chip-set>
+            @for (equipamento of element.equipamentos; track equipamento.id) {
+              <mat-chip [matTooltip]="equipamento.apelido">{{ equipamento.patrimonio }}</mat-chip>
+            }
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="custom-row"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-state" colspan="5">
+          Nenhuma movimentação encontrada
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      [pageSizeOptions]="[10, 20, 50]"
+      showFirstLastButtons
+      class="custom-paginator">
+    </mat-paginator>
+  </div>
+</div>

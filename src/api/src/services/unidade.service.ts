@@ -65,6 +65,15 @@ class UnidadeService{
         }
     }
 
+    async getUnidadesDaRegional(regional:string):Promise<number[]>{
+        try{
+            let unidades = await Unidade.findAll({where:{regional,ativo:true},attributes:['id']})
+            return unidades.map(u=>u.id)
+        }catch(e){
+            throw e;
+        }
+    }
+
 }
 
 export default new UnidadeService();

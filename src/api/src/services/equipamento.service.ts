@@ -10,28 +10,28 @@ import {
 class EquipamentoService {
   async bulkCreate(equipamentos: EquipamentoAttributes[]): Promise<number> {
     try {
-    const patrimonios = equipamentos.map(e => e.patrimonio);
-    const existentes = await Equipamento.findAll({
-      where: { patrimonio: { [Op.in]: patrimonios } },
-      attributes: ['patrimonio'],
-      raw: true,
-    });
+      const patrimonios = equipamentos.map((e) => e.patrimonio);
+      const existentes = await Equipamento.findAll({
+        where: { patrimonio: { [Op.in]: patrimonios } },
+        attributes: ["patrimonio"],
+        raw: true,
+      });
 
-    if (existentes.length > 0) {
-      const erro: any = new Error('ERR_DUPLICATE');
-      erro.duplicados = existentes.map((e: any) => e.patrimonio);
-      throw erro;
-    }
+      if (existentes.length > 0) {
+        const erro: any = new Error("ERR_DUPLICATE");
+        erro.duplicados = existentes.map((e: any) => e.patrimonio);
+        throw erro;
+      }
 
-    let created = await Equipamento.bulkCreate(equipamentos);
-    return created.length;
-  } catch (e: any) {
-    if (e.name === 'SequelizeUniqueConstraintError') {
-      e.duplicados = e.errors?.map((err: any) => err.value) ?? [];
-      e.message = 'ERR_DUPLICATE';
+      let created = await Equipamento.bulkCreate(equipamentos);
+      return created.length;
+    } catch (e: any) {
+      if (e.name === "SequelizeUniqueConstraintError") {
+        e.duplicados = e.errors?.map((err: any) => err.value) ?? [];
+        e.message = "ERR_DUPLICATE";
+      }
+      throw e;
     }
-    throw e;
-  }
   }
 
   async listAll(): Promise<Equipamento[]> {
@@ -102,7 +102,7 @@ class EquipamentoService {
     patrimonio: string,
     tipo: string,
     smartlock_id: number,
-    apelido:string
+    apelido: string,
   ): Promise<void> {
     try {
       let equipamento = await Equipamento.findByPk(id);
@@ -113,7 +113,7 @@ class EquipamentoService {
       equipamento.patrimonio = patrimonio;
       equipamento.tipo = tipo;
       equipamento.smartlock_base_id = smartlock_id;
-      equipamento.apelido = apelido
+      equipamento.apelido = apelido;
       await equipamento.save();
       return;
     } catch (e) {
@@ -165,52 +165,89 @@ class EquipamentoService {
 
   async getEmprestadosUsuario(usuario_id: number) {
     try {
-      let equipamentos = await Equipamento.findAll({
-        attributes: [
-          "patrimonio",
-          "apelido",
-          "tipo",
-          [Sequelize.col("smartlockBase.apelido"), "smartlock"],
+      const equipamentos = await Equipamento.findAll({
+        where: {
+          usuario_atual_id: usuario_id,
+          ativo: true,
+        },
+        attributes: {
+          include: [
+            [
+              Sequelize.literal(`(
+            SELECT m."timestamp"
+            FROM movimentacoes m
+            INNER JOIN "itensMovimentacao" im ON im.movimentacao_id = m.id
+            WHERE im.equipamento_id = "Equipamento"."id"
+              AND m.usuario_id = :usuario_id
+            ORDER BY m."timestamp" DESC
+            LIMIT 1
+          )`),
+              "data_movimentacao",
+            ],
+          ],
+        },
+        include: [
+          {
+            model: SmartLock,
+            as: "smartlockBase",
+            attributes: ["id", "apelido"],
+            include: [
+              {
+                model: Unidade,
+                as: "unidade",
+                attributes: ["nome", "regional"],
+              },
+            ],
+          },
         ],
-        where:{usuario_atual_id:usuario_id},
-        include:[{
-          model:SmartLock,
-          as:'smartlockBase',
-          attributes:[]
-        }],
-        order:[['apelido','asc'],['patrimonio','asc']],
+        replacements: { usuario_id },
+        order: [["patrimonio", "ASC"]],
       });
-      return equipamentos;
+
+      return equipamentos.map((e: any) => ({
+        id: e.id,
+        apelido: e.apelido,
+        patrimonio: e.patrimonio,
+        tipo: e.tipo,
+        smartlock: e.smartlockBase.apelido,
+        unidade: e.smartlockBase.unidade.nome,
+        data_movimentacao: e.get("data_movimentacao"),
+      }));
     } catch (e) {
       throw e;
     }
   }
 
-  async getRelatorioDisponibilidade(smartlock_id:number){
-    try{
+  async getRelatorioDisponibilidade(smartlock_id: number) {
+    try {
       let relatorio = await Equipamento.findAll({
-        attributes:[
-          'id',
+        attributes: [
+          "id",
           "apelido",
-          'tipo',
-          'patrimonio',
-          [Sequelize.col('usuarioAtual.nome'),'responsavel']
+          "tipo",
+          "patrimonio",
+          [Sequelize.col("usuarioAtual.nome"), "responsavel"],
         ],
-        include:[
+        include: [
           {
-            model:Usuario,
-            as:"usuarioAtual",
-            attributes:[],
-            required:false
-          }
+            model: Usuario,
+            as: "usuarioAtual",
+            attributes: [],
+            required: false,
+          },
         ],
-        where:{ativo:true,smartlock_base_id:smartlock_id},
-        order:[['apelido','asc'],['patrimonio','asc']],
-        raw:true
-      })
-      relatorio = relatorio.map((l:any)=>{return {...l,disponivel:l.responsavel==null}})
-      return relatorio
-    }catch(e){
+        where: { ativo: true, smartlock_base_id: smartlock_id },
+        order: [
+          ["apelido", "asc"],
+          ["patrimonio", "asc"],
+        ],
+        raw: true,
+      });
+      relatorio = relatorio.map((l: any) => {
+        return { ...l, disponivel: l.responsavel == null };
+      });
+      return relatorio;
+    } catch (e) {
       throw e;
     }
   }

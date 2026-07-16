@@ -1,0 +1,95 @@
+<div class="page-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Movimentações</div>
+      <h2>Nova Movimentação</h2>
+    </div>
+  </div>
+
+  <div class="form-container">
+
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+    }
+
+    <form [formGroup]="movForm" (ngSubmit)="salvar()">
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Unidade</mat-label>
+          <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
+          <mat-icon matPrefix>business</mat-icon>
+          <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUnidade">
+            @for (unidade of filteredUnidades | async; track unidade) {
+              <mat-option [value]="unidade">{{ unidade.nome }} / {{ unidade.regional }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>SmartLock</mat-label>
+          <mat-select formControlName="smartlock">
+            @for (sl of smartlocks; track sl.id) {
+              <mat-option [value]="sl.id">{{ sl.apelido }} (nº {{ sl.numero }})</mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix>lock</mat-icon>
+          @if (isLoadingSmartlocks) {
+            <mat-hint>Carregando SmartLocks...</mat-hint>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <span class="section-label">Tipo de movimentação</span>
+        <mat-button-toggle-group formControlName="tipo_movimento">
+          <mat-button-toggle value="emprestimo_manual">Empréstimo</mat-button-toggle>
+          <mat-button-toggle value="devolucao_manual">Devolução</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+
+      @if (movForm.get('smartlock')?.value && movForm.get('tipo_movimento')?.value) {
+        <div class="form-row">
+          <span class="section-label">Equipamentos</span>
+
+          @if (isLoadingEquipamentos) {
+            <mat-spinner diameter="30"></mat-spinner>
+          } @else if (equipamentosVisiveis.length === 0) {
+            <p class="empty-hint">Nenhum equipamento disponível para este tipo de movimentação.</p>
+          } @else {
+            <div class="equipamento-list">
+              @for (equipamento of equipamentosVisiveis; track equipamento.id) {
+                <div class="equipamento-item" (click)="toggleEquipamento(equipamento)">
+                  <mat-checkbox
+                    [checked]="equipamento.selecionado"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleEquipamento(equipamento)">
+                  </mat-checkbox>
+                  <mat-icon class="equipamento-icone">{{ equipamento.icone}}</mat-icon>
+                  <div class="equipamento-info">
+                    <span class="equipamento-apelido">{{ equipamento.apelido }}</span>
+                    <span class="equipamento-detalhe">
+                      Patrimônio: {{ equipamento.patrimonio }} · {{ equipamento.tipo }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <div class="form-actions">
+        <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit"
+                [disabled]="movForm.invalid || equipamentosSelecionados.length === 0">
+          Salvar Movimentação
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
