@@ -46,8 +46,8 @@
 // Tokens de marca (uso decorativo / logo / grandes áreas ilustrativas)
 // Não usar para texto normal sobre fundo claro sem checar contraste.
 // -----------------------------------------------------------------------------
-$brand-primary: #e84910;
-$brand-secondary: #164194;
+$brand-primary: #164194;
+$brand-secondary: #e84910;
 $brand-white: #fefefe;
 $brand-black: #1c1c1c;
 
@@ -91,20 +91,20 @@ $app-primary-palette: (
   ),
   neutral: (
     0: #000000,
-    10: #201a18,
-    20: #362f2d,
-    25: #413a38,
-    30: #4d4543,
-    35: #59514e,
-    40: #655c5a,
-    50: #7f7572,
-    60: #998e8c,
-    70: #b4a9a6,
-    80: #d0c4c1,
-    90: #ede0dc,
-    95: #fbeeeb,
-    98: #fff8f6,
-    99: #fffbff,
+    10: #1a1a1a,
+    20: #2f2f2f,
+    25: #3a3a3a,
+    30: #454545,
+    35: #515151,
+    40: #656565,
+    50: #7f7f7f,
+    60: #999999,
+    70: #a9a9a9,
+    80: #c4c4c4,
+    90: #dcdcdc,
+    95: #ebebeb,
+    98: #f6f6f6,
+    99: #fbfbfb,
     100: #ffffff,
     4: #0d0d0d,
     6: #121212,
@@ -119,20 +119,20 @@ $app-primary-palette: (
   ),
   neutral-variant: (
     0: #000000,
-    10: #251915,
-    20: #3b2d29,
-    25: #473834,
-    30: #53433f,
-    35: #5f4f4a,
-    40: #6c5b56,
-    50: #85736e,
-    60: #a08c87,
-    70: #bca7a1,
-    80: #d8c2bc,
-    90: #f5ded7,
-    95: #ffede8,
-    98: #fff8f6,
-    99: #fffbff,
+    10: #1a1a1a,
+    20: #2f2f2f,
+    25: #3a3a3a,
+    30: #454545,
+    35: #515151,
+    40: #656565,
+    50: #7f7f7f,
+    60: #999999,
+    70: #a9a9a9,
+    80: #c4c4c4,
+    90: #dcdcdc,
+    95: #ebebeb,
+    98: #f6f6f6,
+    99: #fbfbfb,
     100: #ffffff,
   ),
   error: (
