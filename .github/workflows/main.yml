@@ -1,0 +1,110 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      api-dados: ${{ steps.filter.outputs.api-dados }}
+      worker-mqtt: ${{ steps.filter.outputs.worker-mqtt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - './src/hmi/**'
+            api-dados:
+              - './src/api/**'
+            worker-mqtt:
+              - './src/worker-mqtt/**'
+
+  build-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+  
+      - name: Gerar environment.prod.ts
+        run: |
+          sed \
+            -e "s|__API_URL__|${{ secrets.FRONTEND_API_URL }}|g" \
+            -e "s|__MQTT_WS_URL__|${{ secrets.FRONTEND_MQTT_WS_URL }}|g" \
+            frontend/src/environments/environment.template.ts \
+            > frontend/src/environments/environment.prod.ts
+  
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./src/hmi
+          push: true
+          tags: ghcr.io/${{ github.repository }}/frontend:latest
+
+  build-api-dados:
+    needs: changes
+    if: needs.changes.outputs.api-dados == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./src/api
+          push: true
+          tags: ghcr.io/${{ github.repository }}/api-dados:latest
+
+  build-worker-mqtt:
+    needs: changes
+    if: needs.changes.outputs.worker-mqtt == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./src/worker-mqtt
+          push: true
+          tags: ghcr.io/${{ github.repository }}/worker-mqtt:latest
+
+  deploy:
+    needs: [build-frontend, build-api-dados, build-worker-mqtt]
+    if: |
+      always() &&
+      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
+      (needs.build-api-dados.result == 'success' || needs.build-api-dados.result == 'skipped') &&
+      (needs.build-worker-mqtt.result == 'success' || needs.build-worker-mqtt.result == 'skipped')
+    runs-on: self-hosted
+    steps:
+      - name: Escrever .env files
+        run: |
+          echo "${{ secrets.ENV_API_DADOS }}" > /srv/app/api-dados/.env
+          echo "${{ secrets.ENV_WORKER_MQTT }}" > /srv/app/worker-mqtt/.env
+
+      - name: Login GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Deploy
+        run: |
+          docker compose -f /srv/app/docker-compose.yml pull
+          docker compose -f /srv/app/docker-compose.yml up -d
