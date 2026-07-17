@@ -33,11 +33,12 @@ jobs:
   
       - name: Gerar environment.prod.ts
         run: |
-          sed \
-            -e "s|__API_URL__|${{ secrets.FRONTEND_API_URL }}|g" \
-            -e "s|__MQTT_WS_URL__|${{ secrets.FRONTEND_MQTT_WS_URL }}|g" \
-            frontend/src/environments/environment.template.ts \
-            > frontend/src/environments/environment.prod.ts
+          echo "${{ secrets.ENV_HMI }}" > /tmp/env_hmi.env
+          API_URL=$(grep '^API_URL=' /tmp/env_hmi.env | cut -d '=' -f2-)
+          sed -e "s|__API_URL__|$API_URL|g" \
+            src/hmi/src/environments/environment.template.ts \
+            > src/hmi/src/environments/environment.prod.ts
+          rm /tmp/env_hmi.env
   
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
