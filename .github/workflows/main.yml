@@ -50,7 +50,7 @@ jobs:
         with:
           context: ./src/hmi
           push: true
-          tags: ghcr.io/${{ github.repository }}/frontend:latest
+          tags: ghcr.io/${{ github.repository }}/hmi:latest
 
   build-api-dados:
     needs: changes
@@ -68,7 +68,7 @@ jobs:
         with:
           context: ./src/api
           push: true
-          tags: ghcr.io/${{ github.repository }}/api-dados:latest
+          tags: ghcr.io/${{ github.repository }}/api:latest
 
   build-worker-mqtt:
     needs: changes
@@ -99,7 +99,7 @@ jobs:
     steps:
       - name: Escrever .env files
         run: |
-          echo "${{ secrets.ENV_API_DADOS }}" > /srv/app/api-dados/.env
+          echo "${{ secrets.ENV_API_DADOS }}" > /srv/app/api/.env
           echo "${{ secrets.ENV_WORKER_MQTT }}" > /srv/app/worker-mqtt/.env
 
       - name: Login GHCR
