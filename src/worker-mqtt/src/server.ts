@@ -1,5 +1,4 @@
-import express from 'express';
-import cors from 'cors';
+//Run
 import dotenv from 'dotenv';
 
 
