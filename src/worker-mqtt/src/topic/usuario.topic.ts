@@ -6,6 +6,9 @@ export const usuarioRoutesMQTT = (route:string,mac:string,payload:any)=>{
         case 'login_request':
             usuarioService.loginRequest(mac,payload.uid)
             break;
+        case 'sync_request':
+            usuarioService.syncList(mac)
+            break;
         
     }
 

@@ -28,8 +28,8 @@ DbResult StorageHandler::getUserAccess(const char* uid) {
     return DbResult::NOT_FOUND;
 }
 
-void StorageHandler::saveUserAccess(const char* uid, bool isAuthorized) {
-    userDb.putUChar(uid, isAuthorized ? 1 : 0);
+void StorageHandler::saveUserAccess(const char* uid) {
+    userDb.putString(uid, "");
 }
 
 // --- MÉTODOS DE FILA (FIFO com LittleFS) ---
