@@ -13,16 +13,16 @@
       <a routerLink="/movimentacoes/lista" routerLinkActive="active-menu-item" class="menu-item">
         <mat-icon>important_devices</mat-icon> Movimentações
       </a>
-      <button class="menu-item" [matMenuTriggerFor]="relatoriosMenu">
-        <mat-icon>analytics</mat-icon> Relatórios
+      <a class="menu-item" [matMenuTriggerFor]="relatoriosMenu">
+        <mat-icon>sticky_note_2</mat-icon> Relatórios
         <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
-      </button>
+      </a>
       @if (usuario$ | async; as usuario) {
         @if (usuario.is_admin) {
-          <button class="menu-item" [matMenuTriggerFor]="cadastrosMenu">
-            <mat-icon>settings_applications</mat-icon> Gerenciamento
+          <a class="menu-item" [matMenuTriggerFor]="cadastrosMenu">
+            <mat-icon>manage_accounts</mat-icon> Gerenciamento
             <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
-          </button>
+          </a>
         }
       }
     </nav>
