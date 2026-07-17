@@ -1,5 +1,17 @@
-src/firmware/.pio
+
+# Geral
+
 src/*/.vscode
 src/*/node_modules
 src/*/.env
+
+# Firmware
+
+src/firmware/.pio
 src/firmware/include/secrets.h
+
+
+# HMI
+
+src/hmi/.angular
+src/hmi/src/environments

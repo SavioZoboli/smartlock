@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CAUTION: Do not modify this file unless you know what you are doing.
+ Unexpected results may occur if the code is changed deliberately.
+-->
+<dbmodel pgmodeler-ver="1.2.2" use-changelog="false" max-obj-count="13"
+	 gen-disabled-objs-code="false" show-sys-schemas-rects="true"
+	 last-position="0,422" last-zoom="1" scene-rect="0,0,1570.8,1346.32"
+	 default-schema="public" default-owner="postgres"
+	 layers="Default layer"
+	 active-layers="0"
+	 layer-name-colors="#000000"
+	 layer-rect-colors="#b4b4b4"
+	 show-layer-names="false" show-layer-rects="false">
+<database name="new_database" is-template="false" allow-conns="true">
+</database>
+
+<schema name="public" layers="0" fill-color="#e1e1e1" name-color="#000000" sql-disabled="true">
+</schema>
+
+<table name="usuarios" layers="0" collapse-mode="2" max-obj-count="14" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="560" y="960"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="nome" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="sobrenome" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="matricula" not-null="true">
+		<type name="varchar" length="6"/>
+	</column>
+	<column name="uid_rfid" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="ativo" not-null="true" default-value="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<column name="email" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="avatar">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="role" default-value="USER">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="createdAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="updatedAt">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="unidade_lotacao_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<constraint name="usuarios_pk" type="pk-constr" table="public.usuarios">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="unidades" layers="0" collapse-mode="2" max-obj-count="8" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="60" y="560"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="nome" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="regional" not-null="true">
+		<type name="varchar" length="60"/>
+	</column>
+	<column name="ativo" not-null="true" default-value="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<column name="entidade" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="createdAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="updatedAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<constraint name="unidades_pk" type="pk-constr" table="public.unidades">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="smartlock" layers="0" collapse-mode="2" max-obj-count="10" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="520" y="100"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="mac_address" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="apelido" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="unidade_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="is_online" not-null="true" default-value="false">
+		<type name="boolean" length="0"/>
+	</column>
+	<column name="has_equipamentos" not-null="true" default-value="false">
+		<type name="boolean" length="0"/>
+	</column>
+	<column name="ativo" not-null="true" default-value="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<column name="createdAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="updatedAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<constraint name="smartlock_pk" type="pk-constr" table="public.smartlock">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="movimentacao" layers="0" collapse-mode="2" max-obj-count="7" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="1140" y="540"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="usuario_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="smartlock_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="tipo_movimento" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="createdAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="updatedAt" not-null="true">
+		<type name="timestamptz" length="24"/>
+	</column>
+	<constraint name="movimentacao_pk" type="pk-constr" table="public.movimentacao">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="LogsUsuario" layers="0" collapse-mode="2" max-obj-count="7" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="1060" y="140"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="usuario_id">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="smartlock_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="uid_lido" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="operacao">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="timestamp" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<constraint name="LogsUsuario_pk" type="pk-constr" table="public.&quot;LogsUsuario&quot;">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="LogsSmartlock" layers="0" collapse-mode="2" max-obj-count="4" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="60" y="160"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="smartlock_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="operacao" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="timestamp" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<constraint name="LogsSmartlock_pk" type="pk-constr" table="public.&quot;LogsSmartlock&quot;">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="equipamentos" layers="0" collapse-mode="2" max-obj-count="13" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="480" y="480"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="apelido">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="tag" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="patrimonio" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="tipo" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="smartlock_base_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="status_atual" not-null="true">
+		<type name="varchar" length="24"/>
+	</column>
+	<column name="usuario_atual_id">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="ativo" default-value="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<column name="createdAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="updatedAt" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<constraint name="equipamentos_pk" type="pk-constr" table="public.equipamentos">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="itens_movimentacao" layers="0" collapse-mode="2" max-obj-count="2" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="1120" y="980"/>
+	<column name="movimentacao_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="equipamento_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+</table>
+
+<constraint name="fk_usuario_unidade" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.unidades" table="public.usuarios">
+	<columns names="unidade_lotacao_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_smartlock_unidade" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.unidades" table="public.smartlock">
+	<columns names="unidade_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_movimenta_usuario" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.usuarios" table="public.movimentacao">
+	<columns names="usuario_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_movimenta_smartlock" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.smartlock" table="public.movimentacao">
+	<columns names="smartlock_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_logUsu_usuario" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.usuarios" table="public.&quot;LogsUsuario&quot;">
+	<columns names="usuario_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_logUsu_smartlock" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.smartlock" table="public.&quot;LogsUsuario&quot;">
+	<columns names="smartlock_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_logSmart_smartlock" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.smartlock" table="public.&quot;LogsSmartlock&quot;">
+	<columns names="smartlock_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_equipamento_smartlock" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.smartlock" table="public.equipamentos">
+	<columns names="smartlock_base_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_usuario_equipamento" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.usuarios" table="public.equipamentos">
+	<columns names="usuario_atual_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_itemMov_movimento" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.movimentacao" table="public.itens_movimentacao">
+	<columns names="movimentacao_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_itemMov_equipamento" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.equipamentos" table="public.itens_movimentacao">
+	<columns names="equipamento_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<relationship name="rel_usuarios_unidades" type="relfk" layers="0"
+	 src-table="public.usuarios"
+	 dst-table="public.unidades" reference-fk="fk_usuario_unidade"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_smartlock_unidades" type="relfk" layers="0"
+	 src-table="public.smartlock"
+	 dst-table="public.unidades" reference-fk="fk_smartlock_unidade"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_movimentacao_usuarios" type="relfk" layers="0"
+	 src-table="public.movimentacao"
+	 dst-table="public.usuarios" reference-fk="fk_movimenta_usuario"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_movimentacao_smartlock" type="relfk" layers="0"
+	 src-table="public.movimentacao"
+	 dst-table="public.smartlock" reference-fk="fk_movimenta_smartlock"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_LogsUsuario_usuarios" type="relfk" layers="0"
+	 src-table="public.&quot;LogsUsuario&quot;"
+	 dst-table="public.usuarios" reference-fk="fk_logUsu_usuario"
+	 src-required="false" dst-required="false">
+	<label ref-type="name-label">
+		<position x="74.9261" y="-0.0529898"/>
+	</label>
+</relationship>
+
+<relationship name="&quot;rel_LogsUsuario_smartlock&quot;" type="relfk" layers="0"
+	 src-table="public.&quot;LogsUsuario&quot;"
+	 dst-table="public.smartlock" reference-fk="fk_logUsu_smartlock"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="&quot;rel_LogsSmartlock_smartlock&quot;" type="relfk" layers="0"
+	 src-table="public.&quot;LogsSmartlock&quot;"
+	 dst-table="public.smartlock" reference-fk="fk_logSmart_smartlock"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_equipamentos_smartlock" type="relfk" layers="0"
+	 src-table="public.equipamentos"
+	 dst-table="public.smartlock" reference-fk="fk_equipamento_smartlock"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_equipamentos_usuarios" type="relfk" layers="0"
+	 src-table="public.equipamentos"
+	 dst-table="public.usuarios" reference-fk="fk_usuario_equipamento"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_itens_movimentacao_movimentacao" type="relfk" layers="0"
+	 src-table="public.itens_movimentacao"
+	 dst-table="public.movimentacao" reference-fk="fk_itemMov_movimento"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_itens_movimentacao_equipamentos" type="relfk" layers="0"
+	 src-table="public.itens_movimentacao"
+	 dst-table="public.equipamentos" reference-fk="fk_itemMov_equipamento"
+	 src-required="false" dst-required="true"/>
+
+</dbmodel>

@@ -96,6 +96,7 @@ void loop()
         }
         else if (status == AuthState::PENDING_CLOUD)
         {
+            StateHandler::setState(SystemState::AWAITING_CLOUD);
             DisplayHandler::setFixedMessage("AGUARDE...", "Validando\nNuvem");
         }
     }
@@ -111,9 +112,10 @@ void loop()
             
             // Restaura a tela padrão
             DisplayHandler::setFixedMessage("SMART LOCK", "Aproxime o\nCracha");
-
+            Serial.print("Irá validar o acesso: ");
             if (asyncStatus == AuthState::GRANTED)
             {
+                Serial.println("Acesso autorizado");
                 HardwareIOHandler::unlockDoor();
                 BuzzerHandler::play(SoundEffect::OP_SUCCESS);
                 StateHandler::setState(SystemState::IN_PROCESS);
@@ -121,12 +123,14 @@ void loop()
             }
             else if (asyncStatus == AuthState::DENIED)
             {
+                Serial.println("Acesso negado");
                 BuzzerHandler::play(SoundEffect::OP_FAIL);
                 StateHandler::setState(SystemState::IDLE);
                 DisplayHandler::setTimeoutMessage("NEGADO", "Negado", 3000);
             }
             else if (asyncStatus == AuthState::TIMEOUT_CLOUD)
             {
+                Serial.println("Sem resposta");
                 BuzzerHandler::play(SoundEffect::OP_FAIL);
                 StateHandler::setState(SystemState::IDLE);
                 DisplayHandler::setTimeoutMessage("FALHA REDE", "Sem Resposta", 3000);
@@ -142,9 +146,19 @@ void loop()
         StateHandler::setState(SystemState::READING);
     }
 
+
+    if(StateHandler::getState() == SystemState::READING){
+        StateHandler::setState(SystemState::IDLE);
+    }
+
     // 2. Scan terminou: processa a diferença e salva na Fila Offline
-    if (InventoryManager::scanJustFinished())
+    /*if (InventoryManager::scanJustFinished())
     {
+
+        StateHandler::setState(SystemState::IDLE); 
+        return;
+
+        //Remover e validar quando tiver o leitor de RFID UHF
         auto eventos = InventoryManager::calculateDiff(); // Calcula os eventos
 
         if (!eventos.empty())
@@ -154,7 +168,7 @@ void loop()
             InventoryManager::commitInventory();   
             StateHandler::setState(SystemState::IDLE);                          // Atualiza o estado atual
         }
-    }
+    }*/
 
     // 3. Sync com o Servidor: Despacha a fila de eventos
     if (WiFiHandler::isConnected() && StorageHandler::hasPendingEvents())
@@ -175,5 +189,4 @@ void loop()
         }
     }
 
-    Serial.println(StateHandler::getStateString());
 }

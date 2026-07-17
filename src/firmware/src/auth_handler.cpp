@@ -68,10 +68,10 @@ void AuthHandler::processCloudResponse(const char* uid, bool isAuthorized) {
         if (isAuthorized) {
             currentState = AuthState::GRANTED;
             strncpy(lastAuthorizedUser, uid, sizeof(lastAuthorizedUser));
-            StorageHandler::saveUserAccess(uid, true); // Delega pro Storage
+            StorageHandler::saveUserAccess(uid); // Delega pro Storage
         } else {
             currentState = AuthState::DENIED;
-            StorageHandler::saveUserAccess(uid, false); 
+            StorageHandler::saveUserAccess(uid); 
         }
         pendingUid[0] = '\0'; 
     }

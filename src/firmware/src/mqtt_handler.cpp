@@ -57,11 +57,11 @@ void MqttHandler::reconnect()
             char subTopic[64];
 
             // 1. Sincronização de Usuários
-            buildTopic(subTopic, sizeof(subTopic), "usuarios", "sync");
+            buildTopic(subTopic, sizeof(subTopic), "usuarios", "sync_response");
             mqttClient.subscribe(subTopic);
 
             // 2. Sincronização de Equipamentos
-            buildTopic(subTopic, sizeof(subTopic), "equipamentos", "sync");
+            buildTopic(subTopic, sizeof(subTopic), "equipamentos", "sync_response");
             mqttClient.subscribe(subTopic);
 
             // 3. Resposta de Login (Caso o ESP pergunte pro banco se a UID é válida)
@@ -135,8 +135,8 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
     char topicEquipSync[64];
 
     buildTopic(topicLoginResponse, sizeof(topicLoginResponse), "usuarios", "login_response");
-    buildTopic(topicUserSync, sizeof(topicUserSync), "usuarios", "sync");
-    buildTopic(topicEquipSync, sizeof(topicEquipSync), "equipamentos", "sync");
+    buildTopic(topicUserSync, sizeof(topicUserSync), "usuarios", "sync_response");
+    buildTopic(topicEquipSync, sizeof(topicEquipSync), "equipamentos", "sync_response");
 
     // ==========================================
     // ROTA 1: RESPOSTA DE LOGIN (Comparação Exata)
@@ -189,15 +189,16 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
 
         // O Node-RED deve enviar: {"usuarios": [{"uid":"A1B2", "autorizado":true}, ...]}
         JsonArray users = doc["usuarios"].as<JsonArray>();
-
         for (JsonObject user : users)
         {
-            const char *uid = user["uid"];
-            bool isAuthorized = user["autorizado"];
+            const char *uid = user["uuid"];
+
+            Serial.print("Salvando usuário com uuid: ");
+            Serial.println(uid);
 
             if (uid != nullptr)
             {
-                StorageHandler::saveUserAccess(uid, isAuthorized);
+                StorageHandler::saveUserAccess(uid);
             }
         }
         Serial.println("[MQTT] Banco de dados offline atualizado via Nuvem!");
