@@ -74,7 +74,7 @@ html {
   // Se o usuário não escolheu manualmente (nem .light-theme nem .dark-theme),
   // segue a preferência do sistema operacional.
   &:not(.light-theme):not(.dark-theme) {
-    @media (prefers-color-scheme: light) {
+    @media (prefers-color-scheme: dark) {
       @include mat.theme(
         (
           color: (

@@ -1,8 +1,16 @@
-// Sem mudanças de cor — nenhuma cor hardcoded aqui.
-.img-container {
-  height: 2em;
+// O :host torna a tag <app-logo> um bloco que obedece ao tamanho do pai.
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
-  img {
-    height: 100%;
-  }
+.responsive-logo {
+  // A imagem ocupa todo o espaço do :host.
+  width: 100%;
+  height: 100%;
+  // Mantém a proporção do SVG sem distorcer.
+  object-fit: contain;
+  // Alinha a imagem à esquerda, caso ela seja menor que o espaço disponível.
+  object-position: left center;
 }

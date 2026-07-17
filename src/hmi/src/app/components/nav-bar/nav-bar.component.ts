@@ -9,6 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { AuthService, UsuarioLogado } from '../../services/auth.service';
 import { Observable } from 'rxjs';
 import { Logo } from "../logo/logo";
+import { ThemeTogglerService } from '../../services/theme-toggler.service';
 
 @Component({
   selector: 'app-navbar',
@@ -21,6 +22,8 @@ export class NavbarComponent{
   // Observable exposto direto no template via async pipe — sempre reflete
   // o usuário atual sem precisar de subscribe manual/unsubscribe no componente.
   usuario$:Observable<UsuarioLogado|null> = inject(AuthService).usuario$;
+
+  themeService = inject(ThemeTogglerService);
 
   constructor(
     private authService: AuthService,

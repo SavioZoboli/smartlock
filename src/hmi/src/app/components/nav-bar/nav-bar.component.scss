@@ -17,11 +17,13 @@
 }
 
 .brand-logo {
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
   height: 100%;
+  
+  width: 180px; 
+  max-width: 300px;
 }
 
 .divider-vertical {

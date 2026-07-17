@@ -72,7 +72,10 @@
     }
 
     <mat-menu #profileMenu="matMenu">
-      <button mat-menu-item><mat-icon>account_circle</mat-icon> <span>Meu Perfil</span></button>
+      <button mat-menu-item (click)="themeService.toggleTheme()">
+  <mat-icon matListItemIcon>{{ themeService.isDarkTheme() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+  <span matListItemTitle>{{ themeService.isDarkTheme() ? 'Escuro' : 'Claro' }}</span>
+</button>
       <button mat-menu-item (click)="logout()">
         <mat-icon>exit_to_app</mat-icon> <span>Sair do Sistema</span>
       </button>
