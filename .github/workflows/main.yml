@@ -30,14 +30,16 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Gerar environment.ts
+        env:
+          ENV_HMI: ${{ secrets.ENV_HMI }}
         run: |
-          echo "${{ secrets.ENV_HMI }}" > /tmp/env_hmi.env
-          API_URL=$(grep '^API_URL=' /tmp/env_hmi.env | cut -d '=' -f2-)
+          echo "$ENV_HMI" > /tmp/env_hmi.env
+          # O uso do awk e tr garante a extração correta mesmo se houver espaços em branco ou quebras de linha invisíveis (carriage returns)
+          API_URL=$(awk -F '=' '/^API_URL/ {print $2}' /tmp/env_hmi.env | tr -d ' ' | tr -d '\r')
           sed -e "s|__API_URL__|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.ts
           rm /tmp/env_hmi.env
 
@@ -98,13 +100,24 @@ jobs:
       (needs.build-worker-mqtt.result == 'success' || needs.build-worker-mqtt.result == 'skipped')
     runs-on: self-hosted
     steps:
-      - name: Escrever .env files
+      - name: Escrever .env files de forma segura
+        env:
+          ENV_API_DADOS: ${{ secrets.ENV_API_DADOS }}
+          ENV_WORKER_MQTT: ${{ secrets.ENV_WORKER_MQTT }}
         run: |
-          echo "${{ secrets.ENV_API_DADOS }}" > /srv/app/api/.env
-          echo "${{ secrets.ENV_WORKER_MQTT }}" > /srv/app/worker-mqtt/.env
+          echo "$ENV_API_DADOS" > /srv/app/api/.env
+          echo "$ENV_WORKER_MQTT" > /srv/app/worker-mqtt/.env
+          
       - name: Login GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Deploy
+        
+      - name: Deploy e Execução de Migrations
         run: |
           docker compose -f /srv/app/docker-compose.yml pull
           docker compose -f /srv/app/docker-compose.yml up -d
+          
+          # Pausa estratégica para inicialização do BD e da API
+          sleep 10
+          
+          # Execução não-interativa. Substitua 'app-api-1' pelo nome exato do serviço no compose caso este seja apenas o nome do container gerado.
+          docker exec -i app-api-1 npx sequelize-cli db:migrate
