@@ -1,4 +1,4 @@
-//Importações
+//Importações de bibliotecas
 import dotenv from 'dotenv';
 
 
