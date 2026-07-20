@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 type StatusServidor = 'ok' | 'erro' | 'carregando';
 
 const INTERVALO_VERIFICACAO_MS = 30000;
-
+//Run
 @Component({
   selector: 'app-server-status',
   standalone: true,
