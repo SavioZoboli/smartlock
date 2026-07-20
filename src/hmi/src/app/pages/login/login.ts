@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 import { SystemNotificationService } from '../../services/system-notification.service';
 import { Logo } from '../../components/logo/logo';
 import { ThemeTogglerService } from '../../services/theme-toggler.service';
+import { ServerStatus } from "../../components/server-status/server-status";
 
 @Component({
   selector: 'app-login',
@@ -24,7 +25,8 @@ import { ThemeTogglerService } from '../../services/theme-toggler.service';
     MatButtonModule,
     MatIconModule,
     Logo,
-  ],
+    ServerStatus
+],
   templateUrl: './login.html',
   styleUrls: ['./login.scss'],
 })

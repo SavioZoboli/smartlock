@@ -1,0 +1,10 @@
+<div class="server-status" [class]="status()">
+  <span class="status-dot"></span>
+  <span class="status-label">
+    @switch (status()) {
+      @case ('ok') { API online }
+      @case ('erro') { API indisponível }
+      @default { Verificando... }
+    }
+  </span>
+</div>
