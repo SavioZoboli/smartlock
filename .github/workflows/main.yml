@@ -113,8 +113,8 @@ jobs:
         
       - name: Deploy e Execução de Migrations
         run: |
-          docker compose -f /srv/app/api/docker-compose.yml pull
-          docker compose -f /srv/app/api/docker-compose.yml up -d
+          docker compose -f /srv/app/docker-compose.yml pull
+          docker compose -f /srv/app/docker-compose.yml up -d
           
           # Pausa estratégica para inicialização do BD e da API
           sleep 10
