@@ -7,44 +7,50 @@ const TIMEOUT_MS = 10000;
 
 @Injectable({ providedIn: 'root' })
 export class GoogleIdentityService {
-  // Cacheia a Promise para não criar múltiplos polls se o método for chamado
-  // várias vezes (ex: revisitas à tela de login dentro da mesma sessão do app).
-  private carregamento: Promise<void> | null = null;
+  private sdkPromise: Promise<void> | null = null;
+  private tokenPromise: Promise<string> | null = null;
 
-  private api_token = signal('')
+  public api_token = signal('');
+  private api_url = environment.api_url;
 
-  private api_url = environment.api_url
+  constructor(private http: HttpClient) {}
 
-  constructor(private http:HttpClient){
-    this.getGoogleApiToken()
+  /** Espera SDK carregado + token do backend, e retorna o token pronto pra usar. */
+  async aguardarCarregamento(): Promise<string> {
+    const [, token] = await Promise.all([
+      this.aguardarSdk(),
+      this.carregarToken(),
+    ]);
+    return token;
   }
 
-  public getGoogleToken():string{
-    return this.api_token()
+  private carregarToken(): Promise<string> {
+    if (this.tokenPromise) return this.tokenPromise;
+
+    this.tokenPromise = new Promise((resolve, reject) => {
+      this.http.get<string>(`${this.api_url}/api/auth/googleToken`).subscribe({
+        next: (res) => {
+          this.api_token.set(res);
+          resolve(res);
+        },
+        error: (e) => {
+          this.tokenPromise = null; // permite retry
+          reject(e);
+        },
+      });
+    });
+
+    return this.tokenPromise;
   }
 
-  private getGoogleApiToken(){
-    this.http.get<any>(`${this.api_url}/api/auth/googleToken`).subscribe({
-      next:(res)=>{
-        this.api_token.set(res);
-      },
-      error:(e)=>{
-        console.error(e)
-      }
-    })
-  }
+  private aguardarSdk(): Promise<void> {
+    if (this.sdkPromise) return this.sdkPromise;
 
-  aguardarCarregamento(): Promise<void> {
-    if (this.carregamento) {
-      return this.carregamento;
-    }
-
-    this.carregamento = new Promise((resolve, reject) => {
+    this.sdkPromise = new Promise((resolve, reject) => {
       if (this.sdkDisponivel()) {
         resolve();
         return;
       }
-
       const inicio = Date.now();
       const intervalo = setInterval(() => {
         if (this.sdkDisponivel()) {
@@ -52,16 +58,15 @@ export class GoogleIdentityService {
           resolve();
           return;
         }
-
         if (Date.now() - inicio > TIMEOUT_MS) {
           clearInterval(intervalo);
-          this.carregamento = null; // permite tentar de novo numa próxima chamada
+          this.sdkPromise = null;
           reject(new Error('Timeout ao carregar o SDK do Google Identity'));
         }
       }, INTERVALO_MS);
     });
 
-    return this.carregamento;
+    return this.sdkPromise;
   }
 
   private sdkDisponivel(): boolean {
