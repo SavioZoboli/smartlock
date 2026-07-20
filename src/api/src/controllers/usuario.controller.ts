@@ -168,7 +168,7 @@ class UsuarioController {
     }
     try{
       let usuario = await usuarioService.create(uuid,nome,sobrenome,matricula,unidade_id,email,avatar)
-      let token = authService.geraToken(usuario.id,usuario.email,usuario.nome,usuario.avatar)
+      let token = authService.geraToken(usuario.id,usuario.email,usuario.nome,usuario.avatar,usuario.role=='ADMIN')
 
       res.cookie("token", token, COOKIE_OPTIONS);
 
