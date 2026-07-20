@@ -14,4 +14,5 @@ src/firmware/include/secrets.h
 # HMI
 
 src/hmi/.angular
-src/hmi/src/environments
+src/hmi/src/environments/environment.development.ts
+src/hmi/src/environments/environment.ts

@@ -1,4 +1,6 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, signal } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 const INTERVALO_MS = 50;
 const TIMEOUT_MS = 10000;
@@ -8,6 +10,29 @@ export class GoogleIdentityService {
   // Cacheia a Promise para não criar múltiplos polls se o método for chamado
   // várias vezes (ex: revisitas à tela de login dentro da mesma sessão do app).
   private carregamento: Promise<void> | null = null;
+
+  private api_token = signal('')
+
+  private api_url = environment.api_url
+
+  constructor(private http:HttpClient){
+    this.getGoogleApiToken()
+  }
+
+  public getGoogleToken():string{
+    return this.api_token()
+  }
+
+  private getGoogleApiToken(){
+    this.http.get<any>(`${this.api_url}/api/auth/googleToken`).subscribe({
+      next:(res)=>{
+        this.api_token.set(res);
+      },
+      error:(e)=>{
+        console.error(e)
+      }
+    })
+  }
 
   aguardarCarregamento(): Promise<void> {
     if (this.carregamento) {

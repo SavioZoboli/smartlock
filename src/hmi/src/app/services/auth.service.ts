@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, map, Observable, of, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface UsuarioLogado {
   nome: string;
@@ -13,7 +14,7 @@ export interface UsuarioLogado {
   providedIn: 'root',
 })
 export class AuthService {
-  private auth_url = 'http://localhost:3000'
+  private auth_url = environment.api_url
 
   private usuarioSubject = new BehaviorSubject<UsuarioLogado | null>(null);
   usuario$ = this.usuarioSubject.asObservable();

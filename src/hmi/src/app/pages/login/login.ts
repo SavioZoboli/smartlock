@@ -49,7 +49,7 @@ export class LoginComponent {
 
     // @ts-ignore
     google.accounts.id.initialize({
-      client_id: environment.google_api_token,
+      client_id: this.googleIdentityService.getGoogleToken(),
       callback: this.handleCredentialResponse.bind(this),
     });
 

@@ -45,6 +45,14 @@ class AuthController {
     res.clearCookie("token", { ...COOKIE_OPTIONS, maxAge: undefined });
     res.status(204).send();
   }
+
+  async returnToken(req:Request,res:Response){
+    let googleToken = process.env.GOOGLE_CLIENT_API
+    if(!googleToken){
+      return res.status(404).json({message:"Token não encontrado"})
+    }
+    res.status(200).json(googleToken)
+  }
 }
 
 export default new AuthController();
