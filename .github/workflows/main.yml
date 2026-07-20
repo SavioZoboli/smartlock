@@ -38,9 +38,7 @@ jobs:
         run: |
           echo "${{ secrets.ENV_HMI }}" > /tmp/env_hmi.env
           API_URL=$(grep '^API_URL=' /tmp/env_hmi.env | cut -d '=' -f2-)
-          sed -e "s|__API_URL__|$API_URL|g" \
-            src/hmi/src/environments/environment.template.ts \
-            > src/hmi/src/environments/environment.ts
+          sed -e "s|__API_URL__|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.ts
           rm /tmp/env_hmi.env
 
       - uses: docker/setup-buildx-action@v3
