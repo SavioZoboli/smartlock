@@ -10,9 +10,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares globais para o caso de você criar um painel web (Frontend) futuramente
+// Porta 14000 é a HMI
+// Porta 14003 será o Worker MQTT
+
 app.use(cors({
-  origin: 'http://localhost:4200', 
+  origin: ['http://localhost:4200','http://189.8.205.50:14000','http://189.8.205.50:14003'], 
   credentials: true,
 }));
 app.use(express.json());
