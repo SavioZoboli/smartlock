@@ -38,9 +38,13 @@ jobs:
           ENV_HMI: ${{ secrets.ENV_HMI }}
         run: |
           echo "$ENV_HMI" > /tmp/env_hmi.env
-          # O uso do awk e tr garante a extração correta mesmo se houver espaços em branco ou quebras de linha invisíveis (carriage returns)
-          API_URL=$(awk -F '=' '/^API_URL/ {print $2}' /tmp/env_hmi.env | tr -d ' ' | tr -d '\r')
+          
+          API_URL=$(awk -F '=' '/__API_URL__/ {print $2}' /tmp/env_hmi.env | tr -d ' ' | tr -d '\r')
+          
           sed -e "s|__API_URL__|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.ts
+          
+          sed -e "s|__API_URL__|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.prod.ts
+          
           rm /tmp/env_hmi.env
 
       - uses: docker/setup-buildx-action@v3
