@@ -17,7 +17,7 @@
   .gradient-overlay{
     width: 100%;
     height:100%;
-    background-image:linear-gradient(to left,var(--bg-surface),transparent);
+    background:linear-gradient(to left,var(--mat-sys-background),transparent);
   }
 }
 
@@ -26,7 +26,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--bg-surface);
+  background-color: var(--mat-sys-background);
   padding: 2.5rem;
 }
 

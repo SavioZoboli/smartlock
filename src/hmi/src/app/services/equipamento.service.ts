@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Equipamento } from '../models/equipamento.model';
 
@@ -52,5 +52,14 @@ export class EquipamentoService {
 
   buscarRelatorioDisponibilidade(smartlock_id:number):Observable<Equipamento[]>{
     return this.http.get<Equipamento[]>(`${this.api_url}/relatorio/disponibilidade/${smartlock_id}`,{withCredentials:true})
+  }
+
+   listDisponiveis(smartlockId: number, dataHoraInicio?: string, dataHoraFim?: string): Observable<Equipamento[]> {
+    let params = new HttpParams().set('smartlock_id', smartlockId);
+ 
+    if (dataHoraInicio) params = params.set('data_hora_inicio', dataHoraInicio);
+    if (dataHoraFim) params = params.set('data_hora_fim', dataHoraFim);
+ 
+    return this.http.get<Equipamento[]>(`${this.api_url}/disponiveis`, { params });
   }
 }

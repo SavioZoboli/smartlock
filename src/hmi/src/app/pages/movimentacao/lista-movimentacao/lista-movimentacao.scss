@@ -14,11 +14,10 @@
 
 // Resumo de empréstimos do usuário logado
 .resumo-container {
-  background-color: var(--mat-sys-surface-container-low);
+  background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--app-radius-lg);
   padding: var(--app-space-lg);
-  box-shadow: var(--app-shadow-sm);
-  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--app-shadow-md);
   margin-bottom: var(--app-space-lg);
 
   .resumo-header {
@@ -52,8 +51,8 @@
 }
 
 .emprestimo-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
   gap: var(--app-space-sm);
   max-height: 320px;
   overflow-y: auto;
@@ -61,11 +60,12 @@
 
 .emprestimo-item {
   display: flex;
+  width: fit-content;
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
-  border-radius: var(--app-radius-md);
-  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--app-radius-lg);
+  background-color: var(--mat-sys-primary);
 
   &.pendente {
     background-color: var(--app-danger-soft-bg);
@@ -73,7 +73,7 @@
   }
 
   .emprestimo-icone {
-    color: var(--mat-sys-on-surface-variant);
+    color: var(--mat-sys-on-primary);
   }
 
   .emprestimo-info {
@@ -83,13 +83,13 @@
 
     .emprestimo-apelido {
       font-weight: 600;
-      color: var(--mat-sys-on-surface);
+      color: var(--mat-sys-on-primary);
       font-size: 0.9rem;
     }
 
     .emprestimo-detalhe {
       font-size: 0.78rem;
-      color: var(--mat-sys-on-surface-variant);
+      color: var(--mat-sys-on-primary);
     }
   }
 

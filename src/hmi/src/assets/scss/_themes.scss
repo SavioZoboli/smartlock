@@ -35,6 +35,13 @@
   --mat-sys-background: #{p.$brand-black};
   --mat-sys-on-surface: #{p.$brand-white};
   --mat-sys-on-background: #{p.$brand-white};
+
+  // O outline-variant gerado (neutral-variant tom 30, #454545) dá só ~1.8:1
+  // contra o brand-black (#1c1c1c) — por isso bordas de card/tabela/header
+  // somem no tema escuro. Não mexe no tom 30 da paleta (ele também é usado
+  // como on-surface-variant no tema claro, que já está ok). Override local,
+  // só para o escuro, ~3.4:1 contra o fundo.
+  --mat-sys-outline-variant: #707070;
 }
 
 html {

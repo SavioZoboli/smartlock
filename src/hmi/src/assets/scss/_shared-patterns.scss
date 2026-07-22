@@ -104,6 +104,7 @@
   padding: var(--app-space-xl);
   box-shadow: var(--app-shadow-sm);
   border: 1px solid var(--mat-sys-outline-variant);
+  border-top: 3px solid var(--mat-sys-primary);
 }
 
 %cadastro-form {
@@ -192,6 +193,7 @@
   border-radius: var(--app-radius-lg);
   box-shadow: var(--app-shadow-sm);
   border: 1px solid var(--mat-sys-outline-variant);
+  border-top: 3px solid var(--mat-sys-primary);
   overflow: hidden;
 }
 
@@ -199,12 +201,14 @@
   width: 100%;
 
   th.mat-mdc-header-cell {
-    background-color: var(--mat-sys-surface-container);
-    color: var(--mat-sys-on-surface-variant);
+    // Mistura com o próprio primary, então acompanha o tema (claro/escuro)
+    // sem precisar de um hex fixo.
+    background-color: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
     font-weight: 600;
     font-size: 0.85rem;
     text-transform: uppercase;
-    border-bottom: 2px solid var(--mat-sys-outline-variant);
+    border: 2px solid var(--mat-sys-primary);
   }
 
   td.mat-mdc-cell {
@@ -218,7 +222,7 @@
   .custom-row {
     transition: background-color 0.2s ease;
     &:hover {
-      background-color: var(--mat-sys-surface-container);
+      background-color: color-mix(in srgb, var(--mat-sys-primary) 6%, var(--mat-sys-surface-container));
     }
   }
 }
@@ -385,7 +389,7 @@
   gap: 8px;
 
   .eq-icon {
-    color: var(--mat-sys-on-surface-variant);
+    color: var(--mat-sys-primary);
     font-size: 20px;
     height: 20px;
     width: 20px;
