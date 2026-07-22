@@ -39,11 +39,11 @@ jobs:
         run: |
           echo "$ENV_HMI" > /tmp/env_hmi.env
           
-          API_URL=$(awk -F '=' '/__API_URL__/ {print $2}' /tmp/env_hmi.env | tr -d ' ' | tr -d '\r')
+          API_URL=$(awk -F '=' '/API_URL/ {print $2}' /tmp/env_hmi.env | tr -d ' ' | tr -d '\r')
           
-          sed -e "s|__API_URL__|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.ts
+          sed -e "s|API_URL|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.ts
           
-          sed -e "s|__API_URL__|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.prod.ts
+          sed -e "s|API_URL|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.prod.ts
           
           rm /tmp/env_hmi.env
 
