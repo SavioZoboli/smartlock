@@ -1,0 +1,136 @@
+@use '../../../assets/scss/shared-patterns' as *;
+
+
+.calendario-container {
+  background-color: var(--mat-sys-surface-container-low);
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-sm);
+  border: 1px solid var(--mat-sys-outline-variant);
+  overflow: hidden;
+}
+
+.calendario-header {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-sm);
+  padding: var(--app-space-md) var(--app-space-lg);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  .mes-label {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--mat-sys-primary);
+    text-transform: capitalize;
+    min-width: 180px;
+  }
+
+  .btn-hoje {
+    margin-left: auto;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.grade-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background-color: var(--mat-sys-surface-container);
+  border-bottom: 2px solid var(--mat-sys-outline-variant);
+
+  .dia-semana-label {
+    padding: var(--app-space-sm);
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.grade-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.dia-celula {
+  min-height: 110px;
+  border-right: 1px solid var(--mat-sys-surface-container);
+  border-bottom: 1px solid var(--mat-sys-surface-container);
+  padding: var(--app-space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &.fora-do-mes {
+    background-color: var(--mat-sys-surface-container-low);
+
+    .dia-numero {
+      color: var(--mat-sys-outline);
+    }
+  }
+
+  &.hoje .dia-numero {
+    background-color: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+    border-radius: 50%;
+  }
+
+  .dia-numero {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface);
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.reservas-do-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+}
+
+.reserva-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--app-info-soft-bg);
+  color: var(--app-info-soft-on);
+  border-radius: var(--app-radius-sm);
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: filter 0.2s;
+
+  &:hover {
+    filter: brightness(0.94);
+  }
+
+  .reserva-hora {
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .reserva-nome {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .reserva-equip-badge {
+    background-color: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    font-size: 0.62rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+}

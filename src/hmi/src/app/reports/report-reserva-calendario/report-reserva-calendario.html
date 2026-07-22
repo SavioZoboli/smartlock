@@ -1,0 +1,44 @@
+<div class="calendario-container">
+  <div class="calendario-header">
+    <button mat-icon-button (click)="mesAnterior()" matTooltip="Mês anterior">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+
+    <span class="mes-label">{{ labelMes }}</span>
+
+    <button mat-icon-button (click)="mesSeguinte()" matTooltip="Próximo mês">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+
+    <button mat-stroked-button class="btn-hoje" (click)="mesAtual()">Hoje</button>
+  </div>
+
+  <div class="grade-semana">
+    @for (nome of nomesDiasSemana; track nome) {
+      <div class="dia-semana-label">{{ nome }}</div>
+    }
+  </div>
+
+  <div class="grade-dias">
+    @for (dia of dias; track dia.data) {
+      <div class="dia-celula" [class.fora-do-mes]="dia.foraDoMes" [class.hoje]="dia.hoje">
+        <span class="dia-numero">{{ dia.numero }}</span>
+
+        <div class="reservas-do-dia">
+          @for (reserva of dia.reservas; track reserva.id) {
+            <div
+              class="reserva-item"
+              [matTooltip]="reserva.smartlock_apelido + ' · ' + reserva.unidade + ' / ' + reserva.regional"
+              (click)="onClickReserva(reserva, $event)">
+              <span class="reserva-hora">{{ reserva.data_hora | date: 'HH:mm' }}</span>
+              <span class="reserva-nome">{{ reserva.smartlock_apelido }}</span>
+              @if (reserva.equipamentos.length > 0) {
+                <span class="reserva-equip-badge">{{ reserva.equipamentos.length }}</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

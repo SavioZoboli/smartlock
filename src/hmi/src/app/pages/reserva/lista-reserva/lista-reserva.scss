@@ -1,0 +1,41 @@
+@use '../../../../assets/scss/shared-patterns' as *;
+
+.page-container {
+  @extend %page-container;
+}
+
+.page-header-container {
+  @extend %page-header;
+
+  .action-area {
+    align-items: center;
+  }
+
+  .toggle-modo {
+    height: 44px;
+
+    mat-icon {
+      margin-right: var(--app-space-xs);
+      font-size: 1.1rem;
+      width: 1.1rem;
+      height: 1.1rem;
+      vertical-align: middle;
+    }
+  }
+
+  .btn-new {
+    @extend %btn-new;
+  }
+}
+
+.filtros-container {
+  @extend %filtros-container;
+
+  .filtro-nome {
+    max-width: 300px;
+  }
+
+  .filtro-select {
+    flex: 0 1 200px;
+  }
+}

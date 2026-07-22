@@ -1,0 +1,68 @@
+<div class="page-container">
+  <div class="page-header-container with-actions">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Reservas</div>
+      <h2>Reservas</h2>
+    </div>
+
+    <div class="action-area">
+      <mat-button-toggle-group class="toggle-modo" [(ngModel)]="modoVisualizacao">
+        <mat-button-toggle value="lista">
+          <mat-icon>view_list</mat-icon> Lista
+        </mat-button-toggle>
+        <mat-button-toggle value="calendario">
+          <mat-icon>calendar_month</mat-icon> Calendário
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <button mat-flat-button class="btn-new" (click)="onNovaReserva()">
+        <mat-icon>add</mat-icon> Nova Reserva
+      </button>
+    </div>
+  </div>
+
+  <div class="filtros-container" [formGroup]="filtros">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-nome">
+      <mat-label>Buscar por smartlock</mat-label>
+      <input matInput formControlName="smartlock" placeholder="Digite o apelido">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Unidade</mat-label>
+      <mat-select formControlName="unidade">
+        <mat-option value="">Todas</mat-option>
+        @for (unidade of unidadesDisponiveis; track unidade) {
+          <mat-option [value]="unidade">{{ unidade }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
+      <mat-label>Regional</mat-label>
+      <mat-select formControlName="regional">
+        <mat-option value="">Todas</mat-option>
+        @for (regional of regionaisDisponiveis; track regional) {
+          <mat-option [value]="regional">{{ regional }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-stroked-button type="button" class="btn-limpar" (click)="limparFiltros()">
+      <mat-icon>filter_alt_off</mat-icon> Limpar
+    </button>
+  </div>
+
+  @if (modoVisualizacao === 'lista') {
+    <app-report-reserva-lista
+      [reservas]="reservasFiltradas"
+      (editar)="onEditarReserva($event)"
+      (excluir)="onExcluirReserva($event)">
+    </app-report-reserva-lista>
+  } @else {
+    <app-report-reserva-calendario
+      [reservas]="reservasFiltradas"
+      (selecionarReserva)="onEditarReserva($event)">
+    </app-report-reserva-calendario>
+  }
+</div>
