@@ -1,0 +1,122 @@
+@use '../../../../assets/scss/shared-patterns' as *;
+
+.page-container {
+  @extend %page-container;
+  width: fit-content;
+}
+
+.page-header-container {
+  @extend %page-header;
+}
+
+.form-container {
+  @extend %form-container;
+}
+
+.loading-overlay {
+  @extend %loading-overlay;
+}
+
+.form-row {
+  @extend %form-row;
+}
+
+.full-width {
+  @extend %full-width;
+}
+
+.form-actions {
+  @extend %form-actions;
+}
+
+.campo-erro {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--app-space-xs);
+  color: var(--app-danger);
+  font-size: 0.82rem;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.periodo-row {
+  .periodo-fields {
+    display: flex;
+    gap: var(--app-space-md);
+  }
+
+  .data-field {
+    flex: 1 1 220px;
+  }
+
+  .hora-field {
+    flex: 0 1 140px;
+  }
+}
+
+.equipamentos-row {
+  .equipamentos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--app-space-sm);
+  }
+
+  .equip-state {
+    @extend %state-message;
+  }
+
+  .equipamentos-grid {
+    @extend %equipment-grid;
+  }
+
+  .equipamento-card {
+    @extend %equipment-card;
+    align-items: center;
+    padding: var(--app-space-sm) var(--app-space-md) !important;
+    cursor: pointer;
+    border: 1px solid var(--mat-sys-outline-variant);
+    transition:
+      border-color 0.2s,
+      background-color 0.2s,
+      transform 0.2s,
+      box-shadow 0.2s;
+
+    &.selecionado {
+      border-color: var(--mat-sys-primary);
+      background-color: var(--app-info-soft-bg);
+    }
+
+    .equipamento-info {
+      display: flex;
+      flex-direction: column;
+      margin-left: var(--app-space-sm);
+      overflow: hidden;
+
+      .equipamento-nome {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--mat-sys-on-surface);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .equipamento-patrimonio {
+        font-size: 0.78rem;
+        color: var(--mat-sys-on-surface-variant);
+      }
+    }
+  }
+
+  .selecao-resumo {
+    margin-top: var(--app-space-sm);
+    font-size: 0.82rem;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

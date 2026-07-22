@@ -1,0 +1,99 @@
+@use '../../../assets/scss/shared-patterns' as *;
+
+
+.table-container {
+  @extend %table-container;
+}
+
+.custom-table {
+  @extend %custom-table;
+}
+
+.fw-500 {
+  @extend %fw-500;
+}
+
+.inline-icon {
+  @extend %inline-icon;
+}
+
+.align-right {
+  @extend %align-right;
+}
+
+.action-btn {
+  @extend %action-btn;
+}
+
+.empty-state {
+  @extend %empty-state;
+}
+
+.regional-tag {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin-top: 2px;
+}
+
+// Seta do botão de expandir gira quando a linha está aberta
+.expand-btn {
+  mat-icon {
+    transition: transform 0.2s ease;
+  }
+
+  &.expanded mat-icon {
+    transform: rotate(180deg);
+  }
+}
+
+// Linha de detalhe some via max-height no container interno,
+// já que <tr> não anima diretamente com transition.
+.detalhe-row {
+  height: 0;
+}
+
+.detalhe-cell {
+  border-bottom: none !important;
+  padding: 0 !important;
+}
+
+.detalhe-container {
+  max-height: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    padding 0.3s ease;
+  padding: 0 var(--app-space-lg);
+
+  &.expandido {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: var(--app-space-md) var(--app-space-lg) var(--app-space-lg);
+  }
+}
+
+.chips-equipamentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--app-space-sm);
+}
+
+.chip-equipamento {
+  @extend %status-chip;
+  background-color: var(--app-info-soft-bg);
+  color: var(--app-info-soft-on);
+  display: inline-flex;
+  align-items: center;
+
+  .inline-icon {
+    margin-right: 4px;
+    color: inherit;
+  }
+}
+
+.sem-equipamentos {
+  color: var(--mat-sys-on-surface-variant);
+  font-style: italic;
+  font-size: 0.85rem;
+}

@@ -18,6 +18,8 @@ import { UpdateEquipamento } from './pages/equipamento/update-equipamento/update
 import { RedirectEquipamento } from './pages/equipamento/redirect-equipamento/redirect-equipamento';
 import { ListaMovimentacao } from './pages/movimentacao/lista-movimentacao/lista-movimentacao';
 import { CadastroMovimentacao } from './pages/movimentacao/cadastro-movimentacao/cadastro-movimentacao';
+import { ListaReserva } from './pages/reserva/lista-reserva/lista-reserva';
+import { CadastroReserva } from './pages/reserva/cadastro-reserva/cadastro-reserva';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
@@ -40,7 +42,9 @@ export const routes: Routes = [
       { path: 'relatorios/disponibilidade', component: SmartlockReport },
 
       {path:'movimentacoes/lista',component:ListaMovimentacao},
-      {path:'movimentacoes/cadastro',component:CadastroMovimentacao}
+      {path:'movimentacoes/cadastro',component:CadastroMovimentacao},
+      {path:'reservas/lista',component:ListaReserva},
+      {path:'reservas/cadastro',component:CadastroReserva}
       
     ],
   },
