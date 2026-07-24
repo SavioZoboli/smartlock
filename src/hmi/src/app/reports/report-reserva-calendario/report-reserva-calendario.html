@@ -28,10 +28,10 @@
           @for (reserva of dia.reservas; track reserva.id) {
             <div
               class="reserva-item"
-              [matTooltip]="reserva.smartlock_apelido + ' · ' + reserva.unidade + ' / ' + reserva.regional"
+              [matTooltip]="reserva.unidade+'/'+reserva.regional"
               (click)="onClickReserva(reserva, $event)">
-              <span class="reserva-hora">{{ reserva.data_hora | date: 'HH:mm' }}</span>
-              <span class="reserva-nome">{{ reserva.smartlock_apelido }}</span>
+              <span class="reserva-hora">{{ reserva.reserva_inicio | date: 'HH:mm' }} - {{ reserva.reserva_fim | date: 'HH:mm' }}</span>
+              <span class="reserva-nome">{{ reserva.smartlock }}</span>
               @if (reserva.equipamentos.length > 0) {
                 <span class="reserva-equip-badge">{{ reserva.equipamentos.length }}</span>
               }

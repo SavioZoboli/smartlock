@@ -2,6 +2,7 @@ import { Op, Sequelize } from "sequelize";
 import { EquipamentoAttributes } from "../models/equipamento.model";
 import {
   Equipamento,
+  Reserva,
   SmartLock,
   Unidade,
   Usuario,
@@ -251,6 +252,45 @@ class EquipamentoService {
       throw e;
     }
   }
+
+  async listDisponibilidadeData(smartlock_id:number,dataInicio: Date, dataFim: Date) {
+    const TOLERANCIA_MS = 30 * 60 * 1000; // 30 min
+
+    const inicioComTolerancia = new Date(dataInicio.getTime() - TOLERANCIA_MS);
+    const fimComTolerancia = new Date(dataFim.getTime() + TOLERANCIA_MS);
+
+    const equipamentos = await Equipamento.findAll({
+      attributes: ["id", "apelido", "patrimonio"],
+      include: [
+        {
+          model: Reserva,
+          as: "reservas",
+          through: { attributes: [] },
+          required: false, // LEFT JOIN -> mantém equipamento mesmo sem reserva
+          where: {
+            reserva_inicio: { [Op.lte]: fimComTolerancia },
+            reserva_fim: { [Op.gte]: inicioComTolerancia },
+          },
+          attributes: ["reserva_inicio", "reserva_fim"],
+          include: [
+            {
+              model: Usuario,
+              as: "usuario",
+              attributes: ["nome", "sobrenome"],
+            },
+          ],
+        },
+      ],
+      order: [["apelido", "ASC"]],
+      where:{smartlock_base_id:smartlock_id,ativo:true}
+    });
+
+    // Mapeia para o formato pedido, com "reserva" já no shape desejado
+    return equipamentos;
+  }
+
+  
+
 }
 
 export default new EquipamentoService();

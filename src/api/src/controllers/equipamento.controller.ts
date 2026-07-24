@@ -164,6 +164,26 @@ class EquipamentoController {
       return res.status(500).json({ message: "Erro interno do Servidor" });
     }
   }
+
+  async listDisponiveisParaReserva(req:Request,res:Response){
+    let {smartlock_id,dataHoraInicio,dataHoraFim} = req.body
+    dataHoraInicio = new Date(dataHoraInicio)
+    dataHoraFim = new Date(dataHoraFim)
+    if(!smartlock_id || !dataHoraInicio || !dataHoraFim){
+      return res.status(400).json({"message":"Faltam dados obrigatórios"})
+    }
+    if(dataHoraInicio.getTime() > dataHoraFim.getTime()){
+      return res.status(400).json({"message":"Data de inicio não pode ser superior à data de fim"})
+    }
+    try{
+      let relatorio = await equipamentoService.listDisponibilidadeData(smartlock_id,dataHoraInicio,dataHoraFim)
+      return res.status(200).json(relatorio)
+    }catch(e){
+      console.log(e)
+      return res.status(500).json({"message":"Erro interno do servidor"})
+    }
+  }
+
 }
 
 export default new EquipamentoController();

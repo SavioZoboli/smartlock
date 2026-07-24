@@ -4,38 +4,49 @@ import { HttpClient } from '@angular/common/http';
 import { Reserva } from '../models/reserva.model';
 import { Observable } from 'rxjs';
 
-export interface ReservaPayload {
-  unidade_id: number;
-  smartlock_id: number;
-  data_hora_emprestimo: string;
-  data_hora_devolucao_prevista: string;
-  equipamentos: number[];
-}
 
 @Injectable({
   providedIn: 'root',
 })
 export class ReservaService {
-    private readonly baseUrl = `${environment.api_url}/api/reservas`;
- 
+  private readonly baseUrl = `${environment.api_url}/api/reserva`;
+
   constructor(private http: HttpClient) {}
- 
-  listAll(): Observable<Reserva[]> {
-    return this.http.get<Reserva[]>(this.baseUrl);
+
+  listAll(): Observable<any> {
+    return this.http.get<any>(this.baseUrl);
   }
- 
+
   getById(id: number): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/${id}`);
   }
- 
-  create(payload: ReservaPayload): Observable<Reserva> {
-    return this.http.post<Reserva>(this.baseUrl, payload);
+
+  create(
+    smartlock_id: number,
+    dt_reserva: Date,
+    dt_devolucao: Date,
+    equipamentos: number[],
+  ): Observable<any> {
+    return this.http.post(
+      this.baseUrl,
+      { smartlock_id, dt_reserva, dt_devolucao, equipamentos },
+      { withCredentials: true },
+    );
   }
- 
-  update(id: number, payload: ReservaPayload): Observable<Reserva> {
-    return this.http.put<Reserva>(`${this.baseUrl}/${id}`, payload);
+
+  update(
+    id: number,
+    dt_reserva: Date,
+    dt_devolucao: Date,
+    equipamentos: number[],
+  ): Observable<any> {
+    return this.http.put(
+      this.baseUrl,
+      { id, dt_reserva, dt_devolucao, equipamentos },
+      { withCredentials: true },
+    );
   }
- 
+
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

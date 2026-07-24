@@ -10,7 +10,7 @@ interface DiaCalendario {
   numero: number;
   foraDoMes: boolean;
   hoje: boolean;
-  reservas: Reserva[];
+  reservas: any[];
 }
 
 @Component({
@@ -20,15 +20,15 @@ interface DiaCalendario {
   styleUrl: './report-reserva-calendario.scss',
 })
 export class ReportReservaCalendario {
-  private _reservas: Reserva[] = [];
+  private _reservas: any = [];
 
   @Input()
-  set reservas(value: Reserva[]) {
+  set reservas(value: any) {
     this._reservas = value ?? [];
     this.gerarDias();
   }
   
-  get reservas(): Reserva[] {
+  get reservas(): any {
     return this._reservas;
   }
 
@@ -63,7 +63,7 @@ export class ReportReservaCalendario {
     this.gerarDias();
   }
 
-  onClickReserva(reserva: Reserva, event: Event): void {
+  onClickReserva(reserva: any, event: Event): void {
     event.stopPropagation();
     this.selecionarReserva.emit(reserva);
   }
@@ -106,7 +106,7 @@ export class ReportReservaCalendario {
 
   private reservasDoDia(dia: Date): Reserva[] {
     return this.reservas
-      .filter((r) => this.mesmoDia(new Date(r.data_hora), dia))
-      .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime());
+      .filter((r:any) => this.mesmoDia(new Date(r.reserva_inicio), dia))
+      .sort((a:any, b:any) => new Date(a.reserva_inicio).getTime() - new Date(b.reserva_inicio).getTime());
   }
 }

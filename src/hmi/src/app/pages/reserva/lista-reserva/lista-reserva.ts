@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -39,13 +39,11 @@ type ModoVisualizacao = 'lista' | 'calendario';
 export class ListaReserva {
   modoVisualizacao: ModoVisualizacao = 'lista';
 
-  private reservas: Reserva[] = [];
-  reservasFiltradas: Reserva[] = [];
+  private reservas = signal<any>([]);
+  reservasFiltradas= signal<any>([]);
 
   filtros: FormGroup = new FormGroup({
     smartlock: new FormControl(''),
-    unidade: new FormControl(''),
-    regional: new FormControl(''),
   });
 
   unidadesDisponiveis: string[] = [];
@@ -66,18 +64,18 @@ export class ListaReserva {
   carregarReservas(): void {
     this.reservaService.listAll().subscribe({
       next: (res) => {
-        this.reservas = res;
-        this.reservasFiltradas = res;
-        this.unidadesDisponiveis = [...new Set(res.map((r) => r.unidade))].sort();
-        this.regionaisDisponiveis = [...new Set(res.map((r) => r.regional))].sort();
+        console.log(res)
+        this.reservas.set(res);
+        this.reservasFiltradas.set(res);
       },
       error: (err) => {
         console.log(err);
-        this.reservas = [];
-        this.reservasFiltradas = [];
+        this.reservas.set([]);
+        this.reservasFiltradas.set([]);
       },
     });
   }
+
 
   // Remove acentos: decompõe caracteres acentuados em base + diacrítico (NFD)
   // e usa uma regex para eliminar os diacríticos (faixa Unicode \u0300-\u036f).
@@ -89,23 +87,11 @@ export class ListaReserva {
   }
 
   private initFiltro(): void {
-    this.filtros.valueChanges.subscribe((valores) => {
-      const { smartlock, unidade, regional } = valores;
-
-      this.reservasFiltradas = this.reservas.filter((r) => {
-        const smartlockConfere = this.normalizarTexto(r.smartlock_apelido).includes(
-          this.normalizarTexto((smartlock ?? '').trim()),
-        );
-        const unidadeConfere = !unidade || r.unidade === unidade;
-        const regionalConfere = !regional || r.regional === regional;
-
-        return smartlockConfere && unidadeConfere && regionalConfere;
-      });
-    });
+   this.filtros.disable()
   }
 
   limparFiltros(): void {
-    this.filtros.reset({ smartlock: '', unidade: '', regional: '' });
+    this.filtros.reset({ smartlock: ''});
   }
 
   // --- AÇÕES DA TELA ---
@@ -114,16 +100,16 @@ export class ListaReserva {
     this.router.navigate(['/reservas/cadastro']);
   }
 
-  onEditarReserva(reserva: Reserva): void {
+  onEditarReserva(reserva: any): void {
     this.router.navigate(['/reservas/editar', reserva.id]);
   }
 
-  onExcluirReserva(reserva: Reserva): void {
+  onExcluirReserva(reserva: any): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
         titulo: 'Excluir reserva',
-        mensagem: `Tem certeza que deseja excluir a reserva do smartlock "${reserva.smartlock_apelido}"? Esta ação não pode ser desfeita.`,
+        mensagem: `Tem certeza que deseja excluir a reserva do smartlock "${reserva.smartlock}"? Esta ação não pode ser desfeita.`,
         textoConfirmar: 'Excluir',
         textoCancelar: 'Cancelar',
       },
@@ -139,8 +125,8 @@ export class ListaReserva {
   private executarExclusao(reserva: Reserva): void {
     this.reservaService.delete(reserva.id).subscribe({
       next: () => {
-        this.reservas = this.reservas.filter((r) => r.id !== reserva.id);
-        this.reservasFiltradas = this.reservasFiltradas.filter((r) => r.id !== reserva.id);
+        this.reservas.set(this.reservas().filter((r:any) => r.id !== reserva.id));
+        this.reservasFiltradas.set(this.reservasFiltradas().filter((r:any) => r.id !== reserva.id));
         this.sns.notificar('Reserva removida com sucesso', 'sucesso');
       },
       error: (err) => {
