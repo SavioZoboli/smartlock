@@ -6,6 +6,8 @@ import Movimentacao from './movimentacao.model'; // Mantendo o padrão .models e
 import LogUsuario from './logUsuario.model';
 import LogSmartlock from './logSmartlock.model';
 import ItensMovimentacao from './itensMovimentacao.model';
+import Reserva from './reserva.model';
+import ItensReserva from './itensReserva.model';
 
 // ============================================================================
 // DEFINIÇÃO DOS RELACIONAMENTOS (ASSOCIATIONS)
@@ -70,6 +72,26 @@ LogUsuario.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'usuario' });
 SmartLock.hasMany(LogSmartlock, { foreignKey: 'smartlock_id', as: 'logsHardware' });
 LogSmartlock.belongsTo(SmartLock, { foreignKey: 'smartlock_id', as: 'smartlock' });
 
+// 6. Relacionamento das reservas
+Reserva.belongsTo(Usuario,{foreignKey:'usuario_id',as:'usuario'})
+Usuario.hasMany(Reserva,{foreignKey:'usuario_id',as:'reserva'})
+
+Reserva.belongsTo(SmartLock,{foreignKey:'smartlock_id',as:'smartlock_origem'})
+SmartLock.hasMany(Reserva,{foreignKey:'smartlock_id',as:'smartlock_reservado'})
+
+Reserva.belongsToMany(Equipamento, {
+  through: ItensReserva,
+  foreignKey: 'reserva_id',
+  otherKey: 'equipamento_id',
+  as: 'equipamentos',
+});
+
+Equipamento.belongsToMany(Reserva, {
+  through: ItensReserva,
+  foreignKey: 'equipamento_id',
+  otherKey: 'reserva_id',
+  as: 'reservas',
+});
 
 // ============================================================================
 // EXPORTAÇÃO CENTRALIZADA
@@ -82,5 +104,7 @@ export {
   Movimentacao,
   LogUsuario,
   LogSmartlock,
-  ItensMovimentacao
+  ItensMovimentacao,
+  Reserva,
+  ItensReserva
 };
