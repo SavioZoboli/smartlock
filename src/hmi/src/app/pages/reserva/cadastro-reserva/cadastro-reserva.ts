@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -45,7 +45,6 @@ import { SystemNotificationService } from '../../../services/system-notification
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    NgxMaskDirective,
   ],
   providers: [provideNgxMask(), provideNativeDateAdapter()],
   templateUrl: './cadastro-reserva.html',
@@ -57,10 +56,9 @@ export class CadastroReserva implements OnInit {
   unidades: Unidade[] = [];
   filteredUnidades!: Observable<Unidade[]>;
 
-  private smartlocks: Smartlock[] = [];
-  smartlocksDaUnidade: Smartlock[] = [];
+  smartlocks: Smartlock[] = [];
 
-  equipamentosDisponiveis: any = [];
+  equipamentosDisponiveis = signal<any>([]);
   equipamentosSelecionados = new Set<number>();
 
   reserva_id!: number | null;
@@ -68,7 +66,7 @@ export class CadastroReserva implements OnInit {
   carregandoEquipamentos = false;
   tentouSalvarSemEquipamento = false;
 
-  private readonly horaPattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  private readonly horaPattern = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 
   constructor(
     private fb: FormBuilder,
@@ -105,11 +103,11 @@ export class CadastroReserva implements OnInit {
     this.isLoading = true;
     this.reservaForm.disable();
 
-    await this.carregarUnidadesESmartlocks();
+    await this.carregarUnidades();
 
     this.initAutocompleteFilter();
     this.initReacaoUnidade();
-    this.initReacaoSmartlock();
+    this.initReacaoEquipamentos();
 
     if (this.reserva_id) {
       await this.carregarDadosReserva();
@@ -125,23 +123,27 @@ export class CadastroReserva implements OnInit {
     this.cdr.detectChanges();
   }
 
-  private carregarUnidadesESmartlocks(): Promise<void> {
-    return new Promise((resolve) => {
-      forkJoin({
-        unidades: this.unidadeService.listAll(),
-        smartlocks: this.smartlockService.listAll(),
-      }).subscribe({
-        next: ({ unidades, smartlocks }) => {
-          this.unidades = unidades;
-          this.smartlocks = smartlocks;
-          resolve();
-        },
-        error: (err) => {
-          console.log(err);
-          this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
-          resolve();
-        },
-      });
+  private carregarUnidades() {
+    this.unidadeService.listAll().subscribe({
+      next: (res) => {
+        this.unidades = res;
+      },
+      error: (err) => {
+        console.log(err);
+        this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
+      },
+    });
+  }
+
+  private carregarSmartlocks(unidade_id: number) {
+    this.smartlockService.listByUnidade(unidade_id).subscribe({
+      next: (res) => {
+        this.smartlocks = res;
+      },
+      error: (err) => {
+        console.log(err);
+        this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
+      },
     });
   }
 
@@ -171,10 +173,10 @@ export class CadastroReserva implements OnInit {
       const smartlockControl = this.reservaForm.get('smartlock')!;
 
       if (unidade && typeof unidade !== 'string') {
-        this.smartlocksDaUnidade = this.smartlocks.filter((s) => s.unidade_id === unidade.id);
+        this.smartlocks = [];
+        this.carregarSmartlocks(unidade.id);
         smartlockControl.enable();
       } else {
-        this.smartlocksDaUnidade = [];
         smartlockControl.disable();
       }
 
@@ -183,29 +185,32 @@ export class CadastroReserva implements OnInit {
     });
   }
 
-  private initReacaoSmartlock(): void {
-    this.reservaForm.get('smartlock')!.valueChanges.subscribe((smartlock: Smartlock | '') => {
-      this.limparEquipamentos();
-
-      if (smartlock) {
-        this.carregarEquipamentosDisponiveis(smartlock.id);
+  private initReacaoEquipamentos(): void {
+    this.reservaForm.valueChanges.subscribe((val: any) => {
+      if (!this.reservaForm.valid) {
+        return;
       }
+      this.carregarEquipamentosDisponiveis();
     });
   }
 
   private limparEquipamentos(): void {
-    this.equipamentosDisponiveis = [];
+    this.equipamentosDisponiveis.set([]);
     this.equipamentosSelecionados.clear();
   }
 
-  private carregarEquipamentosDisponiveis(smartlockId: number): void {
+  private carregarEquipamentosDisponiveis(): void {
     this.carregandoEquipamentos = true;
 
-    // O backend já retorna só os equipamentos livres nesse smartlock;
-    // se o período (data/hora) também entrar no filtro, passe aqui.
-    this.equipamentoService.listDisponiveis(smartlockId).subscribe({
+    let { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
+      this.reservaForm.value;
+
+    let dt_reserva = this.combinarDataHora(data_emprestimo, hora_emprestimo);
+    let dt_devolucao = this.combinarDataHora(data_devolucao, hora_devolucao);
+
+    this.equipamentoService.buscarDisponveisData(smartlock.id, dt_reserva, dt_devolucao).subscribe({
       next: (equipamentos) => {
-        this.equipamentosDisponiveis = equipamentos;
+        this.equipamentosDisponiveis.set(equipamentos);
         this.carregandoEquipamentos = false;
       },
       error: (err) => {
@@ -229,7 +234,7 @@ export class CadastroReserva implements OnInit {
   }
 
   selecionarTodos(): void {
-    this.equipamentosDisponiveis.forEach((e:any) => this.equipamentosSelecionados.add(e.id));
+    this.equipamentosDisponiveis().forEach((e: any) => this.equipamentosSelecionados.add(e.id));
   }
 
   limparSelecao(): void {
@@ -266,7 +271,9 @@ export class CadastroReserva implements OnInit {
     const inicio = this.combinarDataHora(dataEmprestimo, horaEmprestimo);
     const fim = this.combinarDataHora(dataDevolucao, horaDevolucao);
 
-    return fim > inicio ? null : { periodoInvalido: true };
+    const agora = new Date();
+
+    return fim > inicio ? null : fim < agora || inicio < agora ? null : { periodoInvalido: true };
   };
 
   private combinarDataHora(data: Date, hora: string): Date {
@@ -302,7 +309,7 @@ export class CadastroReserva implements OnInit {
       // (popula smartlocksDaUnidade); só depois disso dá pra selecionar o
       // smartlock e marcar os equipamentos já reservados.
       setTimeout(() => {
-        const smartlock = this.smartlocksDaUnidade.find((s) => s.id === dados.smartlock_id);
+        const smartlock = this.smartlocks.find((s) => s.id === dados.smartlock_id);
         this.reservaForm.get('smartlock')?.setValue(smartlock ?? '');
 
         setTimeout(() => {
@@ -319,23 +326,28 @@ export class CadastroReserva implements OnInit {
     this.tentouSalvarSemEquipamento = this.nenhumEquipamentoSelecionado;
 
     if (this.reservaForm.valid && !this.nenhumEquipamentoSelecionado) {
-      const { unidade, smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
-        this.reservaForm.value;
+      const {
+        smartlock,
+        data_emprestimo,
+        hora_emprestimo,
+        data_devolucao,
+        hora_devolucao,
+      } = this.reservaForm.value;
 
-      const payload = {
-        unidade_id: unidade.id,
-        smartlock_id: smartlock.id,
-        data_hora_emprestimo: this.combinarDataHora(data_emprestimo, hora_emprestimo).toISOString(),
-        data_hora_devolucao_prevista: this.combinarDataHora(data_devolucao, hora_devolucao).toISOString(),
-        equipamentos: Array.from(this.equipamentosSelecionados),
-      };
+      const dh_emprestimo = this.combinarDataHora(data_emprestimo, hora_emprestimo)
+        const dh_devolucao = this.combinarDataHora(
+          data_devolucao,
+          hora_devolucao,
+        )
+
+      const equipamentos = Array.from(this.equipamentosSelecionados)
 
       this.isLoading = true;
       this.reservaForm.disable();
 
       const requisicao$ = this.reserva_id
-        ? this.reservaService.update(this.reserva_id, payload)
-        : this.reservaService.create(payload);
+        ? this.reservaService.update(this.reserva_id,dh_emprestimo,dh_devolucao,equipamentos)
+        : this.reservaService.create(smartlock.id,dh_emprestimo,dh_devolucao,equipamentos);
 
       requisicao$.subscribe({
         next: () => {

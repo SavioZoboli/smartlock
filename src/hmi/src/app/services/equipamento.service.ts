@@ -54,12 +54,7 @@ export class EquipamentoService {
     return this.http.get<Equipamento[]>(`${this.api_url}/relatorio/disponibilidade/${smartlock_id}`,{withCredentials:true})
   }
 
-   listDisponiveis(smartlockId: number, dataHoraInicio?: string, dataHoraFim?: string): Observable<Equipamento[]> {
-    let params = new HttpParams().set('smartlock_id', smartlockId);
- 
-    if (dataHoraInicio) params = params.set('data_hora_inicio', dataHoraInicio);
-    if (dataHoraFim) params = params.set('data_hora_fim', dataHoraFim);
- 
-    return this.http.get<Equipamento[]>(`${this.api_url}/disponiveis`, { params });
+   buscarDisponveisData(smartlock_id: number, dataHoraInicio: Date, dataHoraFim: Date): Observable<any> { 
+    return this.http.post(`${this.api_url}/disponiveis-para-reserva`, { smartlock_id,dataHoraInicio,dataHoraFim },{withCredentials:true});
   }
 }

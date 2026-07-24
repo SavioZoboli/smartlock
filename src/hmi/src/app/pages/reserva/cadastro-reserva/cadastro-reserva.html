@@ -16,131 +16,143 @@
 
     <form class="cadastro-form" [formGroup]="reservaForm" (ngSubmit)="salvar()">
 
-      <div class="form-row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-          <mat-label>Unidade</mat-label>
-          <input type="text" matInput formControlName="unidade" [matAutocomplete]="autoUnidade">
-          <mat-icon matPrefix>business</mat-icon>
-          <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="displayUnidade">
-            @for (unidade of filteredUnidades | async; track unidade) {
-              <mat-option [value]="unidade">{{ unidade.nome }} / {{ unidade.regional }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-      </div>
+      <div class="form-grid">
 
-      <div class="form-row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-          <mat-label>Smartlock</mat-label>
-          <mat-select formControlName="smartlock">
-            @for (smartlock of smartlocksDaUnidade; track smartlock.id) {
-              <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
-            }
-          </mat-select>
-          <mat-icon matPrefix>lock</mat-icon>
-          @if (!reservaForm.get('unidade')?.value) {
-            <mat-hint>Selecione uma unidade para ver os smartlocks</mat-hint>
-          }
-        </mat-form-field>
-      </div>
+        <div class="form-col form-col-dados">
 
-      <div class="form-row periodo-row">
-        <div class="section-label">Empréstimo</div>
-        <div class="periodo-fields">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="data-field">
-            <mat-label>Data</mat-label>
-            <input matInput [matDatepicker]="pickerEmprestimo" formControlName="data_emprestimo">
-            <mat-datepicker-toggle matIconSuffix [for]="pickerEmprestimo"></mat-datepicker-toggle>
-            <mat-datepicker #pickerEmprestimo></mat-datepicker>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
-            <mat-label>Hora</mat-label>
-            <input matInput formControlName="hora_emprestimo" mask="00:00" placeholder="HH:mm">
-            <mat-icon matPrefix>schedule</mat-icon>
-          </mat-form-field>
-        </div>
-      </div>
-
-      <div class="form-row periodo-row">
-        <div class="section-label">Devolução prevista</div>
-        <div class="periodo-fields">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="data-field">
-            <mat-label>Data</mat-label>
-            <input matInput [matDatepicker]="pickerDevolucao" formControlName="data_devolucao">
-            <mat-datepicker-toggle matIconSuffix [for]="pickerDevolucao"></mat-datepicker-toggle>
-            <mat-datepicker #pickerDevolucao></mat-datepicker>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
-            <mat-label>Hora</mat-label>
-            <input matInput formControlName="hora_devolucao" mask="00:00" placeholder="HH:mm">
-            <mat-icon matPrefix>schedule</mat-icon>
-          </mat-form-field>
-        </div>
-
-        @if (reservaForm.hasError('periodoInvalido') && reservaForm.get('hora_devolucao')?.touched) {
-          <div class="campo-erro">
-            <mat-icon>error_outline</mat-icon> A devolução deve ser depois do empréstimo.
+          <div class="form-row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+              <mat-label>Unidade</mat-label>
+              <input type="text" matInput formControlName="unidade" [matAutocomplete]="autoUnidade">
+              <mat-icon matPrefix>business</mat-icon>
+              <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="displayUnidade">
+                @for (unidade of filteredUnidades | async; track unidade) {
+                  <mat-option [value]="unidade">{{ unidade.nome }} / {{ unidade.regional }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
           </div>
-        }
-      </div>
 
-      <div class="form-row equipamentos-row">
-        <div class="equipamentos-header">
-          <div class="section-label">Equipamentos disponíveis</div>
+          <div class="form-row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+              <mat-label>Smartlock</mat-label>
+              <mat-select formControlName="smartlock">
+                @for (smartlock of smartlocks; track smartlock.id) {
+                  <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
+                }
+              </mat-select>
+              <mat-icon matPrefix>lock</mat-icon>
+              @if (!reservaForm.get('unidade')?.value) {
+                <mat-hint>Selecione uma unidade para ver os smartlocks</mat-hint>
+              }
+            </mat-form-field>
+          </div>
 
-          @if (equipamentosDisponiveis.length > 0) {
-            <button mat-button type="button" (click)="todosSelecionados ? limparSelecao() : selecionarTodos()">
-              {{ todosSelecionados ? 'Limpar seleção' : 'Selecionar todos' }}
-            </button>
-          }
-        </div>
+          <div class="form-row periodo-row">
+            <div class="section-label">Empréstimo</div>
+            <div class="periodo-fields">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="data-field">
+                <mat-label>Data</mat-label>
+                <input matInput [matDatepicker]="pickerEmprestimo" formControlName="data_emprestimo">
+                <mat-datepicker-toggle matIconSuffix [for]="pickerEmprestimo"></mat-datepicker-toggle>
+                <mat-datepicker #pickerEmprestimo></mat-datepicker>
+              </mat-form-field>
 
-        @if (carregandoEquipamentos) {
-          <div class="equip-state">
-            <mat-spinner diameter="28"></mat-spinner>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
+                <mat-label>Hora</mat-label>
+                <input matInput formControlName="hora_emprestimo" placeholder="HH:mm">
+                <mat-icon matPrefix>schedule</mat-icon>
+              </mat-form-field>
+            </div>
           </div>
-        } @else if (!reservaForm.get('smartlock')?.value) {
-          <div class="equip-state">
-            <mat-icon>lock</mat-icon>
-            Selecione um smartlock para ver os equipamentos disponíveis
-          </div>
-        } @else if (equipamentosDisponiveis.length === 0) {
-          <div class="equip-state">
-            <mat-icon>inventory_2</mat-icon>
-            Nenhum equipamento disponível neste smartlock
-          </div>
-        } @else {
-          <div class="equipamentos-grid">
-            @for (equipamento of equipamentosDisponiveis; track equipamento.id) {
-              <div
-                class="equipamento-card"
-                [class.selecionado]="isSelecionado(equipamento)"
-                (click)="toggleEquipamento(equipamento)">
-                <mat-checkbox
-                  [checked]="isSelecionado(equipamento)"
-                  (click)="$event.stopPropagation()"
-                  (change)="toggleEquipamento(equipamento)">
-                </mat-checkbox>
-                <div class="equipamento-info">
-                  <span class="equipamento-nome">{{ equipamento.nome }}</span>
-                  <span class="equipamento-patrimonio">Patrimônio: {{ equipamento.patrimonio }}</span>
-                </div>
+
+          <div class="form-row periodo-row">
+            <div class="section-label">Devolução prevista</div>
+            <div class="periodo-fields">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="data-field">
+                <mat-label>Data</mat-label>
+                <input matInput [matDatepicker]="pickerDevolucao" formControlName="data_devolucao">
+                <mat-datepicker-toggle matIconSuffix [for]="pickerDevolucao"></mat-datepicker-toggle>
+                <mat-datepicker #pickerDevolucao></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
+                <mat-label>Hora</mat-label>
+                <input matInput formControlName="hora_devolucao" placeholder="HH:mm">
+                <mat-icon matPrefix>schedule</mat-icon>
+              </mat-form-field>
+            </div>
+
+            @if (reservaForm.hasError('periodoInvalido') && reservaForm.get('hora_devolucao')?.touched) {
+              <div class="campo-erro">
+                <mat-icon>error_outline</mat-icon> A devolução deve ser depois do empréstimo.
               </div>
             }
           </div>
 
-          <div class="selecao-resumo">
-            {{ equipamentosSelecionados.size }} de {{ equipamentosDisponiveis.length }} equipamento(s) selecionado(s)
-          </div>
-        }
+        </div>
 
-        @if (tentouSalvarSemEquipamento && nenhumEquipamentoSelecionado) {
-          <div class="campo-erro">
-            <mat-icon>error_outline</mat-icon> Selecione ao menos um equipamento.
+        <div class="form-col form-col-equipamentos">
+
+          <div class="form-row equipamentos-row">
+            <div class="equipamentos-header">
+              <div class="section-label">Equipamentos disponíveis</div>
+
+              @if (equipamentosDisponiveis.length > 0) {
+                <button mat-button type="button" (click)="todosSelecionados ? limparSelecao() : selecionarTodos()">
+                  {{ todosSelecionados ? 'Limpar seleção' : 'Selecionar todos' }}
+                </button>
+              }
+            </div>
+
+            @if (carregandoEquipamentos) {
+              <div class="equip-state">
+                <mat-spinner diameter="28"></mat-spinner>
+              </div>
+            } @else if (!reservaForm.get('smartlock')?.value) {
+              <div class="equip-state">
+                <mat-icon>lock</mat-icon>
+                Selecione um smartlock para ver os equipamentos disponíveis
+              </div>
+            } @else if (equipamentosDisponiveis().length === 0) {
+              <div class="equip-state">
+                <mat-icon>inventory_2</mat-icon>
+                Nenhum equipamento disponível neste smartlock
+              </div>
+            } @else {
+              <div class="equipamentos-grid">
+                @for (equipamento of equipamentosDisponiveis(); track equipamento.id) {
+                  <div
+                    class="equipamento-card"
+                    [class.selecionado]="isSelecionado(equipamento)"
+                    (click)="toggleEquipamento(equipamento)">
+                    <mat-checkbox
+                      [checked]="isSelecionado(equipamento)"
+                      (click)="$event.stopPropagation()"
+                      (change)="toggleEquipamento(equipamento)">
+                    </mat-checkbox>
+                    <div class="equipamento-info">
+                      <span class="equipamento-nome">{{ equipamento.apelido }}</span>
+                      <span class="equipamento-patrimonio">Patrimônio: {{ equipamento.patrimonio }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <div class="selecao-resumo">
+                {{ equipamentosSelecionados.size }} de {{ equipamentosDisponiveis().length }} equipamento(s) selecionado(s)
+              </div>
+            }
+
+            @if (tentouSalvarSemEquipamento && nenhumEquipamentoSelecionado) {
+              <div class="campo-erro">
+                <mat-icon>error_outline</mat-icon> Selecione ao menos um equipamento.
+              </div>
+            }
           </div>
-        }
+
+        </div>
+
       </div>
 
       <div class="form-actions">

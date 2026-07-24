@@ -13,6 +13,7 @@ import { firstValueFrom } from 'rxjs';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from '../interceptors/auth.interceptor';
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,6 +27,7 @@ export const appConfig: ApplicationConfig = {
       return firstValueFrom(authService.verificarSessao()).catch(() => false);
     }),
     provideHttpClient(withInterceptors([authInterceptor])),
-    { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-rounded' } }
+    { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-rounded' } },
+    {provide:MAT_DATE_LOCALE,useValue:'PT-BR'}
   ],
 };
