@@ -7,27 +7,30 @@
   </div>
 
   <div class="form-container">
-
-    @if (isLoading) {
+    @if (isLoading()) {
       <div class="loading-overlay">
         <mat-spinner diameter="50"></mat-spinner>
       </div>
     }
 
     <form class="cadastro-form" [formGroup]="reservaForm" (ngSubmit)="salvar()">
-
       <div class="form-grid">
-
         <div class="form-col form-col-dados">
-
           <div class="form-row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
               <mat-label>Unidade</mat-label>
-              <input type="text" matInput formControlName="unidade" [matAutocomplete]="autoUnidade">
+              <input
+                type="text"
+                matInput
+                formControlName="unidade"
+                [matAutocomplete]="autoUnidade"
+              />
               <mat-icon matPrefix>business</mat-icon>
               <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="displayUnidade">
                 @for (unidade of filteredUnidades | async; track unidade) {
-                  <mat-option [value]="unidade">{{ unidade.nome }} / {{ unidade.regional }}</mat-option>
+                  <mat-option [value]="unidade"
+                    >{{ unidade.nome }} / {{ unidade.regional }}</mat-option
+                  >
                 }
               </mat-autocomplete>
             </mat-form-field>
@@ -53,14 +56,21 @@
             <div class="periodo-fields">
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="data-field">
                 <mat-label>Data</mat-label>
-                <input matInput [matDatepicker]="pickerEmprestimo" formControlName="data_emprestimo">
-                <mat-datepicker-toggle matIconSuffix [for]="pickerEmprestimo"></mat-datepicker-toggle>
+                <input
+                  matInput
+                  [matDatepicker]="pickerEmprestimo"
+                  formControlName="data_emprestimo"
+                />
+                <mat-datepicker-toggle
+                  matIconSuffix
+                  [for]="pickerEmprestimo"
+                ></mat-datepicker-toggle>
                 <mat-datepicker #pickerEmprestimo></mat-datepicker>
               </mat-form-field>
 
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
                 <mat-label>Hora</mat-label>
-                <input matInput formControlName="hora_emprestimo" placeholder="HH:mm">
+                <input matInput formControlName="hora_emprestimo" placeholder="HH:mm" />
                 <mat-icon matPrefix>schedule</mat-icon>
               </mat-form-field>
             </div>
@@ -71,41 +81,52 @@
             <div class="periodo-fields">
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="data-field">
                 <mat-label>Data</mat-label>
-                <input matInput [matDatepicker]="pickerDevolucao" formControlName="data_devolucao">
-                <mat-datepicker-toggle matIconSuffix [for]="pickerDevolucao"></mat-datepicker-toggle>
+                <input
+                  matInput
+                  [matDatepicker]="pickerDevolucao"
+                  formControlName="data_devolucao"
+                />
+                <mat-datepicker-toggle
+                  matIconSuffix
+                  [for]="pickerDevolucao"
+                ></mat-datepicker-toggle>
                 <mat-datepicker #pickerDevolucao></mat-datepicker>
               </mat-form-field>
 
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
                 <mat-label>Hora</mat-label>
-                <input matInput formControlName="hora_devolucao" placeholder="HH:mm">
+                <input matInput formControlName="hora_devolucao" placeholder="HH:mm" />
                 <mat-icon matPrefix>schedule</mat-icon>
               </mat-form-field>
             </div>
 
-            @if (reservaForm.hasError('periodoInvalido') && reservaForm.get('hora_devolucao')?.touched) {
+            @if (
+              reservaForm.hasError('periodoInvalido') && reservaForm.get('hora_devolucao')?.touched
+            ) {
               <div class="campo-erro">
                 <mat-icon>error_outline</mat-icon> A devolução deve ser depois do empréstimo.
               </div>
             }
           </div>
-
         </div>
 
         <div class="form-col form-col-equipamentos">
-
           <div class="form-row equipamentos-row">
             <div class="equipamentos-header">
               <div class="section-label">Equipamentos disponíveis</div>
 
-              @if (equipamentosDisponiveis.length > 0) {
-                <button mat-button type="button" (click)="todosSelecionados ? limparSelecao() : selecionarTodos()">
+              @if (equipamentosDisponiveis().length > 0) {
+                <button
+                  mat-button
+                  type="button"
+                  (click)="todosSelecionados ? limparSelecao() : selecionarTodos()"
+                >
                   {{ todosSelecionados ? 'Limpar seleção' : 'Selecionar todos' }}
                 </button>
               }
             </div>
 
-            @if (carregandoEquipamentos) {
+            @if (carregandoEquipamentos()) {
               <div class="equip-state">
                 <mat-spinner diameter="28"></mat-spinner>
               </div>
@@ -125,22 +146,40 @@
                   <div
                     class="equipamento-card"
                     [class.selecionado]="isSelecionado(equipamento)"
-                    (click)="toggleEquipamento(equipamento)">
+                    [class.reservado]="isReservadoPorOutro(equipamento)"
+                    (click)="toggleEquipamento(equipamento)"
+                  >
                     <mat-checkbox
                       [checked]="isSelecionado(equipamento)"
                       (click)="$event.stopPropagation()"
-                      (change)="toggleEquipamento(equipamento)">
+                      (change)="toggleEquipamento(equipamento)"
+                      [disabled]="isReservadoPorOutro(equipamento)"
+                    >
                     </mat-checkbox>
                     <div class="equipamento-info">
                       <span class="equipamento-nome">{{ equipamento.apelido }}</span>
-                      <span class="equipamento-patrimonio">Patrimônio: {{ equipamento.patrimonio }}</span>
+                      <span class="equipamento-patrimonio"
+                        >Patrimônio: {{ equipamento.patrimonio }}</span
+                      >
+                      @if (equipamento.reservas.length > 0) {
+                        @for (reserva of equipamento.reservas; track reserva) {
+                          <span class="info-reserva">
+                            {{ reserva.reserva_inicio.getTime() | date: 'HH:mm' }}
+                            -
+                            {{ reserva.reserva_fim.getTime() | date: 'HH:mm' }}
+                            :
+                            {{ reserva.usuario.nome }} {{ reserva.usuario.sobrenome }}
+                          </span>
+                        }
+                      }
                     </div>
                   </div>
                 }
               </div>
 
               <div class="selecao-resumo">
-                {{ equipamentosSelecionados.size }} de {{ equipamentosDisponiveis().length }} equipamento(s) selecionado(s)
+                {{ equipamentosSelecionados.size }} de
+                {{ equipamentosDisponiveis().length }} equipamento(s) selecionado(s)
               </div>
             }
 
@@ -150,14 +189,17 @@
               </div>
             }
           </div>
-
         </div>
-
       </div>
 
       <div class="form-actions">
         <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="reservaForm.invalid || nenhumEquipamentoSelecionado">
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="reservaForm.invalid || nenhumEquipamentoSelecionado"
+        >
           {{ reserva_id ? 'Salvar' : 'Cadastrar' }} Reserva
         </button>
       </div>

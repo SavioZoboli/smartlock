@@ -28,26 +28,6 @@
       <mat-icon matPrefix>search</mat-icon>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
-      <mat-label>Unidade</mat-label>
-      <mat-select formControlName="unidade">
-        <mat-option value="">Todas</mat-option>
-        @for (unidade of unidadesDisponiveis; track unidade) {
-          <mat-option [value]="unidade">{{ unidade }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filtro-select">
-      <mat-label>Regional</mat-label>
-      <mat-select formControlName="regional">
-        <mat-option value="">Todas</mat-option>
-        @for (regional of regionaisDisponiveis; track regional) {
-          <mat-option [value]="regional">{{ regional }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
     <button mat-stroked-button type="button" class="btn-limpar" (click)="limparFiltros()">
       <mat-icon>filter_alt_off</mat-icon> Limpar
     </button>

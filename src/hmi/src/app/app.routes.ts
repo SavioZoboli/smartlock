@@ -44,7 +44,8 @@ export const routes: Routes = [
       {path:'movimentacoes/lista',component:ListaMovimentacao},
       {path:'movimentacoes/cadastro',component:CadastroMovimentacao},
       {path:'reservas/lista',component:ListaReserva},
-      {path:'reservas/cadastro',component:CadastroReserva}
+      {path:'reservas/cadastro',component:CadastroReserva},
+      {path:'reservas/editar/:id',component:CadastroReserva}
       
     ],
   },

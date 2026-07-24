@@ -1,4 +1,5 @@
 @use '../../../assets/scss/shared-patterns' as *;
+@use '../../../assets/scss/tokens' as *;
 
 
 .table-container {
@@ -89,6 +90,18 @@
   .inline-icon {
     margin-right: 4px;
     color: inherit;
+  }
+}
+
+.chip-situacao{
+  @extend %status-chip;
+  &.pendente{
+    background-color: var(--app-warning-soft-bg);
+    color:var(--app-warning-soft-on);
+  }
+  &.agendado{
+    background-color: var(--app-info-soft-bg);
+    color:var(--app-info-soft-on);
   }
 }
 

@@ -61,9 +61,11 @@ export class CadastroReserva implements OnInit {
   equipamentosDisponiveis = signal<any>([]);
   equipamentosSelecionados = new Set<number>();
 
+  equipamentosDaReservaAtual: number[] = [];
+
   reserva_id!: number | null;
-  isLoading = false;
-  carregandoEquipamentos = false;
+  isLoading = signal(false);
+  carregandoEquipamentos = signal(false);
   tentouSalvarSemEquipamento = false;
 
   private readonly horaPattern = /^([01]?\d|2[0-3]):([0-5]\d)$/;
@@ -100,7 +102,7 @@ export class CadastroReserva implements OnInit {
   }
 
   private async inicializarDados(): Promise<void> {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.reservaForm.disable();
 
     await this.carregarUnidades();
@@ -116,7 +118,7 @@ export class CadastroReserva implements OnInit {
       this.reservaForm.get('smartlock')?.disable();
     }
 
-    this.isLoading = false;
+    this.isLoading.set(false);
 
     // Mesmo motivo do cadastro-smartlock: patchValue dispara valueChanges
     // assincronamente e pode gerar NG0100 sem essa checagem manual.
@@ -135,16 +137,13 @@ export class CadastroReserva implements OnInit {
     });
   }
 
-  private carregarSmartlocks(unidade_id: number) {
-    this.smartlockService.listByUnidade(unidade_id).subscribe({
-      next: (res) => {
-        this.smartlocks = res;
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
-      },
-    });
+  private async carregarSmartlocks(unidade_id: number): Promise<void> {
+    try {
+      this.smartlocks = await firstValueFrom(this.smartlockService.listByUnidade(unidade_id));
+    } catch (err) {
+      console.log(err);
+      this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
+    }
   }
 
   private initAutocompleteFilter(): void {
@@ -194,13 +193,20 @@ export class CadastroReserva implements OnInit {
     });
   }
 
+  isReservadoPorOutro(equipamento: any): boolean {
+    return (
+      equipamento.reservas.length > 0 && !this.equipamentosDaReservaAtual.includes(equipamento.id)
+    );
+  }
+
   private limparEquipamentos(): void {
     this.equipamentosDisponiveis.set([]);
     this.equipamentosSelecionados.clear();
   }
 
-  private carregarEquipamentosDisponiveis(): void {
-    this.carregandoEquipamentos = true;
+  private async carregarEquipamentosDisponiveis(): Promise<void> {
+    this.carregandoEquipamentos.set(true);
+    this.limparEquipamentos();
 
     let { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
       this.reservaForm.value;
@@ -208,20 +214,36 @@ export class CadastroReserva implements OnInit {
     let dt_reserva = this.combinarDataHora(data_emprestimo, hora_emprestimo);
     let dt_devolucao = this.combinarDataHora(data_devolucao, hora_devolucao);
 
-    this.equipamentoService.buscarDisponveisData(smartlock.id, dt_reserva, dt_devolucao).subscribe({
-      next: (equipamentos) => {
-        this.equipamentosDisponiveis.set(equipamentos);
-        this.carregandoEquipamentos = false;
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar('Erro ao carregar equipamentos disponíveis.', 'erro');
-        this.carregandoEquipamentos = false;
-      },
-    });
+    try {
+      let equipamentos = await firstValueFrom(
+        this.equipamentoService.buscarDisponveisData(smartlock.id, dt_reserva, dt_devolucao),
+      );
+
+      equipamentos = equipamentos.map((e: any) => {
+        if (e.reservas.length == 0) {
+          return e;
+        }
+        return {
+          ...e,
+          reservas: e.reservas.map((r: any) => ({
+            ...r,
+            reserva_inicio: new Date(r.reserva_inicio),
+            reserva_fim: new Date(r.reserva_fim),
+          })),
+        };
+      });
+
+      this.equipamentosDisponiveis.set(equipamentos);
+    } catch (err) {
+      console.log(err);
+      this.sns.notificar('Erro ao carregar equipamentos disponíveis.', 'erro');
+    } finally {
+      this.carregandoEquipamentos.set(false);
+    }
   }
 
   toggleEquipamento(equipamento: any): void {
+    if (this.isReservadoPorOutro(equipamento)) return;
     if (this.equipamentosSelecionados.has(equipamento.id)) {
       this.equipamentosSelecionados.delete(equipamento.id);
     } else {
@@ -234,7 +256,10 @@ export class CadastroReserva implements OnInit {
   }
 
   selecionarTodos(): void {
-    this.equipamentosDisponiveis().forEach((e: any) => this.equipamentosSelecionados.add(e.id));
+    this.equipamentosDisponiveis().forEach((e: any) => {
+      if (this.isReservadoPorOutro(e)) return;
+      this.equipamentosSelecionados.add(e.id);
+    });
   }
 
   limparSelecao(): void {
@@ -242,10 +267,11 @@ export class CadastroReserva implements OnInit {
   }
 
   get todosSelecionados(): boolean {
-    return (
-      this.equipamentosDisponiveis.length > 0 &&
-      this.equipamentosSelecionados.size === this.equipamentosDisponiveis.length
+    const selecionaveis = this.equipamentosDisponiveis().filter(
+      (e: any) => !this.isReservadoPorOutro(e),
     );
+
+    return selecionaveis.length > 0 && this.equipamentosSelecionados.size === selecionaveis.length;
   }
 
   get nenhumEquipamentoSelecionado(): boolean {
@@ -292,30 +318,41 @@ export class CadastroReserva implements OnInit {
       const dados = await firstValueFrom(this.reservaService.getById(this.reserva_id!));
 
       const unidade = this.unidades.find((u) => u.id === dados.unidade_id);
-      this.reservaForm.enable();
+      this.reservaForm.enable({ emitEvent: false });
 
       const dataEmprestimo = new Date(dados.data_hora_emprestimo);
       const dataDevolucao = new Date(dados.data_hora_devolucao_prevista);
 
-      this.reservaForm.patchValue({
-        unidade,
-        data_emprestimo: dataEmprestimo,
-        hora_emprestimo: this.formatarHora(dataEmprestimo),
-        data_devolucao: dataDevolucao,
-        hora_devolucao: this.formatarHora(dataDevolucao),
-      });
+      // Guarda os equipamentos já vinculados a ESTA reserva, para diferenciar
+      // de equipamentos reservados por outras reservas.
+      this.equipamentosDaReservaAtual = (dados.equipamentos ?? []).map((e: any) => e.id);
 
-      // O patchValue de "unidade" dispara initReacaoUnidade de forma assíncrona
-      // (popula smartlocksDaUnidade); só depois disso dá pra selecionar o
-      // smartlock e marcar os equipamentos já reservados.
-      setTimeout(() => {
-        const smartlock = this.smartlocks.find((s) => s.id === dados.smartlock_id);
-        this.reservaForm.get('smartlock')?.setValue(smartlock ?? '');
+      // emitEvent:false em tudo abaixo -> impede que initReacaoUnidade/
+      // initReacaoEquipamentos disparem sozinhos com dados parciais.
+      this.reservaForm.patchValue(
+        {
+          unidade,
+          data_emprestimo: dataEmprestimo,
+          hora_emprestimo: this.formatarHora(dataEmprestimo),
+          data_devolucao: dataDevolucao,
+          hora_devolucao: this.formatarHora(dataDevolucao),
+        },
+        { emitEvent: false },
+      );
 
-        setTimeout(() => {
-          (dados.equipamentos ?? []).forEach((e: any) => this.equipamentosSelecionados.add(e.id));
-        });
-      });
+      // 1. Busca smartlocks da unidade selecionada
+      await this.carregarSmartlocks(dados.unidade_id);
+
+      // 2. Seleciona a smartlock vinculada à reserva
+      const smartlock = this.smartlocks.find((s) => s.id === dados.smartlock_id);
+      this.reservaForm.get('smartlock')?.enable({ emitEvent: false });
+      this.reservaForm.get('smartlock')?.setValue(smartlock ?? '', { emitEvent: false });
+
+      // 3. Só agora busca os equipamentos disponíveis (já com unidade/smartlock/horários prontos)
+      await this.carregarEquipamentosDisponiveis();
+
+      // 4. Compara com os equipamentos da reserva e marca como selecionado
+      this.equipamentosDaReservaAtual.forEach((id) => this.equipamentosSelecionados.add(id));
     } catch (err) {
       console.log(err);
       this.sns.notificar('Erro ao carregar reserva. Ela pode não existir.', 'erro');
@@ -326,28 +363,20 @@ export class CadastroReserva implements OnInit {
     this.tentouSalvarSemEquipamento = this.nenhumEquipamentoSelecionado;
 
     if (this.reservaForm.valid && !this.nenhumEquipamentoSelecionado) {
-      const {
-        smartlock,
-        data_emprestimo,
-        hora_emprestimo,
-        data_devolucao,
-        hora_devolucao,
-      } = this.reservaForm.value;
+      const { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
+        this.reservaForm.value;
 
-      const dh_emprestimo = this.combinarDataHora(data_emprestimo, hora_emprestimo)
-        const dh_devolucao = this.combinarDataHora(
-          data_devolucao,
-          hora_devolucao,
-        )
+      const dh_emprestimo = this.combinarDataHora(data_emprestimo, hora_emprestimo);
+      const dh_devolucao = this.combinarDataHora(data_devolucao, hora_devolucao);
 
-      const equipamentos = Array.from(this.equipamentosSelecionados)
+      const equipamentos = Array.from(this.equipamentosSelecionados);
 
-      this.isLoading = true;
+      this.isLoading.set(true);
       this.reservaForm.disable();
 
       const requisicao$ = this.reserva_id
-        ? this.reservaService.update(this.reserva_id,dh_emprestimo,dh_devolucao,equipamentos)
-        : this.reservaService.create(smartlock.id,dh_emprestimo,dh_devolucao,equipamentos);
+        ? this.reservaService.update(this.reserva_id, dh_emprestimo, dh_devolucao, equipamentos)
+        : this.reservaService.create(smartlock.id, dh_emprestimo, dh_devolucao, equipamentos);
 
       requisicao$.subscribe({
         next: () => {
@@ -358,7 +387,7 @@ export class CadastroReserva implements OnInit {
         error: (err: any) => {
           console.log(err);
           this.sns.notificar(err.message, 'erro');
-          this.isLoading = false;
+          this.isLoading.set(false);
           this.reservaForm.enable();
         },
       });

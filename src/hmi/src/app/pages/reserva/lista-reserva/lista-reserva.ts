@@ -44,8 +44,6 @@ export class ListaReserva {
 
   filtros: FormGroup = new FormGroup({
     smartlock: new FormControl(''),
-    unidade: new FormControl(''),
-    regional: new FormControl(''),
   });
 
   unidadesDisponiveis: string[] = [];
@@ -78,6 +76,7 @@ export class ListaReserva {
     });
   }
 
+
   // Remove acentos: decompõe caracteres acentuados em base + diacrítico (NFD)
   // e usa uma regex para eliminar os diacríticos (faixa Unicode \u0300-\u036f).
   private normalizarTexto(valor: string): string {
@@ -88,23 +87,11 @@ export class ListaReserva {
   }
 
   private initFiltro(): void {
-    this.filtros.valueChanges.subscribe((valores) => {
-      const { smartlock, unidade, regional } = valores;
-
-      this.reservasFiltradas = this.reservas().filter((r:any) => {
-        const smartlockConfere = this.normalizarTexto(r.smartlock_apelido).includes(
-          this.normalizarTexto((smartlock ?? '').trim()),
-        );
-        const unidadeConfere = !unidade || r.unidade === unidade;
-        const regionalConfere = !regional || r.regional === regional;
-
-        return smartlockConfere && unidadeConfere && regionalConfere;
-      });
-    });
+   this.filtros.disable()
   }
 
   limparFiltros(): void {
-    this.filtros.reset({ smartlock: '', unidade: '', regional: '' });
+    this.filtros.reset({ smartlock: ''});
   }
 
   // --- AÇÕES DA TELA ---
@@ -113,16 +100,16 @@ export class ListaReserva {
     this.router.navigate(['/reservas/cadastro']);
   }
 
-  onEditarReserva(reserva: Reserva): void {
+  onEditarReserva(reserva: any): void {
     this.router.navigate(['/reservas/editar', reserva.id]);
   }
 
-  onExcluirReserva(reserva: Reserva): void {
+  onExcluirReserva(reserva: any): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
         titulo: 'Excluir reserva',
-        mensagem: `Tem certeza que deseja excluir a reserva do smartlock "${reserva.smartlock_apelido}"? Esta ação não pode ser desfeita.`,
+        mensagem: `Tem certeza que deseja excluir a reserva do smartlock "${reserva.smartlock}"? Esta ação não pode ser desfeita.`,
         textoConfirmar: 'Excluir',
         textoCancelar: 'Cancelar',
       },
@@ -138,8 +125,8 @@ export class ListaReserva {
   private executarExclusao(reserva: Reserva): void {
     this.reservaService.delete(reserva.id).subscribe({
       next: () => {
-        this.reservas = this.reservas().filter((r:any) => r.id !== reserva.id);
-        this.reservasFiltradas = this.reservasFiltradas().filter((r:any) => r.id !== reserva.id);
+        this.reservas.set(this.reservas().filter((r:any) => r.id !== reserva.id));
+        this.reservasFiltradas.set(this.reservasFiltradas().filter((r:any) => r.id !== reserva.id));
         this.sns.notificar('Reserva removida com sucesso', 'sucesso');
       },
       error: (err) => {

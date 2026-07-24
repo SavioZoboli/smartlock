@@ -29,7 +29,7 @@ export class ReportReservaLista {
 
   // Coluna "detalhe" é renderizada em uma segunda <tr> (multiTemplateDataRows),
   // por isso não entra em displayedColumns.
-  displayedColumns: string[] = ['data_hora', 'smartlock', 'unidade', 'equipamentos', 'acoes'];
+  displayedColumns: string[] = ['data_hora', 'smartlock', 'unidade', 'equipamentos','situacao', 'acoes'];
 
   linhaExpandida: Reserva | null = null;
 

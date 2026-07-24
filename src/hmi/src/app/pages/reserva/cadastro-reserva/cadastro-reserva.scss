@@ -138,6 +138,22 @@
         border-color:var(--mat-sys-primary);
       }
 
+      &.reservado{
+        border-color: var(--mat-sys-secondary);
+        .equipamento-info{
+          .equipamento-nome{
+            color:var(--mat-sys-secondary);
+          }
+          .equipamento-patrimonio{
+            color:var(--mat-sys-secondary);
+          }
+          .info-reserva{
+            font-size: 0.78rem;
+            color:var(--mat-sys-secondary);
+          }
+        }
+      }
+
     .equipamento-info {
       display: flex;
       flex-direction: column;
