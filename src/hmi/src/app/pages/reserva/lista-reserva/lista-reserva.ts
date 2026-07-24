@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -39,8 +39,8 @@ type ModoVisualizacao = 'lista' | 'calendario';
 export class ListaReserva {
   modoVisualizacao: ModoVisualizacao = 'lista';
 
-  private reservas: Reserva[] = [];
-  reservasFiltradas: Reserva[] = [];
+  private reservas = signal<any>([]);
+  reservasFiltradas= signal<any>([]);
 
   filtros: FormGroup = new FormGroup({
     smartlock: new FormControl(''),
@@ -66,15 +66,14 @@ export class ListaReserva {
   carregarReservas(): void {
     this.reservaService.listAll().subscribe({
       next: (res) => {
-        this.reservas = res;
-        this.reservasFiltradas = res;
-        this.unidadesDisponiveis = [...new Set(res.map((r) => r.unidade))].sort();
-        this.regionaisDisponiveis = [...new Set(res.map((r) => r.regional))].sort();
+        console.log(res)
+        this.reservas.set(res);
+        this.reservasFiltradas.set(res);
       },
       error: (err) => {
         console.log(err);
-        this.reservas = [];
-        this.reservasFiltradas = [];
+        this.reservas.set([]);
+        this.reservasFiltradas.set([]);
       },
     });
   }
@@ -92,7 +91,7 @@ export class ListaReserva {
     this.filtros.valueChanges.subscribe((valores) => {
       const { smartlock, unidade, regional } = valores;
 
-      this.reservasFiltradas = this.reservas.filter((r) => {
+      this.reservasFiltradas = this.reservas().filter((r:any) => {
         const smartlockConfere = this.normalizarTexto(r.smartlock_apelido).includes(
           this.normalizarTexto((smartlock ?? '').trim()),
         );
@@ -139,8 +138,8 @@ export class ListaReserva {
   private executarExclusao(reserva: Reserva): void {
     this.reservaService.delete(reserva.id).subscribe({
       next: () => {
-        this.reservas = this.reservas.filter((r) => r.id !== reserva.id);
-        this.reservasFiltradas = this.reservasFiltradas.filter((r) => r.id !== reserva.id);
+        this.reservas = this.reservas().filter((r:any) => r.id !== reserva.id);
+        this.reservasFiltradas = this.reservasFiltradas().filter((r:any) => r.id !== reserva.id);
         this.sns.notificar('Reserva removida com sucesso', 'sucesso');
       },
       error: (err) => {

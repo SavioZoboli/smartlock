@@ -55,13 +55,13 @@
 
   @if (modoVisualizacao === 'lista') {
     <app-report-reserva-lista
-      [reservas]="reservasFiltradas"
+      [reservas]="reservasFiltradas()"
       (editar)="onEditarReserva($event)"
       (excluir)="onExcluirReserva($event)">
     </app-report-reserva-lista>
   } @else {
     <app-report-reserva-calendario
-      [reservas]="reservasFiltradas"
+      [reservas]="reservasFiltradas()"
       (selecionarReserva)="onEditarReserva($event)">
     </app-report-reserva-calendario>
   }

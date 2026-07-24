@@ -4,13 +4,6 @@ import { HttpClient } from '@angular/common/http';
 import { Reserva } from '../models/reserva.model';
 import { Observable } from 'rxjs';
 
-export interface ReservaPayload {
-  unidade_id: number;
-  smartlock_id: number;
-  data_hora_emprestimo: string;
-  data_hora_devolucao_prevista: string;
-  equipamentos: number[];
-}
 
 @Injectable({
   providedIn: 'root',
@@ -20,8 +13,8 @@ export class ReservaService {
 
   constructor(private http: HttpClient) {}
 
-  listAll(): Observable<Reserva[]> {
-    return this.http.get<Reserva[]>(this.baseUrl);
+  listAll(): Observable<any> {
+    return this.http.get<any>(this.baseUrl);
   }
 
   getById(id: number): Observable<any> {

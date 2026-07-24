@@ -5,13 +5,15 @@
       <th mat-header-cell *matHeaderCellDef> Data / Hora </th>
       <td mat-cell *matCellDef="let element" class="fw-500">
         <mat-icon class="inline-icon">event</mat-icon>
-        {{ element.data_hora | date: 'dd/MM/yyyy HH:mm' }}
+        {{ element.reserva_inicio | date: 'dd/MM/yyyy HH:mm' }}
+        -
+        {{ element.reserva_fim | date: 'dd/MM/yyyy HH:mm' }}
       </td>
     </ng-container>
 
     <ng-container matColumnDef="smartlock">
       <th mat-header-cell *matHeaderCellDef> Smartlock </th>
-      <td mat-cell *matCellDef="let element" class="fw-500"> {{ element.smartlock_apelido }} </td>
+      <td mat-cell *matCellDef="let element" class="fw-500"> {{ element.smartlock }} </td>
     </ng-container>
 
     <ng-container matColumnDef="unidade">
@@ -62,7 +64,7 @@
               @for (equip of element.equipamentos; track equip.id) {
                 <span class="chip-equipamento">
                   <mat-icon class="inline-icon">qr_code_2</mat-icon>
-                  {{ equip.nome }} · {{ equip.patrimonio }}
+                  {{ equip.apelido }} · {{ equip.patrimonio }}
                 </span>
               }
             }
