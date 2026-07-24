@@ -22,7 +22,13 @@ router.get('/listBySmartlock/:smartlock_id',authMiddleware,equipamentoController
 
 router.get('/relatorio/disponibilidade/:smartlock_id',authMiddleware,equipamentoController.reportDisponibilidade)
 
-
+// TODO: débito técnico - usando POST em vez de QUERY (RFC 10008)
+// Motivo: suporte instável em proxies/firewalls corporativos (Palo Alto bloqueando/resetando)
+// Retomar quando: 
+//   - confirmar liberação de método QUERY na política do firewall, OU
+//   - navegadores/fetch API suportarem QUERY nativamente com CORS tratado
+// Rota afetada: POST /smartlocks/:id/equipamentos/disponiveis (deveria ser QUERY)
+router.post('/disponiveis-para-reserva',authMiddleware,equipamentoController.listDisponiveisParaReserva)
 
 
 
