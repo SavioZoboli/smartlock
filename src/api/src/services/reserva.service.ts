@@ -83,6 +83,108 @@ class ReservaService {
       throw e;
     }
   }
+
+  async getById(id: number) {
+    let reserva = await Reserva.findOne({
+      where: { id },
+      attributes: [
+        "id",
+        ["reserva_inicio", "data_hora_emprestimo"],
+        ["reserva_fim", "data_hora_devolucao_prevista"],
+        "situacao",
+        "motivo",
+        "smartlock_id",
+        [Sequelize.col("smartlock_origem.unidade_id"), "unidade_id"],
+      ],
+      include: [
+        {
+          model: SmartLock,
+          as: "smartlock_origem",
+          attributes: [],
+        },
+        {
+          model: Equipamento,
+          as: "equipamentos",
+          through: { attributes: [] },
+          attributes: ["id", "apelido", "patrimonio"],
+        },
+      ],
+    });
+
+    if (!reserva) {
+      throw new Error("Reserva não encontrada");
+    }
+
+    return reserva;
+  }
+
+  async update(
+    reserva_id: number,
+    dt_inicio: Date,
+    dt_fim: Date,
+    equipamentos: number[],
+    motivo: string,
+  ) {
+    let transaction = await sequelize.transaction();
+    try {
+      let reserva = await Reserva.findByPk(reserva_id, { transaction });
+      if (!reserva) {
+        throw new Error("ERR_RESERVA_NOT_FOUND");
+      }
+      reserva.reserva_inicio = dt_inicio;
+      reserva.reserva_fim = dt_fim;
+      reserva.motivo = motivo;
+
+      let antiga_reserva = await ItensReserva.findAll({
+        where: {
+          reserva_id: reserva.id,
+        },
+        transaction,
+      });
+      for (let eqp of antiga_reserva) {
+        let indexEquipamento = equipamentos.indexOf(eqp.equipamento_id);
+        if (indexEquipamento != -1) {
+          // Já está cadastrado, ignora
+          equipamentos.splice(indexEquipamento, 1);
+        } else {
+          //Não achou na lista atualizada, remove o vínculo
+          await eqp.destroy({ transaction });
+        }
+      }
+      if (equipamentos.length > 0) {
+        //Passou por todos os que já estão cadastrados e ainda tem equipamentos na lista
+        //cria o vínculo
+        let creation_equipamentos = equipamentos.map((e) => {
+          return { reserva_id: reserva.id, equipamento_id: e };
+        });
+        await ItensReserva.bulkCreate(creation_equipamentos, { transaction });
+      }
+      await transaction.commit();
+      return reserva;
+    } catch (e) {
+      await transaction.rollback();
+      throw e;
+    }
+  }
+
+  async delete(reserva_id:number):Promise<void>{
+    let transaction = await sequelize.transaction()
+    try{
+      let itens = await ItensReserva.findAll({where:{reserva_id},transaction})
+      for(let item of itens){
+        await item.destroy({transaction})
+      }
+      let reserva = await Reserva.findByPk(reserva_id)
+      if(!reserva){
+        throw new Error("ERR_RESERVA_NOT_FOUND")
+      }
+      reserva.destroy()
+      await transaction.commit()
+    }catch(e){
+      await transaction.rollback()
+      throw e
+    }
+  }
 }
 
 export default new ReservaService();

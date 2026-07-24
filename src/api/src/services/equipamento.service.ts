@@ -288,6 +288,9 @@ class EquipamentoService {
     // Mapeia para o formato pedido, com "reserva" já no shape desejado
     return equipamentos;
   }
+
+  
+
 }
 
 export default new EquipamentoService();

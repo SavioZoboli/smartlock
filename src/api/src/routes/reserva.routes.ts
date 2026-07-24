@@ -7,4 +7,10 @@ router.post('/',authMiddleware,reservaController.create)
 
 router.get('/',authMiddleware,reservaController.reservasDoUsuario)
 
+router.get('/:id',authMiddleware,reservaController.getById)
+
+router.put('/',authMiddleware,reservaController.update)
+
+router.delete('/:id',authMiddleware,reservaController.delete)
+
 module.exports = router
