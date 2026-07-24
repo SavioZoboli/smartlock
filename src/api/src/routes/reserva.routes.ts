@@ -5,4 +5,6 @@ const router = require("express").Router()
 
 router.post('/',authMiddleware,reservaController.create)
 
+router.get('/',authMiddleware,reservaController.reservasDoUsuario)
+
 module.exports = router

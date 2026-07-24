@@ -41,6 +41,19 @@ class ReservaController{
 
     }
 
+    async reservasDoUsuario(req:Request,res:Response){
+        if(!req.user){
+            return res.status(401).json({message:"Não autenticado"})
+        }
+        try{
+            let relatorio = await reservaService.listDoUsario(req.user.id)
+            return res.status(200).json(relatorio)
+        }catch(e){
+            console.log(e)
+            return res.status(500).json({message:"Erro interno do servidor"})
+        }
+    }
+
 }
 
 export default new ReservaController();
