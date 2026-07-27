@@ -17,6 +17,7 @@ import { Unidade } from '../../pages/unidade/lista-unidade/lista-unidade';
 import { Smartlock } from '../../pages/smartlock/lista-smartlock/lista-smartlock';
 import { SystemNotificationService } from '../../services/system-notification.service';
 import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
+import { MatExpansionModule } from '@angular/material/expansion';
 
 @Component({
   selector: 'app-smartlock-report',
@@ -31,6 +32,7 @@ import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
     MatIconModule,
     MatChipsModule,
     MatProgressSpinnerModule,
+    MatExpansionModule
   ],
   templateUrl: './smartlock-report.html',
   styleUrls: ['./smartlock-report.scss'],
@@ -110,7 +112,9 @@ export class SmartlockReport implements OnInit {
     this.carregando.set(true);
     this.equipamentoService.buscarRelatorioDisponibilidade(smartlock_id).subscribe({
       next: (res) => {
+        console.log(res)
         if (res.length > 0) {
+          console.log(res)
           this.equipamentos = res.map(linha=>{return {...linha,icone:this.tiposEquipamentos.find(t=>t.descricao==linha.tipo)?.icone}});
         }
 

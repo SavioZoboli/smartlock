@@ -7,6 +7,7 @@ export interface Equipamento {
   disponivel: boolean;
   responsavel?: string;
   icone?:string;
+  reservas?:any
 }
 
 export interface TipoEquipamento {
