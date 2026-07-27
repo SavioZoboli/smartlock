@@ -121,9 +121,6 @@
   }
 }
 
-.equipment-card.has-reserva {
-  border: 1.5px solid var(--app-warning, #f59e0b);
-}
 
 .reservation-info {
   display: flex;
@@ -179,11 +176,12 @@
 }
 
 .card-body .status-badge.reserved {
-  color: var(--app-warning-soft-on, #92400e);
-  background-color: var(--app-warning-soft-bg, #fef3c7);
+  color: var(--app-info-soft-on);
+  background-color: var(--app-info-soft-bg);
 }
 
 // Reserva tem prioridade visual sobre o indicador verde/cinza
 .equipment-card.has-reserva .status-indicator {
-  background-color: var(--app-warning, #f59e0b);
+  background-color: var(--app-info-soft-on
+  );
 }

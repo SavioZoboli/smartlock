@@ -77,7 +77,8 @@
                 <div class="employee-name">{{ item.responsavel }}</div>
               } @else if (item.reservas?.length) {
                 <div class="status-badge reserved">
-                  <mat-icon class="sm-icon">event</mat-icon> Reservado
+                  <mat-icon class="sm-icon">event</mat-icon>
+                  Disponível até {{ item.reservas[0].inicio | date: 'HH:mm' }}
                 </div>
               } @else {
                 <div class="status-badge available">
