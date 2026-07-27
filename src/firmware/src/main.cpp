@@ -26,8 +26,7 @@ void setup()
     BuzzerHandler::init();
     DisplayHandler::init();
 
-
-    //Inicializa a fechadura
+    // Inicializa a fechadura
     HardwareIOHandler::init();
 
     // Inicializa com tudo desconectado
@@ -56,6 +55,31 @@ void setup()
     StateHandler::setState(SystemState::IDLE);
 }
 
+void autorizaAcesso()
+{
+    Serial.println("Acesso autorizado");
+    HardwareIOHandler::unlockDoor();
+    BuzzerHandler::play(SoundEffect::OP_SUCCESS);
+    StateHandler::setState(SystemState::IN_PROCESS);
+    DisplayHandler::setTimeoutMessage("SUCESSO", "Autorizado", 5000);
+}
+
+void rejeitaAcesso()
+{
+    Serial.println("Acesso negado");
+    BuzzerHandler::play(SoundEffect::OP_FAIL);
+    StateHandler::setState(SystemState::IDLE);
+    DisplayHandler::setTimeoutMessage("NEGADO", "Negado", 3000);
+}
+
+void semResposta()
+{
+    Serial.println("Sem resposta");
+    BuzzerHandler::play(SoundEffect::OP_FAIL);
+    StateHandler::setState(SystemState::IDLE);
+    DisplayHandler::setTimeoutMessage("FALHA REDE", "Sem Resposta", 3000);
+}
+
 void loop()
 {
     // 1. Atualiza as rotinas de background
@@ -66,6 +90,8 @@ void loop()
 
     WiFiHandler::update();
     MqttHandler::update();
+
+    InventoryManager::update();
 
     DisplayHandler::setIndicators(
         WiFiHandler::isConnected(),
@@ -83,16 +109,11 @@ void loop()
         BuzzerHandler::play(SoundEffect::TAG_READ);
         if (status == AuthState::GRANTED)
         {
-            HardwareIOHandler::unlockDoor();
-            BuzzerHandler::play(SoundEffect::OP_SUCCESS);
-            StateHandler::setState(SystemState::IN_PROCESS);
-            DisplayHandler::setTimeoutMessage("SUCESSO", "Autorizado", 5000);
+            autorizaAcesso();
         }
         else if (status == AuthState::DENIED || status == AuthState::ERROR_OFFLINE)
         {
-            BuzzerHandler::play(SoundEffect::OP_FAIL);
-            StateHandler::setState(SystemState::IDLE);
-            DisplayHandler::setTimeoutMessage("NEGADO", "Negado", 3000);
+            rejeitaAcesso();
         }
         else if (status == AuthState::PENDING_CLOUD)
         {
@@ -109,53 +130,44 @@ void loop()
         // Se a nuvem respondeu algo (Sucesso, Negado ou Timeout) sai do estado Pending
         if (asyncStatus != AuthState::PENDING_CLOUD)
         {
-            
+
             // Restaura a tela padrão
             DisplayHandler::setFixedMessage("SMART LOCK", "Aproxime o\nCracha");
-            Serial.print("Irá validar o acesso: ");
             if (asyncStatus == AuthState::GRANTED)
             {
-                Serial.println("Acesso autorizado");
-                HardwareIOHandler::unlockDoor();
-                BuzzerHandler::play(SoundEffect::OP_SUCCESS);
-                StateHandler::setState(SystemState::IN_PROCESS);
-                DisplayHandler::setTimeoutMessage("SUCESSO", "Autorizado", 5000);
+                autorizaAcesso();
             }
             else if (asyncStatus == AuthState::DENIED)
             {
-                Serial.println("Acesso negado");
-                BuzzerHandler::play(SoundEffect::OP_FAIL);
-                StateHandler::setState(SystemState::IDLE);
-                DisplayHandler::setTimeoutMessage("NEGADO", "Negado", 3000);
+                rejeitaAcesso();
             }
             else if (asyncStatus == AuthState::TIMEOUT_CLOUD)
             {
-                Serial.println("Sem resposta");
-                BuzzerHandler::play(SoundEffect::OP_FAIL);
-                StateHandler::setState(SystemState::IDLE);
-                DisplayHandler::setTimeoutMessage("FALHA REDE", "Sem Resposta", 3000);
+                semResposta();
             }
         }
     }
-    
-    if (HardwareIOHandler::doorJustClosed())
+
+    if (StateHandler::getState() == SystemState::IN_PROCESS)
     {
-        // Liga o leitor e espera terminar (bloqueante por 4s aqui ou por máquina de estados)
-        InventoryManager::startScanFor(4000);
-        StatusFeedback::set(Component::PORTA,State::CLOSED);
-        StateHandler::setState(SystemState::READING);
+        DisplayHandler::setFixedMessage("SMART LOCK", "Feche a \nporta");
+        if (HardwareIOHandler::doorJustClosed())
+        {
+            // Liga o leitor e espera terminar (bloqueante por 4s aqui ou por máquina de estados)
+            BuzzerHandler::play(SoundEffect::LOGOFF);
+            DisplayHandler::setTimeoutMessage("INVENTARIO", "Fazendo \nleitura", 4000);
+            InventoryManager::startScanFor(4000);
+            StatusFeedback::set(Component::PORTA, State::CLOSED);
+            StateHandler::setState(SystemState::READING);
+        }
     }
 
+    if (StateHandler::getState() == SystemState::READING && InventoryManager::scanJustFinished())
+    {
 
-    if(StateHandler::getState() == SystemState::READING){
         StateHandler::setState(SystemState::IDLE);
-    }
-
-    // 2. Scan terminou: processa a diferença e salva na Fila Offline
-    /*if (InventoryManager::scanJustFinished())
-    {
-
-        StateHandler::setState(SystemState::IDLE); 
+        DisplayHandler::setFixedMessage("SMART LOCK", "Aproxime o\nCracha");
+        BuzzerHandler::play(SoundEffect::RFID_SUCCESS);
         return;
 
         //Remover e validar quando tiver o leitor de RFID UHF
@@ -165,10 +177,10 @@ void loop()
         {
             String jsonEventos = InventoryManager::serializeEvents(eventos); // Transforma em JSON
             StorageHandler::pushEventToQueue(jsonEventos.c_str());           // Empilha na fila (Flash)
-            InventoryManager::commitInventory();   
+            InventoryManager::commitInventory();
             StateHandler::setState(SystemState::IDLE);                          // Atualiza o estado atual
         }
-    }*/
+    }
 
     // 3. Sync com o Servidor: Despacha a fila de eventos
     if (WiFiHandler::isConnected() && StorageHandler::hasPendingEvents())
@@ -188,5 +200,4 @@ void loop()
             }
         }
     }
-
 }
