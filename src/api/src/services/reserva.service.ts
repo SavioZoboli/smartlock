@@ -24,7 +24,6 @@ class ReservaService {
           usuario_id,
           reserva_inicio: dt_reserva,
           reserva_fim: dt_devolucao,
-          situacao: "PENDENTE",
           smartlock_id,
         },
         { transaction },
