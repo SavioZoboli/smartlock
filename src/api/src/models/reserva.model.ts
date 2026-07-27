@@ -7,7 +7,7 @@ export interface ReservaAttributes{
     smartlock_id:number;
     reserva_inicio:Date;
     reserva_fim:Date;
-    situacao:string;
+    situacao?:string;
     motivo?:string;
     createdAt?:string;
     updatedAt?:string;
@@ -58,7 +58,7 @@ Reserva.init({
     situacao:{
         type:DataTypes.STRING(20),
         allowNull:false,
-        defaultValue:'PENDENTE'
+        defaultValue:'AGENDADO'
     },
     motivo:{
         type:DataTypes.TEXT,

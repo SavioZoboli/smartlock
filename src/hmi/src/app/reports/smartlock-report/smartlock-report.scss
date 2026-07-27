@@ -120,3 +120,68 @@
     }
   }
 }
+
+
+.reservation-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: var(--app-radius-sm, 4px);
+  background-color: var(--app-warning-soft-bg, #fef3c7);
+  color: var(--app-warning-soft-on, #92400e);
+
+  .sm-icon {
+    font-size: 14px;
+    height: 14px;
+    width: 14px;
+    flex-shrink: 0;
+  }
+
+  .reservation-main {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .reservation-user {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .reservation-time {
+    font-size: 0.75rem;
+  }
+}
+
+.reservation-extra-panel {
+  margin-top: 4px;
+  box-shadow: none !important;
+  background: transparent;
+
+  ::ng-deep .mat-expansion-panel-header {
+    padding: 0 8px;
+    height: 32px !important;
+    font-size: 0.75rem;
+  }
+
+  ::ng-deep .mat-expansion-panel-body {
+    padding: 0 8px 8px;
+  }
+
+  .reservation-info {
+    margin-top: 4px;
+  }
+}
+
+.card-body .status-badge.reserved {
+  color: var(--app-info-soft-on);
+  background-color: var(--app-info-soft-bg);
+}
+
+// Reserva tem prioridade visual sobre o indicador verde/cinza
+.equipment-card.has-reserva .status-indicator {
+  background-color: var(--app-info-soft-on
+  );
+}

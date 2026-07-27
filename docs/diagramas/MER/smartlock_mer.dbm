@@ -3,16 +3,16 @@
 CAUTION: Do not modify this file unless you know what you are doing.
  Unexpected results may occur if the code is changed deliberately.
 -->
-<dbmodel pgmodeler-ver="1.2.2" use-changelog="false" max-obj-count="13"
+<dbmodel pgmodeler-ver="1.2.2" use-changelog="false" max-obj-count="16"
 	 gen-disabled-objs-code="false" show-sys-schemas-rects="true"
-	 last-position="0,422" last-zoom="1" scene-rect="0,0,1570.8,1346.32"
+	 last-position="0,335" last-zoom="0.85" scene-rect="0,0,1570.8,1481.12"
 	 default-schema="public" default-owner="postgres"
 	 layers="Default layer"
 	 active-layers="0"
 	 layer-name-colors="#000000"
 	 layer-rect-colors="#b4b4b4"
 	 show-layer-names="false" show-layer-rects="false">
-<database name="new_database" is-template="false" allow-conns="true">
+<database name="smartlock_db" is-template="false" allow-conns="true">
 </database>
 
 <schema name="public" layers="0" fill-color="#e1e1e1" name-color="#000000" sql-disabled="true">
@@ -21,7 +21,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="usuarios" layers="0" collapse-mode="2" max-obj-count="14" z-value="0">
 	<schema name="public"/>
 	<role name="postgres"/>
-	<position x="560" y="960"/>
+	<position x="240" y="980"/>
 	<column name="id" not-null="true"
 	 identity-type="ALWAYS">
 		<type name="smallint" length="0"/>
@@ -256,8 +256,48 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="itens_movimentacao" layers="0" collapse-mode="2" max-obj-count="2" z-value="0">
 	<schema name="public"/>
 	<role name="postgres"/>
-	<position x="1120" y="980"/>
+	<position x="1220" y="960"/>
 	<column name="movimentacao_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="equipamento_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+</table>
+
+<table name="reservas" layers="0" collapse-mode="2" max-obj-count="7" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="680" y="1080"/>
+	<column name="id" not-null="true"
+	 identity-type="ALWAYS">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="usuario_id" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="reserva_inicio" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="reserva_fim" not-null="true">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="situacao" not-null="true" default-value="PENDENTE">
+		<type name="varchar" length="20"/>
+	</column>
+	<column name="motivo">
+		<type name="text" length="0"/>
+	</column>
+	<constraint name="pk_id" type="pk-constr" table="public.reservas">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="itens_reserva" layers="0" collapse-mode="2" max-obj-count="2" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="1140" y="1240"/>
+	<column name="reserva_id" not-null="true">
 		<type name="smallint" length="0"/>
 	</column>
 	<column name="equipamento_id" not-null="true">
@@ -331,6 +371,24 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<columns names="id" ref-type="dst-columns"/>
 </constraint>
 
+<constraint name="fk_usuario_reserva" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.usuarios" table="public.reservas">
+	<columns names="usuario_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_itemReserva_equipamento" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.equipamentos" table="public.itens_reserva">
+	<columns names="equipamento_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_itemReserva_reserva" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="CASCADE" del-action="RESTRICT" ref-table="public.reservas" table="public.itens_reserva">
+	<columns names="reserva_id" ref-type="src-columns"/>
+	<columns names="id" ref-type="dst-columns"/>
+</constraint>
+
 <relationship name="rel_usuarios_unidades" type="relfk" layers="0"
 	 src-table="public.usuarios"
 	 dst-table="public.unidades" reference-fk="fk_usuario_unidade"
@@ -388,6 +446,21 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <relationship name="rel_itens_movimentacao_equipamentos" type="relfk" layers="0"
 	 src-table="public.itens_movimentacao"
 	 dst-table="public.equipamentos" reference-fk="fk_itemMov_equipamento"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_reservas_usuarios" type="relfk" layers="0"
+	 src-table="public.reservas"
+	 dst-table="public.usuarios" reference-fk="fk_usuario_reserva"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_itens_reserva_equipamentos" type="relfk" layers="0"
+	 src-table="public.itens_reserva"
+	 dst-table="public.equipamentos" reference-fk="fk_itemReserva_equipamento"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_itens_reserva_reservas" type="relfk" layers="0"
+	 src-table="public.itens_reserva"
+	 dst-table="public.reservas" reference-fk="fk_itemReserva_reserva"
 	 src-required="false" dst-required="true"/>
 
 </dbmodel>

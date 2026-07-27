@@ -220,40 +220,95 @@ class EquipamentoService {
   }
 
   async getRelatorioDisponibilidade(smartlock_id: number) {
-    try {
-      let relatorio = await Equipamento.findAll({
-        attributes: [
-          "id",
-          "apelido",
-          "tipo",
-          "patrimonio",
-          [Sequelize.col("usuarioAtual.nome"), "responsavel"],
-        ],
-        include: [
-          {
-            model: Usuario,
-            as: "usuarioAtual",
-            attributes: [],
-            required: false,
-          },
-        ],
-        where: { ativo: true, smartlock_base_id: smartlock_id },
-        order: [
-          ["apelido", "asc"],
-          ["patrimonio", "asc"],
-        ],
-        raw: true,
-      });
-      relatorio = relatorio.map((l: any) => {
-        return { ...l, disponivel: l.responsavel == null };
-      });
-      return relatorio;
-    } catch (e) {
-      throw e;
-    }
-  }
+  try {
+    const agora = new Date();
+    const fimDoDia = new Date();
+    fimDoDia.setHours(23, 59, 59, 999);
 
-  async listDisponibilidadeData(smartlock_id:number,dataInicio: Date, dataFim: Date) {
+    const linhas: any[] = await Equipamento.findAll({
+      attributes: [
+        "id",
+        "apelido",
+        "tipo",
+        "patrimonio",
+        [Sequelize.col("usuarioAtual.nome"), "responsavel"],
+        [Sequelize.col("reservas.reserva_inicio"), "reserva_inicio"],
+        [Sequelize.col("reservas.reserva_fim"), "reserva_fim"],
+        [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],
+      ],
+      include: [
+        {
+          model: Usuario,
+          as: "usuarioAtual",
+          attributes: [],
+          required: false,
+        },
+        {
+          model: Reserva,
+          as: "reservas",
+          attributes: [],
+          required: false,
+          through: { attributes: [] },
+          where: {
+            reserva_inicio: { [Op.gte]: agora },
+            reserva_fim: { [Op.lte]: fimDoDia },
+            situacao: { [Op.ne]: "CANCELADA" },
+          },
+          include: [
+            {
+              model: Usuario,
+              as: "usuario",
+              attributes: [],
+              required: false,
+            },
+          ],
+        },
+      ],
+      where: { ativo: true, smartlock_base_id: smartlock_id },
+      order: [
+        ["apelido", "asc"],
+        ["patrimonio", "asc"],
+        [Sequelize.col("reservas.reserva_inicio"), "asc"],
+      ],
+      raw: true,
+    });
+
+    // Agrupa as linhas duplicadas (uma por reserva) em um único equipamento com array de reservas
+    const agrupado = new Map<number, any>();
+
+    for (const linha of linhas) {
+      if (!agrupado.has(linha.id)) {
+        agrupado.set(linha.id, {
+          id: linha.id,
+          apelido: linha.apelido,
+          tipo: linha.tipo,
+          patrimonio: linha.patrimonio,
+          responsavel: linha.responsavel,
+          disponivel: linha.responsavel == null,
+          reservas: [],
+        });
+      }
+
+      if (linha.reserva_inicio) {
+        agrupado.get(linha.id).reservas.push({
+          usuario: linha.reserva_usuario,
+          inicio: linha.reserva_inicio,
+          fim: linha.reserva_fim,
+        });
+      }
+    }
+
+    return Array.from(agrupado.values());
+  } catch (e) {
+    throw e;
+  }
+}
+
+  async listDisponibilidadeData(
+    smartlock_id: number,
+    dataInicio: Date,
+    dataFim: Date,
+  ) {
     const TOLERANCIA_MS = 30 * 60 * 1000; // 30 min
 
     const inicioComTolerancia = new Date(dataInicio.getTime() - TOLERANCIA_MS);
@@ -282,15 +337,12 @@ class EquipamentoService {
         },
       ],
       order: [["apelido", "ASC"]],
-      where:{smartlock_base_id:smartlock_id,ativo:true}
+      where: { smartlock_base_id: smartlock_id, ativo: true },
     });
 
     // Mapeia para o formato pedido, com "reserva" já no shape desejado
     return equipamentos;
   }
-
-  
-
 }
 
 export default new EquipamentoService();
