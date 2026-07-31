@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 // Porta 14003 será o Worker MQTT
 
 app.use(cors({
-  origin: ['http://localhost:4200','http://189.8.205.50:14000','http://189.8.205.50:14003'], 
+  //origin: ['http://localhost:4200','http://189.8.205.50:14000','http://189.8.205.50:14003','*'], 
   credentials: true,
 }));
 app.use(express.json());

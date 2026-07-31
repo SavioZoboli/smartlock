@@ -4,8 +4,8 @@ import sequelize from '../config/database';
 interface SmartlockAttributes {
   id: number;
   mac_address: string;
-  apelido: string;
-  unidade_id: number;
+  apelido?: string|null;
+  unidade_id?: number|null;
   is_online: boolean;
   has_equipamentos: boolean;
   ativo: boolean;
@@ -15,7 +15,7 @@ interface SmartlockAttributes {
 
 interface SmartlockCreationAttributes extends Optional<
   SmartlockAttributes,
-  "id"
+  "id"|'apelido'|'unidade_id'
 > {}
 
 class Smartlock extends Model<
@@ -50,11 +50,11 @@ Smartlock.init(
     },
     apelido:{
         type:DataTypes.STRING,
-        allowNull:false
+        allowNull:true
     },
     unidade_id:{
         type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'unidades', // Nome da tabela de Unidades no banco
         key: 'id',

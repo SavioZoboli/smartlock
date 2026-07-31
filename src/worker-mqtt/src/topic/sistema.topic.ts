@@ -1,4 +1,5 @@
 import LogSmartlockController from "../controllers/logSmartlock.controller";
+import SmartlockController from "../controllers/smartlock.controller";
 
 export const roteiaMqttSistema = async(rota:string,mac:string,payload:any)=>{
 
@@ -8,6 +9,8 @@ export const roteiaMqttSistema = async(rota:string,mac:string,payload:any)=>{
         case 'status':
             await LogSmartlockController.gravarLog(mac,payload.status)
             break;
+        case 'discover':
+            await SmartlockController.whoami(mac);
     }
 
 }
