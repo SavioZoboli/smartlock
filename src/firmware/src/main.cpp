@@ -79,6 +79,7 @@ void loop()
     Time::update();
     MqttHandler::update();
     StatusFeedback::update();
+    System::update();
     
     if(System::getState()==SystemState::IDLE){
         DisplayHandler::setFixedMessage("Aproxime o cracha...");

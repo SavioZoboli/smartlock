@@ -24,5 +24,7 @@ router.get('/listByUnidade/:unidade_id',authMiddleware,smartLockController.listB
 
 router.get('/whoami/:mac',smartLockController.whoami)
 
+router.get('/provisionando',smartLockController.buscarSmartlocksProvisionando)
+
 
 module.exports = router;

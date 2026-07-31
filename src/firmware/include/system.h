@@ -22,6 +22,9 @@ class System
 public:
     static void init();
 
+    // Chamado a cada loop() — trata sync em background pendente
+    static void update();
+
     static bool isProvisionado();
 
     static void setWifiOnline(bool is_online);
@@ -37,7 +40,11 @@ public:
 
     static void updateProvisionamento();
 
+    // Usado no fluxo de PROVISIONANDO (primeira config, sem dado local ainda)
     static bool salvarConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade);
+
+    // Usado na sincronização em background (já tem config local, só revalida)
+    static bool atualizarConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade);
 
 private:
     static int _codigo;
@@ -48,5 +55,12 @@ private:
     static Unidade _unidade;
     static bool _is_provisionado;
 
+    // Fica true quando um pedido de sync em background precisa ser (re)enviado
+    static bool _sync_pendente;
+
     static void iniciarProvisionamento();
+    static void solicitarSincronizacaoBackground();
+
+    // Função interna compartilhada: só grava em disco + RAM, não mexe em estado
+    static bool persistirConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade);
 };
