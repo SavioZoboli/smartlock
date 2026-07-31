@@ -9,6 +9,7 @@ src/*/.env
 
 src/firmware/.pio
 src/firmware/include/secrets.h
+src/firmware/include/certs.h
 
 
 # HMI
@@ -16,3 +17,6 @@ src/firmware/include/secrets.h
 src/hmi/.angular
 src/hmi/src/environments/environment.development.ts
 src/hmi/src/environments/environment.ts
+
+# Worker MQTT
+src/worker-mqtt/ca.crt
