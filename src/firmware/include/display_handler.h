@@ -13,7 +13,7 @@ public:
     static void setIndicators(bool wifiOk, bool mqttOk, bool isLocked);
     
     // Escreve uma mensagem fixa (Ex: "Aproxime o Cracha")
-    static void setFixedMessage(const char* title, const char* message);
+    static void setFixedMessage(const char* message);
     
     // Escreve uma mensagem temporária (Ex: "Acesso Negado" por 3 segundos)
     static void setTimeoutMessage(const char* title, const char* message, unsigned long timeoutMs);

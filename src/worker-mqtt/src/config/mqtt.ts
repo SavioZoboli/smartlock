@@ -1,23 +1,48 @@
 import mqtt from "mqtt";
 import { rotearMensagemMQTT } from "../topic/mqtt.topic";
+import fs from "fs";
+import path from "path";
 
-require('dotenv').config()
+require('dotenv').config();
 
-// Avalia as configurações de conexão apenas no momento da execução
+// Avalia as configurações de conexão
 const brokerHost = process.env.MQTT_BROKER || "localhost";
 const brokerPort = process.env.MQTT_PORT || 1883;
-const brokerUrl = `mqtt://${brokerHost}:${brokerPort}`;
+const brokerProtocol = process.env.MQTT_PROTOCOL || "mqtt";
 const username = process.env.MQTT_USER || "";
 const password = process.env.MQTT_PASS || "";
 
-console.log(`[MQTT] Inicializando conexão ao MQTT em: ${brokerUrl}`);
+// Monta a URL (ex: mqtt://localhost:1883 ou mqtts://iot.dominio.com:8883)
+const brokerUrl = `${brokerProtocol}://${brokerHost}:${brokerPort}`;
 
-// Estabelece a conexão com o broker aplicando tentativas de reconexão
-export const mqttClient = mqtt.connect(brokerUrl, {
+console.log(`[MQTT] Inicializando conexão ao broker em: ${brokerUrl}`);
+
+// Opções base (comuns para MQTT e MQTTS)
+const options:any = {
   username,
   password,
   reconnectPeriod: 5000,
-});
+};
+
+// Injeta o certificado APENAS se o protocolo for seguro
+if (brokerProtocol === "mqtts" || brokerProtocol === "ssl") {
+  try {
+    // __dirname garante que ele acha o arquivo não importa de onde você rode o script
+    const caPath = path.resolve(__dirname, "../../ca.crt"); 
+    options.ca = fs.readFileSync(caPath);
+    console.log("[MQTT] Certificado CA carregado com sucesso para conexão TLS.");
+    
+    // DESCOMENTE A LINHA ABAIXO APENAS PARA TESTE LOCAL SE OCORRER ERRO DE HOSTNAME
+    // options.rejectUnauthorized = false; 
+
+  } catch (error:any) {
+    console.error("[MQTT] Erro fatal: Não foi possível ler o arquivo ca.crt. Verifique o caminho.", error.message);
+    process.exit(1); // Derruba o Worker se não achar o certificado exigido
+  }
+}
+
+// Estabelece a conexão com o broker
+export const mqttClient = mqtt.connect(brokerUrl, options);
 
 // Confirma a conexão bem-sucedida e assina os tópicos base
 mqttClient.on("connect", () => {
@@ -32,7 +57,7 @@ mqttClient.on("connect", () => {
   });
 });
 
-// Processa as mensagens recebidas e encaminha para a camada de rotas
+// Processa as mensagens recebidas
 mqttClient.on("message", (topic, message) => {
   try {
     const payloadTexto = message.toString();
@@ -41,15 +66,14 @@ mqttClient.on("message", (topic, message) => {
   } catch (error) {
     console.error(
       `[MQTT] Erro ao processar mensagem no tópico ${topic}: Payload não é um JSON válido.`,
-      error,
+      error
     );
   }
 });
 
-// Captura e exibe falhas de conexão para facilitar o debug
+// Captura e exibe falhas de conexão
 mqttClient.on("error", (err) => {
   console.error("[MQTT] Erro crítico no cliente MQTT:", err.message);
-  console.error(err)
 });
 
 // Monitora tentativas de reconexão
@@ -61,5 +85,3 @@ mqttClient.on("reconnect", () => {
 mqttClient.on("offline", () => {
   console.warn("[MQTT] O cliente MQTT está offline");
 });
-
-//module.exports = mqttClient;

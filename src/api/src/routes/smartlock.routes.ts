@@ -22,5 +22,7 @@ router.delete('/:id',authMiddleware,handleAdmin,smartLockController.delete)
 
 router.get('/listByUnidade/:unidade_id',authMiddleware,smartLockController.listByUnidade)
 
+router.get('/whoami/:mac',smartLockController.whoami)
+
 
 module.exports = router;
