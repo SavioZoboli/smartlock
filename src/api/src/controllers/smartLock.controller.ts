@@ -189,6 +189,15 @@ class SmartLockController {
       return res.status(500).json({ message: "Erro no servidor" });
     }
   }
+
+  async buscarSmartlocksProvisionando(req:Request,res:Response){
+    try{
+      let smartlocksProvisionando = await smartLockService.getSmartlocksProvisionando();
+      return res.status(200).json(smartlocksProvisionando);
+    }catch(e){
+      return res.status(500).json({message:"Erro interno do servidor"})
+    }
+  }
 }
 
 export default new SmartLockController();

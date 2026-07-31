@@ -48,6 +48,7 @@ export interface Smartlock {
 export class ListaSmartlock {
   displayedColumns: string[] = [
     'apelido',
+    'mac',
     'unidade',
     'regional',
     'status',
@@ -64,6 +65,7 @@ export class ListaSmartlock {
     unidade: new FormControl(''),
     regional: new FormControl(''),
     apenasOnline: new FormControl(false),
+    provisionando:new FormControl(false),
     apenasComEquipamentos: new FormControl(false),
   });
 
@@ -120,7 +122,7 @@ export class ListaSmartlock {
 
   private initFiltro(): void {
     this.dataSource.filterPredicate = (data: Smartlock, filtro: string): boolean => {
-      const { apelido, unidade, regional, apenasOnline, apenasComEquipamentos } =
+      const { apelido, unidade, regional, apenasOnline, apenasComEquipamentos,provisionando } =
         JSON.parse(filtro);
 
       const apelidoConfere = this.normalizarTexto(data.apelido).includes(
@@ -129,6 +131,7 @@ export class ListaSmartlock {
       const unidadeConfere = !unidade || data.unidade === unidade;
       const regionalConfere = !regional || data.regional === regional;
       const onlineConfere = !apenasOnline || data.is_online;
+      const provisionandoConfere = !provisionando || data.unidade != ''
       const equipamentosConfere = !apenasComEquipamentos || data.has_equipamentos;
 
       return (
@@ -136,6 +139,7 @@ export class ListaSmartlock {
         unidadeConfere &&
         regionalConfere &&
         onlineConfere &&
+        provisionandoConfere &&
         equipamentosConfere
       );
     };

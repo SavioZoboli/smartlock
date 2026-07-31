@@ -236,26 +236,36 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
     // ==========================================
     // ROTA 4: IDENTIDADE DO DISPOSITIVO
     // ==========================================
-    else if(strcmp(topic,topicIdentity)==0){
+    else if (strcmp(topic, topicIdentity) == 0)
+    {
         StaticJsonDocument<384> doc;
-    DeserializationError error = deserializeJson(doc, message);
-    if (error) {
-        Serial.print(F("[MQTT] Erro de parse na identidade: "));
-        Serial.println(error.f_str());
-        return;
-    }
+        DeserializationError error = deserializeJson(doc, message);
+        if (error)
+        {
+            Serial.print(F("[MQTT] Erro de parse na identidade: "));
+            Serial.println(error.f_str());
+            return;
+        }
 
-    JsonObject info = doc["me"];
-    if (info.isNull()) return;
+        JsonObject info = doc["me"];
+        if (info.isNull()) return;
 
-    int codigo = info["id"] | 0;
-    String apelido = info["apelido"] | "Smartlock";
-    int codUnidade = info["uni_id"] | 0;
-    String nomeUnidade = info["uni_nome"] | "";
+        int codigo = info["id"] | 0;
+        String apelido = info["apelido"] | "";
+        int codUnidade = info["uni_id"] | 0;
+        String nomeUnidade = info["uni_nome"] | "";
 
-    if (codigo > 0) {
-        System::salvarConfiguracao(codigo, apelido, codUnidade, nomeUnidade);
-    }
+        if (codigo <= 0) return;
+
+        // Decide qual função chamar baseado no que o sistema está fazendo agora
+        if (System::getState() == SystemState::PROVISIONANDO)
+        {
+            System::salvarConfiguracao(codigo, apelido, codUnidade, nomeUnidade);
+        }
+        else
+        {
+            System::atualizarConfiguracao(codigo, apelido, codUnidade, nomeUnidade);
+        }
     }
 }
 

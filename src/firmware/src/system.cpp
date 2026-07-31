@@ -13,6 +13,7 @@ bool System::_mqtt_online = false;
 SystemState System::_estadoAtual = SystemState::INITIALIZING;
 Unidade System::_unidade = {0, ""};
 bool System::_is_provisionado = false;
+bool System::_sync_pendente = false;
 
 const char *CONFIG_FILE = "/config.json";
 bool solicitou_provisao = false;
@@ -63,6 +64,9 @@ void System::init()
         _is_provisionado = true;
         setState(SystemState::IDLE);
         Serial.println("Sistema carregado. Operacional.");
+
+        // NOVO: dispara sincronização em background (não bloqueia, não muda estado)
+        solicitarSincronizacaoBackground();
     }
     else
     {
@@ -70,11 +74,37 @@ void System::init()
     }
 }
 
-bool System::salvarConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade)
+void System::update()
+{
+    // Se há sync em background pendente e a rede já subiu, tenta enviar agora
+    if (_sync_pendente && WiFiHandler::isConnected() && MqttHandler::isConnected())
+    {
+        MqttHandler::publish("system", "discover", "{}");
+        _sync_pendente = false;
+        Serial.println("[SYSTEM] Sincronização em background enviada (rede ficou pronta).");
+    }
+}
+
+void System::solicitarSincronizacaoBackground()
+{
+    if (WiFiHandler::isConnected() && MqttHandler::isConnected())
+    {
+        MqttHandler::publish("system", "discover", "{}");
+        Serial.println("[SYSTEM] Sincronização em background solicitada.");
+    }
+    else
+    {
+        // Rede ainda não está pronta no momento do init() — marca pra tentar no update()
+        _sync_pendente = true;
+        Serial.println("[SYSTEM] Rede não pronta ainda. Sync em background ficará pendente.");
+    }
+}
+
+// Função interna: só persiste em disco e atualiza a RAM. Não decide nada sobre estado.
+bool System::persistirConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade)
 {
     StaticJsonDocument<512> doc;
 
-    // Monta o JSON
     doc["codigo"] = codigo;
     doc["apelido"] = apelido;
     doc["unidade"]["codigo"] = codUnidade;
@@ -87,24 +117,41 @@ bool System::salvarConfiguracao(int codigo, String apelido, int codUnidade, Stri
         return false;
     }
 
-    // Escreve o JSON no arquivo
     if (serializeJson(doc, file) == 0)
     {
         Serial.println("Falha ao gravar JSON");
         file.close();
         return false;
     }
-
     file.close();
 
-    // Atualiza a memória RAM imediatamente
     _codigo = codigo;
     _apelido = apelido;
     _unidade.codigo = codUnidade;
     _unidade.nome = nomeUnidade;
-    _is_provisionado = true;
+    return true;
+}
 
-    setState(SystemState::IDLE);
+// FOREGROUND: usado quando estamos saindo do estado PROVISIONANDO (primeira config)
+bool System::salvarConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade)
+{
+    if (!persistirConfiguracao(codigo, apelido, codUnidade, nomeUnidade))
+        return false;
+
+    _is_provisionado = true;
+    setState(SystemState::IDLE); // Só faz sentido aqui: estávamos em PROVISIONANDO
+    Serial.println("[SYSTEM] Provisionamento concluído. Operacional.");
+    return true;
+}
+
+// BACKGROUND: usado na sincronização periódica/pós-boot. Nunca mexe em estado atual,
+// pra não interromper IN_PROCESS/READING/AWAITING_CLOUD em andamento.
+bool System::atualizarConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade)
+{
+    if (!persistirConfiguracao(codigo, apelido, codUnidade, nomeUnidade))
+        return false;
+
+    Serial.println("[SYSTEM] Configuração atualizada via sincronização em background.");
     return true;
 }
 
@@ -127,7 +174,7 @@ String System::getSystemTitle()
 
 void System::iniciarProvisionamento()
 {
-    _is_provisionado = true;
+    _is_provisionado = false; // corrigido: não estamos provisionados ainda
     setState(SystemState::PROVISIONANDO);
     Serial.println("Entrando em modo de provisionamento...");
 

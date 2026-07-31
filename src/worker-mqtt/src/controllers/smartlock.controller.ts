@@ -15,7 +15,7 @@ class SmartlockController {
     }
     try {
       let me = await smartlockService.whoami(mac);
-      let status = me.is_new?"criado":"autenticado";
+      let status = me.uni_id?"criado":"autenticado";
       let payload = JSON.stringify({ status, me });
       console.log(payload)
       mqttClient.publish(`${this.mqtt_base_topic}/youare/${mac}`, payload);

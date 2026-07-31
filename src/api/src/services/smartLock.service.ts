@@ -5,7 +5,7 @@ import Smartlock from "../models/smartlock.model";
 import logSmartLockService from "./logSmartLock.service";
 
 class SmartLockService{
-    async getSmartlockByMac(mac:string):Promise<Smartlock>{
+    async getSmartlockByMac(mac:string):Promise<Smartlock|null>{
         try{
             let smartlock = await SmartLock.findOne({
                 attributes:[
@@ -24,9 +24,6 @@ class SmartLockService{
                 where:{mac_address:mac},
                 raw:true
             })
-            if(!smartlock){
-                throw new Error("SMARTLOCK_NOT_FOUND")
-            }
             return smartlock;
         }catch(e){
             throw e;
@@ -84,6 +81,7 @@ class SmartLockService{
                 attributes: [
           "id",
           "apelido",
+          ["mac_address","mac"],
           "is_online",
           "has_equipamentos",
           [Sequelize.col("unidade.nome"), "unidade"],
@@ -155,6 +153,17 @@ class SmartLockService{
     async listByUnidade(unidade_id:number):Promise<Smartlock[]>{
         try{
             let smartlocks = await Smartlock.findAll({where:{ativo:true,unidade_id},attributes:['id','apelido']})
+            return smartlocks;
+        }catch(e){
+            throw e;
+        }
+    }
+
+    async getSmartlocksProvisionando(){
+        try{
+            let smartlocks = await Smartlock.findAll({
+                where:{unidade_id:null,ativo:true}
+            })
             return smartlocks;
         }catch(e){
             throw e;
