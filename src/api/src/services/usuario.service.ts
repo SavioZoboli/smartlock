@@ -58,7 +58,7 @@ class UsuarioService {
 
   async getUsersSmartlock(mac: string): Promise<Usuario[]> {
     try {
-      const smartlock: Smartlock =
+      const smartlock: Smartlock|null =
         await smartLockService.getSmartlockByMac(mac);
       if (!smartlock) {
         throw new Error("SMARTLOCK_NOT_FOUND");
