@@ -1,5 +1,6 @@
 #include "mqtt_handler.h"
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "status_feedback_handler.h"
@@ -8,11 +9,15 @@
 #include "display_handler.h"
 #include "config.h"
 #include "secrets.h"
+#include "certs.h"
+#include "time_handler.h"
+#include "wifi_handler.h"
+#include "system.h"
 
 // Variáveis encapsuladas neste escopo
 namespace
 {
-    WiFiClient espClient;
+    WiFiClientSecure espClient;
     PubSubClient mqttClient(espClient);
 
     unsigned long lastMqttReconnectAttempt = 0;
@@ -29,6 +34,12 @@ void MqttHandler::init()
     String mac = WiFi.macAddress();
     strncpy(macStr, mac.c_str(), sizeof(macStr));
 
+    //espClient.setCACert(root_ca);
+
+    espClient.setInsecure();
+
+    mqttClient.setBufferSize(1024);
+
     mqttClient.setServer(MQTT_HOST, MQTT_PORT);
     mqttClient.setCallback(MqttHandler::callback);
 
@@ -38,6 +49,9 @@ void MqttHandler::init()
 
 void MqttHandler::reconnect()
 {
+    if(!Time::is_sync()){
+        return;
+    }
     unsigned long currentMillis = millis();
     if (currentMillis - lastMqttReconnectAttempt >= MQTT_RECONNECT_INTERVAL)
     {
@@ -68,6 +82,10 @@ void MqttHandler::reconnect()
             buildTopic(subTopic, sizeof(subTopic), "usuarios", "login_response");
             mqttClient.subscribe(subTopic);
 
+            // 4. Resposta de quem você é
+            buildTopic(subTopic, sizeof(subTopic), "system", "youare");
+            mqttClient.subscribe(subTopic);
+
             Serial.println("[MQTT] Tópicos assinados com sucesso.");
 
             MqttHandler::publish("usuarios", "sync_request", "{}");
@@ -82,7 +100,7 @@ void MqttHandler::reconnect()
 void MqttHandler::update()
 {
     // Se o WiFi estiver offline, nem tenta conectar no MQTT
-    if (WiFi.status() != WL_CONNECTED)
+    if (!WiFiHandler::isConnected())
     {
         StatusFeedback::set(Component::MQTT, State::OFF);
         return;
@@ -105,7 +123,7 @@ bool MqttHandler::publish(const char *module, const char *action, const char *pa
 {
     if (!mqttClient.connected())
     {
-        Serial.println("[MQTT] Erro ao publicar: Broker desconectado. (Os dados deveriam ir para Flash aqui!)");
+        Serial.println("[MQTT] Erro ao publicar: Broker desconectado.");
         // Futuro: Se falhar aqui, você salva na Preferences (Flash) e o StatusFeedback vai para DIRTY_OFFLINE
         return false;
     }
@@ -133,11 +151,12 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
     char topicLoginResponse[64];
     char topicUserSync[64];
     char topicEquipSync[64];
+    char topicIdentity[64];
 
     buildTopic(topicLoginResponse, sizeof(topicLoginResponse), "usuarios", "login_response");
     buildTopic(topicUserSync, sizeof(topicUserSync), "usuarios", "sync_response");
     buildTopic(topicEquipSync, sizeof(topicEquipSync), "equipamentos", "sync_response");
-
+    buildTopic(topicIdentity, sizeof(topicIdentity), "system", "youare");
     // ==========================================
     // ROTA 1: RESPOSTA DE LOGIN (Comparação Exata)
     // ==========================================
@@ -212,6 +231,31 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
         // Se a nuvem acusar recebimento, o ESP32 sabe que o dado do R200 chegou a salvo.
         Serial.println("[MQTT] Confirmação (ACK) de inventário recebida.");
         DisplayHandler::setTimeoutMessage("AUDITORIA", "Nuvem\nSincronizada", 3000);
+    }
+
+    // ==========================================
+    // ROTA 4: IDENTIDADE DO DISPOSITIVO
+    // ==========================================
+    else if(strcmp(topic,topicIdentity)==0){
+        StaticJsonDocument<384> doc;
+    DeserializationError error = deserializeJson(doc, message);
+    if (error) {
+        Serial.print(F("[MQTT] Erro de parse na identidade: "));
+        Serial.println(error.f_str());
+        return;
+    }
+
+    JsonObject info = doc["me"];
+    if (info.isNull()) return;
+
+    int codigo = info["id"] | 0;
+    String apelido = info["apelido"] | "Smartlock";
+    int codUnidade = info["uni_id"] | 0;
+    String nomeUnidade = info["uni_nome"] | "";
+
+    if (codigo > 0) {
+        System::salvarConfiguracao(codigo, apelido, codUnidade, nomeUnidade);
+    }
     }
 }
 

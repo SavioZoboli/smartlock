@@ -2,6 +2,7 @@
 #include <WiFiManager.h>
 #include "status_feedback_handler.h"
 #include "secrets.h"
+#include "display_handler.h"
 namespace {
     WiFiManager wm;
     unsigned long lastReconnectAttempt = 0;
@@ -20,6 +21,9 @@ void WiFiHandler::init() {
     Serial.println("[WIFI] Tentando rede salva na memoria...");
     WiFi.begin(); // Usa as credenciais que já estão na NVS
     
+    DisplayHandler::setFixedMessage("Conectando rede WiFi...");
+    DisplayHandler::update();
+
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) { // Aguarda ~10 segundos
         delay(500);
@@ -49,7 +53,7 @@ void WiFiHandler::init() {
         StatusFeedback::set(Component::WIFI, State::OK);
     } else {
         Serial.println("\n[WIFI] Nenhuma rede disponivel. Subindo Portal AP em background...");
-        
+        DisplayHandler::setFixedMessage("Rede: SMARTLOCK_CONFIG\nIP: 192.168.4.1");
         snprintf(macHtml, sizeof(macHtml), 
                  "<hr><h3>Configuracao de Fabrica</h3><p><b>MAC Address:</b> %s</p><hr>", 
                  WiFi.macAddress().c_str());
