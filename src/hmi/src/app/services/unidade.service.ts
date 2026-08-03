@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UnidadeService {
-  private api_url:string = "http://localhost:3000"
+  private api_url:string = environment.api_url
   private  headers = {
     "content-type":"application/json"
   }
