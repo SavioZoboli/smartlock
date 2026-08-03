@@ -4,7 +4,7 @@
 // Ordem de import importa: themes (define as CSS vars --mat-sys-*) antes de
 // tokens (alguns tokens referenciam --mat-sys-*) antes de shared-patterns.
 // =============================================================================
-
+//
 @use './assets/scss/themes';
 @use './assets/scss/tokens';
 @use './assets/scss/shared-patterns' as shared;
