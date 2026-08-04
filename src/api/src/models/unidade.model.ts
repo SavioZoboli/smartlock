@@ -4,7 +4,7 @@ import sequelize from "../config/database";
 interface UnidadesAttributes {
   id: number;
   nome: string;
-  regional: string;
+  regiao_id: number;
   ativo: boolean;
   entidade:string;
   createdAt?: Date;
@@ -19,7 +19,7 @@ interface UnidadeCreationAttributes extends Optional<
 class Unidade extends Model<UnidadesAttributes, UnidadeCreationAttributes> {
   declare id: number;
   declare nome: string;
-  declare regional: string;
+  declare regiao_id: string;
   declare entidade:string;
   declare ativo: boolean;
 }
@@ -36,10 +36,13 @@ Unidade.init(
       allowNull: false,
       unique: true,
     },
-    regional: {
-      type: DataTypes.STRING(24),
+    regiao_id: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      unique: false,
+      references:{
+        model:'regioes',
+        key:'id'
+      }
     },
     entidade:{
       type:DataTypes.STRING,

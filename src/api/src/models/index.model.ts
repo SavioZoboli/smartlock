@@ -8,10 +8,15 @@ import LogSmartlock from './logSmartlock.model';
 import ItensMovimentacao from './itensMovimentacao.model';
 import Reserva from './reserva.model';
 import ItensReserva from './itensReserva.model';
+import Regiao from './regiao.model';
 
 // ============================================================================
 // DEFINIÇÃO DOS RELACIONAMENTOS (ASSOCIATIONS)
 // ============================================================================
+
+Regiao.hasMany(Unidade,{foreignKey:'regiao_id',as:'unidade'})
+Unidade.belongsTo(Regiao,{foreignKey:'regiao_id',as:'regional'})
+
 
 // 1. Relacionamentos de UNIDADE
 Unidade.hasMany(Usuario, { foreignKey: 'unidade_lotacao_id', as: 'usuarios' });
