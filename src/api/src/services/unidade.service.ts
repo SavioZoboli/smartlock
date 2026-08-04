@@ -1,5 +1,6 @@
+import { Sequelize } from "sequelize";
 import sequelize from "../config/database";
-import {Unidade} from "../models/index.model";
+import {Regiao, Unidade} from "../models/index.model";
 
 class UnidadeService{
 
@@ -18,7 +19,20 @@ class UnidadeService{
 
     async listAll():Promise<Unidade[]>{
         try{
-            let unidades = await Unidade.findAll({raw:true})
+            let unidades = await Unidade.findAll({
+                attributes:[
+                    'id',
+                    'nome',
+                    'entidade',
+                    [Sequelize.col('regional.nome'),'regional']
+                ],
+                include:[{
+                    model:Regiao,
+                    as:'regional',
+                    attributes:[]
+                }],
+                raw:true
+            })
             return unidades;
         }catch(e){
             throw e;
