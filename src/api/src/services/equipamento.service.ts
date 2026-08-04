@@ -8,6 +8,7 @@ import {
   Unidade,
   Usuario,
 } from "../models/index.model";
+import Smartlock from "../models/smartlock.model";
 
 class EquipamentoService {
   async bulkCreate(equipamentos: EquipamentoAttributes[]): Promise<number> {
@@ -36,7 +37,7 @@ class EquipamentoService {
     }
   }
 
-  async listAll(regiao_id:number): Promise<Equipamento[]> {
+  async listAll(regiao_id: number): Promise<Equipamento[]> {
     try {
       let equipametos = await Equipamento.findAll({
         where: { ativo: true },
@@ -60,7 +61,7 @@ class EquipamentoService {
                 model: Unidade,
                 as: "unidade",
                 attributes: [],
-                where:{regiao_id}
+                where: { regiao_id },
               },
             ],
           },
@@ -199,11 +200,13 @@ class EquipamentoService {
                 model: Unidade,
                 as: "unidade",
                 attributes: ["nome"],
-                include: [{
-                  model: Regiao,
-                  as: 'regional',
-                  attributes: ["id", "nome"], // adicionei "id" já que você quer retorná-lo
-                }],
+                include: [
+                  {
+                    model: Regiao,
+                    as: "regional",
+                    attributes: ["id", "nome"], // adicionei "id" já que você quer retorná-lo
+                  },
+                ],
               },
             ],
           },
@@ -228,89 +231,184 @@ class EquipamentoService {
   }
 
   async getRelatorioDisponibilidade(smartlock_id: number) {
-  try {
-    const agora = new Date();
-    const fimDoDia = new Date();
-    fimDoDia.setHours(23, 59, 59, 999);
+    try {
+      const agora = new Date();
+      const fimDoDia = new Date();
+      fimDoDia.setHours(23, 59, 59, 999);
 
-    const linhas: any[] = await Equipamento.findAll({
-      attributes: [
-        "id",
-        "apelido",
-        "tipo",
-        "patrimonio",
-        [Sequelize.col("usuarioAtual.nome"), "responsavel"],
-        [Sequelize.col("reservas.reserva_inicio"), "reserva_inicio"],
-        [Sequelize.col("reservas.reserva_fim"), "reserva_fim"],
-        [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],
-      ],
-      include: [
-        {
-          model: Usuario,
-          as: "usuarioAtual",
-          attributes: [],
-          required: false,
-        },
-        {
-          model: Reserva,
-          as: "reservas",
-          attributes: [],
-          required: false,
-          through: { attributes: [] },
-          where: {
-            reserva_inicio: { [Op.gte]: agora },
-            reserva_fim: { [Op.lte]: fimDoDia },
-            situacao: { [Op.ne]: "CANCELADA" },
+      const linhas: any[] = await Equipamento.findAll({
+        attributes: [
+          "id",
+          "apelido",
+          "tipo",
+          "patrimonio",
+          [Sequelize.col("usuarioAtual.nome"), "responsavel"],
+          [Sequelize.col("reservas.reserva_inicio"), "reserva_inicio"],
+          [Sequelize.col("reservas.reserva_fim"), "reserva_fim"],
+          [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],
+        ],
+        include: [
+          {
+            model: Usuario,
+            as: "usuarioAtual",
+            attributes: [],
+            required: false,
           },
-          include: [
-            {
-              model: Usuario,
-              as: "usuario",
-              attributes: [],
-              required: false,
+          {
+            model: Reserva,
+            as: "reservas",
+            attributes: [],
+            required: false,
+            through: { attributes: [] },
+            where: {
+              reserva_inicio: { [Op.gte]: agora },
+              reserva_fim: { [Op.lte]: fimDoDia },
+              situacao: { [Op.ne]: "CANCELADA" },
             },
-          ],
-        },
-      ],
-      where: { ativo: true, smartlock_base_id: smartlock_id },
-      order: [
-        ["apelido", "asc"],
-        ["patrimonio", "asc"],
-        [Sequelize.col("reservas.reserva_inicio"), "asc"],
-      ],
-      raw: true,
-    });
+            include: [
+              {
+                model: Usuario,
+                as: "usuario",
+                attributes: [],
+                required: false,
+              },
+            ],
+          },
+        ],
+        where: { ativo: true, smartlock_base_id: smartlock_id },
+        order: [
+          ["apelido", "asc"],
+          ["patrimonio", "asc"],
+          [Sequelize.col("reservas.reserva_inicio"), "asc"],
+        ],
+        raw: true,
+      });
 
-    // Agrupa as linhas duplicadas (uma por reserva) em um único equipamento com array de reservas
-    const agrupado = new Map<number, any>();
+      // Agrupa as linhas duplicadas (uma por reserva) em um único equipamento com array de reservas
+      const agrupado = new Map<number, any>();
 
-    for (const linha of linhas) {
-      if (!agrupado.has(linha.id)) {
-        agrupado.set(linha.id, {
-          id: linha.id,
-          apelido: linha.apelido,
-          tipo: linha.tipo,
-          patrimonio: linha.patrimonio,
-          responsavel: linha.responsavel,
-          disponivel: linha.responsavel == null,
-          reservas: [],
-        });
+      for (const linha of linhas) {
+        if (!agrupado.has(linha.id)) {
+          agrupado.set(linha.id, {
+            id: linha.id,
+            apelido: linha.apelido,
+            tipo: linha.tipo,
+            patrimonio: linha.patrimonio,
+            responsavel: linha.responsavel,
+            disponivel: linha.responsavel == null,
+            reservas: [],
+          });
+        }
+
+        if (linha.reserva_inicio) {
+          agrupado.get(linha.id).reservas.push({
+            usuario: linha.reserva_usuario,
+            inicio: linha.reserva_inicio,
+            fim: linha.reserva_fim,
+          });
+        }
       }
 
-      if (linha.reserva_inicio) {
-        agrupado.get(linha.id).reservas.push({
-          usuario: linha.reserva_usuario,
-          inicio: linha.reserva_inicio,
-          fim: linha.reserva_fim,
-        });
-      }
+      return Array.from(agrupado.values());
+    } catch (e) {
+      throw e;
     }
-
-    return Array.from(agrupado.values());
-  } catch (e) {
-    throw e;
   }
-}
+
+  async getRelatorioDisponibilidadeUnidade(unidade_id: number) {
+    try {
+      const agora = new Date();
+      const fimDoDia = new Date();
+      fimDoDia.setHours(23, 59, 59, 999);
+
+      const linhas: any[] = await Equipamento.findAll({
+        attributes: [
+          "id",
+          "apelido",
+          "tipo",
+          "patrimonio",
+          [Sequelize.col("smartlockBase.id"), "smartlock_id"],
+          [Sequelize.col("smartlockBase.apelido"), "smartlock_apelido"],
+          [Sequelize.col("usuarioAtual.nome"), "responsavel"],
+          [Sequelize.col("reservas.reserva_inicio"), "reserva_inicio"],
+          [Sequelize.col("reservas.reserva_fim"), "reserva_fim"],
+          [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],
+        ],
+        include: [
+          {
+            model: Usuario,
+            as: "usuarioAtual",
+            attributes: [],
+            required: false,
+          },
+          {
+            model: Smartlock,
+            as: "smartlockBase",
+            attributes: [],
+            where: { unidade_id },
+          },
+          {
+            model: Reserva,
+            as: "reservas",
+            attributes: [],
+            required: false,
+            through: { attributes: [] },
+            where: {
+              reserva_inicio: { [Op.gte]: agora },
+              reserva_fim: { [Op.lte]: fimDoDia },
+              situacao: { [Op.ne]: "CANCELADA" },
+            },
+            include: [
+              {
+                model: Usuario,
+                as: "usuario",
+                attributes: [],
+                required: false,
+              },
+            ],
+          },
+        ],
+        where: { ativo: true },
+        order: [
+          ["apelido", "asc"],
+          ["patrimonio", "asc"],
+          [Sequelize.col("reservas.reserva_inicio"), "asc"],
+        ],
+        raw: true,
+      });
+
+      // Agrupa as linhas duplicadas (uma por reserva) em um único equipamento com array de reservas
+      const agrupado = new Map<number, any>();
+
+      for (const linha of linhas) {
+        if (!agrupado.has(linha.id)) {
+          agrupado.set(linha.id, {
+            id: linha.id,
+            apelido: linha.apelido,
+            tipo: linha.tipo,
+            patrimonio: linha.patrimonio,
+            responsavel: linha.responsavel,
+            disponivel: linha.responsavel == null,
+            smartlockId: linha.smartlock_id,
+            smartlockApelido: linha.smartlock_apelido,
+            reservas: [],
+          });
+        }
+
+        if (linha.reserva_inicio) {
+          agrupado.get(linha.id).reservas.push({
+            usuario: linha.reserva_usuario,
+            inicio: linha.reserva_inicio,
+            fim: linha.reserva_fim,
+          });
+        }
+      }
+
+      return Array.from(agrupado.values());
+    } catch (e) {
+      throw e;
+    }
+  }
 
   async listDisponibilidadeData(
     smartlock_id: number,

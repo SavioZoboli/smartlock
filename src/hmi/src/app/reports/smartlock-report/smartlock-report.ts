@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,7 +8,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Observable, startWith, map, switchMap, of, combineLatest } from 'rxjs';
 import { Equipamento } from '../../models/equipamento.model';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { UnidadeService } from '../../services/unidade.service';
@@ -18,6 +17,12 @@ import { Smartlock } from '../../pages/smartlock/lista-smartlock/lista-smartlock
 import { SystemNotificationService } from '../../services/system-notification.service';
 import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 import { MatExpansionModule } from '@angular/material/expansion';
+
+interface GrupoSmartlock {
+  smartlockId: number;
+  smartlockApelido: string;
+  itens: Equipamento[];
+}
 
 @Component({
   selector: 'app-smartlock-report',
@@ -47,10 +52,40 @@ export class SmartlockReport implements OnInit {
   filteredUnidades = signal<Unidade[]>([]);
   filteredSmartlocks = signal<Smartlock[]>([]);
 
-  equipamentos: Equipamento[] = [];
+  // Lista completa retornada pelo backend para a unidade selecionada.
+  // ATENÇÃO: assumi que cada item de Equipamento traz `smartlockId` e
+  // `smartlockApelido` (ajuste os nomes conforme o retorno real do backend).
+  equipamentos = signal<Equipamento[]>([]);
+
+  // Smartlock escolhida no filtro (ou null = mostrar todas as smartlocks da unidade).
+  smartlockFiltro = signal<Smartlock | null>(null);
+
   carregando = signal<boolean>(false);
 
   tiposEquipamentos = TIPO_EQUIPAMENTOS;
+
+  // Agrupamento por smartlock, recalculado em memória a cada mudança
+  // do filtro — sem nova chamada ao backend.
+  grupos = computed<GrupoSmartlock[]>(() => {
+    const filtro = this.smartlockFiltro();
+    const lista:any = filtro
+      ? this.equipamentos().filter((item:any) => item.smartlockId === filtro.id)
+      : this.equipamentos();
+
+    const mapa = new Map<number, GrupoSmartlock>();
+    for (const item of lista) {
+      const grupo:any = mapa.get(item.smartlockId) ?? {
+        smartlockId: item.smartlockId,
+        smartlockApelido: item.smartlockApelido,
+        itens: [],
+      };
+      grupo.itens.push(item);
+      mapa.set(item.smartlockId, grupo);
+    }
+    return Array.from(mapa.values()).sort((a, b) =>
+      a.smartlockApelido.localeCompare(b.smartlockApelido),
+    );
+  });
 
   constructor(
     private equipamentoService: EquipamentoService,
@@ -76,48 +111,52 @@ export class SmartlockReport implements OnInit {
 
     this.unidadeCtrl.valueChanges.subscribe((val: string | Unidade) => {
       this.filteredUnidades.set(this._filterUnidade(val || ''));
+
       if (val && typeof val !== 'string') {
         this.smartlocks = [];
         this.filteredSmartlocks.set([]);
         this.smartlockCtrl.reset();
+        this.smartlockFiltro.set(null);
+
         this.buscaSmartlock(val.id);
+        this.buscarRelatorio(val.id);
+      } else {
+        this.equipamentos.set([]);
       }
     });
 
+    // Agora só filtra o array já carregado — não dispara requisição.
     this.smartlockCtrl.valueChanges.subscribe((val: string | Smartlock) => {
       this.filteredSmartlocks.set(this._filterSmartlock(val || ''));
-      if (val && typeof val !== 'string') {
-        this.buscarRelatorio(val.id);
-      }
+      this.smartlockFiltro.set(val && typeof val !== 'string' ? val : null);
     });
   }
 
   buscaSmartlock(unidade_id: number) {
-    this.carregando.set(true);
     this.smartlockService.listByUnidade(unidade_id).subscribe({
       next: (res) => {
-        this.carregando.set(false);
         this.smartlocks = res;
         this.filteredSmartlocks.set(res);
       },
       error: (e) => {
-        this.carregando.set(false);
         this.sns.notificar('Erro ao buscar Smartlocks da Unidade', 'erro');
         console.error(e);
       },
     });
   }
 
-  buscarRelatorio(smartlock_id: number) {
+  // NOVO endpoint necessário no backend/serviço: retorna todos os
+  // equipamentos das smartlocks de uma unidade (não mais de uma smartlock só).
+  buscarRelatorio(unidade_id: number) {
     this.carregando.set(true);
-    this.equipamentoService.buscarRelatorioDisponibilidade(smartlock_id).subscribe({
+    this.equipamentoService.buscarRelatorioDisponibilidadePorUnidade(unidade_id).subscribe({
       next: (res) => {
-        console.log(res)
-        if (res.length > 0) {
-          console.log(res)
-          this.equipamentos = res.map(linha=>{return {...linha,icone:this.tiposEquipamentos.find(t=>t.descricao==linha.tipo)?.icone}});
-        }
-
+        this.equipamentos.set(
+          res.map((linha:any) => ({
+            ...linha,
+            icone: this.tiposEquipamentos.find((t) => t.descricao == linha.tipo)?.icone,
+          })),
+        );
         this.carregando.set(false);
       },
       error: (e) => {

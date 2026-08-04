@@ -40,89 +40,95 @@
       <mat-spinner diameter="32"></mat-spinner>
       <span>Carregando equipamentos...</span>
     </div>
-  } @else if (!unidadeCtrl.value || !smartlockCtrl.value) {
+  } @else if (!unidadeCtrl.value) {
     <div class="state-message">
       <mat-icon>filter_alt</mat-icon>
-      <span>Selecione unidade e smartlock para ver a disponibilidade.</span>
+      <span>Selecione uma unidade para ver a disponibilidade.</span>
     </div>
-  } @else if (equipamentos.length === 0) {
+  } @else if (grupos().length === 0) {
     <div class="state-message">
       <mat-icon>inbox</mat-icon>
-      <span>Nenhum equipamento encontrado para esta smartlock.</span>
+      <span>Nenhum equipamento encontrado para esta unidade.</span>
     </div>
   } @else {
-    <div class="equipment-grid">
-      @for (item of equipamentos; track item.id) {
-        <mat-card
-          class="equipment-card"
-          [ngClass]="[
-            item.disponivel ? 'status-green' : 'status-gray',
-            item.reservas?.length ? 'has-reserva' : '',
-          ]"
-        >
-          <div class="status-indicator"></div>
-          <div class="card-content">
-            <div class="card-header">
-              <mat-icon class="eq-icon">{{ item.icone }}</mat-icon>
-              <span class="eq-code">{{ item.apelido ? item.apelido : '' }}</span>
-            </div>
+    @for (grupo of grupos(); track grupo.smartlockId) {
+      <div class="smartlock-group">
+        <h3 class="smartlock-title">{{ grupo.smartlockApelido }}</h3>
 
-            <div class="card-body">
-              <span>{{ item.tipo }}</span>
-              <span>Patrimônio: {{ item.patrimonio }}</span>
-              @if (!item.disponivel) {
-                <div class="status-badge unavailable">
-                  <mat-icon class="sm-icon">person</mat-icon> Em uso
-                </div>
-                <div class="employee-name">{{ item.responsavel }}</div>
-              } @else if (item.reservas?.length) {
-                <div class="status-badge reserved">
-                  <mat-icon class="sm-icon">event</mat-icon>
-                  Disponível até {{ item.reservas[0].inicio | date: 'HH:mm' }}
-                </div>
-              } @else {
-                <div class="status-badge available">
-                  <mat-icon class="sm-icon">check_circle</mat-icon> Disponível
-                </div>
-              }
-
-              @if (item.reservas?.length) {
-                <div class="reservation-info">
-                  <mat-icon class="sm-icon">event</mat-icon>
-                  <div class="reservation-main">
-                    <span class="reservation-user">{{ item.reservas[0].usuario }}</span>
-                    <span class="reservation-time">
-                      {{ item.reservas[0].inicio | date: 'HH:mm' }} -
-                      {{ item.reservas[0].fim | date: 'HH:mm' }}
-                    </span>
-                  </div>
+        <div class="equipment-grid">
+          @for (item of grupo.itens; track item.id) {
+            <mat-card
+              class="equipment-card"
+              [ngClass]="[
+                item.disponivel ? 'status-green' : 'status-gray',
+                item.reservas?.length ? 'has-reserva' : '',
+              ]"
+            >
+              <div class="status-indicator"></div>
+              <div class="card-content">
+                <div class="card-header">
+                  <mat-icon class="eq-icon">{{ item.icone }}</mat-icon>
+                  <span class="eq-code">{{ item.apelido ? item.apelido : '' }}</span>
                 </div>
 
-                @if (item.reservas.length > 1) {
-                  <mat-expansion-panel class="reservation-extra-panel">
-                    <mat-expansion-panel-header>
-                      <mat-panel-title
-                        >+{{ item.reservas.length - 1 }} reserva(s) hoje</mat-panel-title
-                      >
-                    </mat-expansion-panel-header>
-                    @for (reserva of item.reservas.slice(1); track $index) {
-                      <div class="reservation-info">
-                        <mat-icon class="sm-icon">event</mat-icon>
-                        <div class="reservation-main">
-                          <span class="reservation-user">{{ reserva.usuario }}</span>
-                          <span class="reservation-time">
-                            {{ reserva.inicio | date: 'HH:mm' }} - {{ reserva.fim | date: 'HH:mm' }}
-                          </span>
-                        </div>
+                <div class="card-body">
+                  <span>{{ item.tipo }}</span>
+                  <span>Patrimônio: {{ item.patrimonio }}</span>
+                  @if (!item.disponivel) {
+                    <div class="status-badge unavailable">
+                      <mat-icon class="sm-icon">person</mat-icon> Em uso
+                    </div>
+                    <div class="employee-name">{{ item.responsavel }}</div>
+                  } @else if (item.reservas?.length) {
+                    <div class="status-badge reserved">
+                      <mat-icon class="sm-icon">event</mat-icon>
+                      Disponível até {{ item.reservas[0].inicio | date: 'HH:mm' }}
+                    </div>
+                  } @else {
+                    <div class="status-badge available">
+                      <mat-icon class="sm-icon">check_circle</mat-icon> Disponível
+                    </div>
+                  }
+
+                  @if (item.reservas?.length) {
+                    <div class="reservation-info">
+                      <mat-icon class="sm-icon">event</mat-icon>
+                      <div class="reservation-main">
+                        <span class="reservation-user">{{ item.reservas[0].usuario }}</span>
+                        <span class="reservation-time">
+                          {{ item.reservas[0].inicio | date: 'HH:mm' }} -
+                          {{ item.reservas[0].fim | date: 'HH:mm' }}
+                        </span>
                       </div>
+                    </div>
+
+                    @if (item.reservas.length > 1) {
+                      <mat-expansion-panel class="reservation-extra-panel">
+                        <mat-expansion-panel-header>
+                          <mat-panel-title
+                            >+{{ item.reservas.length - 1 }} reserva(s) hoje</mat-panel-title
+                          >
+                        </mat-expansion-panel-header>
+                        @for (reserva of item.reservas.slice(1); track $index) {
+                          <div class="reservation-info">
+                            <mat-icon class="sm-icon">event</mat-icon>
+                            <div class="reservation-main">
+                              <span class="reservation-user">{{ reserva.usuario }}</span>
+                              <span class="reservation-time">
+                                {{ reserva.inicio | date: 'HH:mm' }} - {{ reserva.fim | date: 'HH:mm' }}
+                              </span>
+                            </div>
+                          </div>
+                        }
+                      </mat-expansion-panel>
                     }
-                  </mat-expansion-panel>
-                }
-              }
-            </div>
-          </div>
-        </mat-card>
-      }
-    </div>
+                  }
+                </div>
+              </div>
+            </mat-card>
+          }
+        </div>
+      </div>
+    }
   }
 </div>
