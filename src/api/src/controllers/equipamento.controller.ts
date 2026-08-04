@@ -148,7 +148,7 @@ class EquipamentoController {
     }
   }
 
-  async reportDisponibilidade(req: Request, res: Response) {
+  async reportDisponibilidadeSmartlock(req: Request, res: Response) {
     let rawId = req.params.smartlock_id;
     if (!rawId || typeof rawId != "string") {
       return res
@@ -162,6 +162,27 @@ class EquipamentoController {
     try {
       let relatorio =
         await equipamentoService.getRelatorioDisponibilidade(smartlock_id);
+      return res.status(200).json(relatorio);
+    } catch (e) {
+      console.log(e);
+      return res.status(500).json({ message: "Erro interno do Servidor" });
+    }
+  }
+
+    async reportDisponibilidadeUnidade(req: Request, res: Response) {
+    let rawId = req.params.unidade_id;
+    if (!rawId || typeof rawId != "string") {
+      return res
+        .status(400)
+        .json({ message: "Valores obrigatórios não informados" });
+    }
+    let unidade_id = Number(rawId);
+    if (isNaN(unidade_id)) {
+      return res.status(400).json({ message: "O código precisa se numérico" });
+    }
+    try {
+      let relatorio =
+        await equipamentoService.getRelatorioDisponibilidadeUnidade(unidade_id);
       return res.status(200).json(relatorio);
     } catch (e) {
       console.log(e);

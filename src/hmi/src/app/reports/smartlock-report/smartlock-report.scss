@@ -51,6 +51,19 @@
   @extend %state-message;
 }
 
+.smartlock-group {
+  & + .smartlock-group {
+    margin-top: var(--app-space-xl, 32px);
+  }
+}
+
+.smartlock-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0 0 var(--app-space-md) 0;
+}
+
 .equipment-grid {
   @extend %equipment-grid;
 }

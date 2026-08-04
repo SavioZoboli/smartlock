@@ -20,7 +20,8 @@ router.delete('/:id',authMiddleware,handleAdmin,equipamentoController.deactivate
 
 router.get('/listBySmartlock/:smartlock_id',authMiddleware,equipamentoController.listBySmartlock)
 
-router.get('/relatorio/disponibilidade/:smartlock_id',authMiddleware,equipamentoController.reportDisponibilidade)
+router.get('/relatorio/disponibilidade/smartlock/:smartlock_id',authMiddleware,equipamentoController.reportDisponibilidadeSmartlock)
+router.get('/relatorio/disponibilidade/unidade/:unidade_id',authMiddleware,equipamentoController.reportDisponibilidadeUnidade)
 
 // TODO: débito técnico - usando POST em vez de QUERY (RFC 10008)
 // Motivo: suporte instável em proxies/firewalls corporativos (Palo Alto bloqueando/resetando)

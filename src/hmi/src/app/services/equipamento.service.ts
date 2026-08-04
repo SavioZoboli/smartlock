@@ -51,7 +51,11 @@ export class EquipamentoService {
   }
 
   buscarRelatorioDisponibilidade(smartlock_id:number):Observable<Equipamento[]>{
-    return this.http.get<Equipamento[]>(`${this.api_url}/relatorio/disponibilidade/${smartlock_id}`,{withCredentials:true})
+    return this.http.get<Equipamento[]>(`${this.api_url}/relatorio/disponibilidade/smartlock/${smartlock_id}`,{withCredentials:true})
+  }
+
+  buscarRelatorioDisponibilidadePorUnidade(unidade_id:number):Observable<any>{
+return this.http.get(`${this.api_url}/relatorio/disponibilidade/unidade/${unidade_id}`,{withCredentials:true})
   }
 
    buscarDisponveisData(smartlock_id: number, dataHoraInicio: Date, dataHoraFim: Date): Observable<any> { 
