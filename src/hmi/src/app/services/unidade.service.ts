@@ -14,12 +14,12 @@ export class UnidadeService {
 
   constructor(private http:HttpClient){}
 
-  public create(nome:string,regional:string,entidade:string):Observable<any>{
-    return this.http.post(`${this.api_url}/api/unidade`,{nome,regional,entidade},{headers:this.headers})
+  public create(nome:string,regiao_id:string,entidade:string):Observable<any>{
+    return this.http.post(`${this.api_url}/api/unidade`,{nome,regiao_id,entidade},{headers:this.headers})
   }
 
-  public update(id:number,nome:string,regional:string,entidade:string):Observable<any>{
-    return this.http.put(`${this.api_url}/api/unidade`,{id,nome,regional,entidade},{headers:this.headers})
+  public update(id:number,nome:string,regiao_id:string,entidade:string):Observable<any>{
+    return this.http.put(`${this.api_url}/api/unidade`,{id,nome,regiao_id,entidade},{headers:this.headers})
   }
 
   public getById(id:number):Observable<any>{

@@ -10,6 +10,7 @@ const equipamentoRouter = require("./equipamentos.routes")
 const kpiRouter = require("./kpi.routes")
 const movimentacaoRouter = require("./movimentacao.routes")
 const reservaRouter = require("./reserva.routes")
+const regiaoRouter = require("./regiao.routes")
 
 router.get('/',(req:Request,res:Response)=>{
     res.status(200).json({message:"API acessível"})
@@ -23,5 +24,6 @@ router.use(`/equipamento`,equipamentoRouter)
 router.use(`/kpi`,kpiRouter)
 router.use('/movimentacao',movimentacaoRouter)
 router.use('/reserva',reservaRouter)
+router.use('/regiao',regiaoRouter)
 
 module.exports = router;

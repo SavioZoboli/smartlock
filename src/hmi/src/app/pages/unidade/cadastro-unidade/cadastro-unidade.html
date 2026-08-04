@@ -35,7 +35,7 @@
           subscriptSizing="dynamic"
           class="form-field full-width"
         >
-          <mat-label>Nome da Unidade (Apelido)</mat-label>
+          <mat-label>Nome da Unidade</mat-label>
           <input matInput type="text" formControlName="nome" placeholder="Ex: SENAI Blumenau" />
           <mat-icon matPrefix class="field-icon">business</mat-icon>
           @if (unidadeForm.get('nome')?.hasError('required') && unidadeForm.get('nome')?.touched) {
@@ -52,8 +52,8 @@
         >
           <mat-label>Regional</mat-label>
           <mat-select formControlName="regional">
-            @for (regional of regionais; track regional) {
-              <mat-option [value]="regional">{{ regional }}</mat-option>
+            @for (regional of regionais(); track regional.id) {
+              <mat-option [value]="regional">{{ regional.nome }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix class="field-icon">map</mat-icon>

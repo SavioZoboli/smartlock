@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,6 +13,7 @@ import { UnidadeService } from '../../../services/unidade.service';
 import { Router, ActivatedRoute } from '@angular/router'; // INJEÇÃO DA ROTA
 import { REGIONAIS_SC } from '../../../shared/regionais.constant';
 import { SystemNotificationService } from '../../../services/system-notification.service';
+import { RegiaoService } from '../../../services/regiao.service';
 
 @Component({
   selector: 'app-cadastro-unidade',
@@ -35,7 +36,7 @@ import { SystemNotificationService } from '../../../services/system-notification
 export class CadastroUnidade implements OnInit {
   unidadeForm: FormGroup;
   empresas: string[] = ['FIESC', 'SENAI', 'SESI', 'CIESC', 'IEL'];
-  regionais: readonly string[] = REGIONAIS_SC;
+  regionais = signal<{id:number,nome:string}[]>([])
 
   // Variáveis de controle de estado
   unidadeId: number | null = null;
@@ -47,8 +48,12 @@ export class CadastroUnidade implements OnInit {
     private unidadeService: UnidadeService,
     private router: Router,
     private route: ActivatedRoute,
-    private sns:SystemNotificationService
+    private sns:SystemNotificationService,
+    private regiaoService:RegiaoService
   ) {
+
+    this.buscaRegioes()
+
     this.unidadeForm = this.fb.group({
       entidade: ['SENAI', Validators.required],
       nome: ['', [Validators.required, Validators.minLength(3)]],
@@ -64,6 +69,14 @@ export class CadastroUnidade implements OnInit {
       this.unidadeId = Number(idParam);
       this.carregarDadosUnidade();
     }
+  }
+
+  private buscaRegioes(){
+    this.regiaoService.listAll().subscribe({
+      next:(res)=>{
+        this.regionais.set(res)
+      }
+    })
   }
 
   private carregarDadosUnidade(): void {
@@ -94,8 +107,8 @@ export class CadastroUnidade implements OnInit {
 
       // Define se vai chamar a rota de criação ou atualização baseando-se na existência do ID
       const requisicao$ = this.unidadeId
-        ? this.unidadeService.update(this.unidadeId, formObj.nome, formObj.regional, formObj.entidade)
-        : this.unidadeService.create(formObj.nome, formObj.regional, formObj.entidade);
+        ? this.unidadeService.update(this.unidadeId, formObj.nome, formObj.regional.id, formObj.entidade)
+        : this.unidadeService.create(formObj.nome, formObj.regional.id, formObj.entidade);
 
       requisicao$.subscribe({
         next: () => {
