@@ -1,3 +1,4 @@
+import regiaoService from "./regiao.service";
 import usuarioService from "./usuario.service";
 
 const { OAuth2Client } = require("google-auth-library");
@@ -29,8 +30,10 @@ class AuthService {
       // 3. Integração com o Banco de Dados (Você precisa implementar essa função)
       // Buscamos pelo email ou pelo ID único do Google (sub)
       let user = await usuarioService.getUserByEmail(email);
+      
 
       if (!user) {
+
         let sessionToken = this.geraTokenTemporario(email,nome,avatar);
 
         return {
@@ -40,11 +43,13 @@ class AuthService {
         };
       } else {
 
+        let regiao_id = await regiaoService.getRegiaoDoUsuario(user.id)
+
         user = await usuarioService.updateAvatar(user.id,avatar);
 
         let is_admin = user.role == "ADMIN";
 
-        let sessionToken = this.geraToken(user.id, user.email,user.nome+" "+user.sobrenome,user.avatar,is_admin);
+        let sessionToken = this.geraToken(user.id, user.email,user.nome+" "+user.sobrenome,user.avatar,is_admin,regiao_id);
 
         return {
           sessionToken,
@@ -62,9 +67,9 @@ class AuthService {
     return jwt.sign({ email: email ,nome:nome,avatar:avatar}, this.JWT_SECRET, { expiresIn: "15min" });
   }
 
-  public geraToken(id: number, email: string,nome:string,avatar:string,is_admin:boolean): string {
+  public geraToken(id: number, email: string,nome:string,avatar:string,is_admin:boolean,regiao_id:number): string {
     return jwt.sign(
-      { id, email,nome,avatar,is_admin}, // Payload da nossa aplicação
+      { id, email,nome,avatar,is_admin,regiao_id}, // Payload da nossa aplicação
       this.JWT_SECRET,
       { expiresIn: this.JWT_EXPIRATION },
     );

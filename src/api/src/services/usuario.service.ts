@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import { Usuario, LogUsuario, Unidade } from "../models/index.model";
+import { Usuario, LogUsuario, Unidade, Regiao } from "../models/index.model";
 import Smartlock from "../models/smartlock.model";
 import smartLockService from "./smartLock.service";
 
@@ -96,13 +96,20 @@ class UsuarioService {
           "email",
           "avatar",
           [Sequelize.col("unidadeLotacao.nome"), "unidade"],
-          [Sequelize.col("unidadeLotacao.regional"), "regional"],
+          [Sequelize.col("unidadeLotacao.regional.nome"), "regional"],
         ],
         include: [
           {
             model: Unidade,
             as: "unidadeLotacao",
-            attributes: [], // Array vazio para não gerar um objeto "unidadeLotacao" aninhado extra
+            attributes: [],
+            include:[
+              {
+                model:Regiao,
+                as:'regional',
+                attributes:[]
+              }
+            ]
           },
         ],
         raw: true,

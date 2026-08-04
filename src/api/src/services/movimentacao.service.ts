@@ -7,6 +7,7 @@ import {
   Unidade,
   Usuario,
   Equipamento,
+  Regiao,
 } from "../models/index.model";
 import unidadeService from "./unidade.service";
 
@@ -216,7 +217,14 @@ class MovimentacaoService {
           {
             model: Unidade,
             as: "unidade",
-            attributes: ["id", "nome", "regional"],
+            attributes: ["id", "nome",],
+            include:[
+              {
+                model:Regiao,
+                as:'regional',
+                attributes:['nome']
+              }
+            ]
           },
         ],
       },
@@ -242,7 +250,7 @@ class MovimentacaoService {
     usuario: `${m.usuario.nome} ${m.usuario.sobrenome ?? ""}`.trim(),
     smartlock: m.smartlock.apelido,
     unidade: m.smartlock.unidade.nome,
-    regional: m.smartlock.unidade.regional,
+    regional: m.smartlock.unidade.regional.nome,
     equipamentos: m.equipamentos.map((e: any) => ({
       id: e.id,
       apelido: e.apelido,

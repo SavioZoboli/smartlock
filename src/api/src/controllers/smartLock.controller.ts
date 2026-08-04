@@ -64,8 +64,12 @@ class SmartLockController {
   }
 
   async listAll(req: Request, res: Response) {
+    let regiao_id = req.user?.regiao_id
+    if(!regiao_id){
+      return res.status(401).json({message:"Deslogado"})
+    }
     try {
-      let smartlocks = await smartLockService.listAll();
+      let smartlocks = await smartLockService.listAll(regiao_id);
       res.status(200).json(smartlocks);
     } catch (e) {
       res.status(500).json({ message: "Erro interno do Servidor" });

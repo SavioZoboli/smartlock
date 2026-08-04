@@ -3,8 +3,12 @@ import equipamentoService from "../services/equipamento.service";
 
 class EquipamentoController {
   async listAll(req: Request, res: Response) {
+    let regiao_id = req.user?.regiao_id
+    if(!regiao_id){
+      return res.status(401).json({message:"Deslogado"})
+    }
     try {
-      let equipamentos = await equipamentoService.listAll();
+      let equipamentos = await equipamentoService.listAll(regiao_id);
       return res.status(200).json(equipamentos);
     } catch (e) {
       console.log(e);
