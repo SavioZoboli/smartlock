@@ -4,14 +4,14 @@ import unidadeService from "../services/unidade.service";
 class UnidadeController {
   async create(req: Request, res: Response) {
     const b = req.body;
-    if (!b.nome || !b.regional || !b.entidade) {
+    if (!b.nome || !b.regiao_id || !b.entidade) {
       return res.status(401).json({ message: "Faltam dados obrigatórios" });
     }
 
     try {
       let unidade_id = await unidadeService.create(
         b.nome,
-        b.regional,
+        b.regiao_id,
         b.entidade,
       );
       return res.status(201).json({ codigo: unidade_id });
@@ -55,11 +55,11 @@ class UnidadeController {
 
   async update(req:Request,res:Response){
     let b = req.body;
-    if(!b.id || !b.nome || !b.regional || !b.entidade){
+    if(!b.id || !b.nome || !b.regiao_id || !b.entidade){
         return res.status(400).json({"message":"Dados inválidos"})
     }
     try{
-        let unidade = await unidadeService.update(b.id,b.nome,b.regional,b.entidade)
+        let unidade = await unidadeService.update(b.id,b.nome,b.regiao_id,b.entidade)
         res.status(200).json({message:"Alterado"})
     }catch(e:any){
         if(e.message == "UNIDADE_NOT_FOUND"){

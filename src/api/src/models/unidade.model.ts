@@ -19,7 +19,7 @@ interface UnidadeCreationAttributes extends Optional<
 class Unidade extends Model<UnidadesAttributes, UnidadeCreationAttributes> {
   declare id: number;
   declare nome: string;
-  declare regiao_id: string;
+  declare regiao_id: number;
   declare entidade:string;
   declare ativo: boolean;
 }

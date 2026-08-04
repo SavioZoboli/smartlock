@@ -3,11 +3,11 @@ import {Unidade} from "../models/index.model";
 
 class UnidadeService{
 
-    async create(nome:string,regional:string,entidade:string):Promise<number>{
+    async create(nome:string,regiao_id:number,entidade:string):Promise<number>{
         try{
             let unidade = await Unidade.create({
                 nome,
-                regional,
+                regiao_id,
                 entidade
             })
             return unidade.id
@@ -37,14 +37,14 @@ class UnidadeService{
         }
     }
 
-    async update(id:number,nome:string,regional:string,entidade:string){
+    async update(id:number,nome:string,regiao_id:number,entidade:string){
         try{
             let unidade = await Unidade.findByPk(id);
             if(!unidade){
                 throw new Error("UNIDADE_NOT_FOUND")
             }
             unidade.nome = nome
-            unidade.regional = regional
+            unidade.regiao_id = regiao_id
             unidade.entidade = entidade
             await unidade.save()
             return unidade;
@@ -65,9 +65,9 @@ class UnidadeService{
         }
     }
 
-    async getUnidadesDaRegional(regional:string):Promise<number[]>{
+    async getUnidadesDaRegional(regiao_id:number):Promise<number[]>{
         try{
-            let unidades = await Unidade.findAll({where:{regional,ativo:true},attributes:['id']})
+            let unidades = await Unidade.findAll({where:{regiao_id,ativo:true},attributes:['id']})
             return unidades.map(u=>u.id)
         }catch(e){
             throw e;

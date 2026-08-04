@@ -111,5 +111,6 @@ export {
   LogSmartlock,
   ItensMovimentacao,
   Reserva,
-  ItensReserva
+  ItensReserva,
+  Regiao
 };
