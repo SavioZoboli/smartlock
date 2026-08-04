@@ -3,6 +3,7 @@ import usuarioService from "../services/usuario.service";
 import authService from "../services/auth.service";
 import { verificarToken } from "../utils/jwt.utils";
 import { COOKIE_OPTIONS } from "./auth.controller";
+import regiaoService from "../services/regiao.service";
 
 class UsuarioController {
   async create(req: Request, res: Response) {
@@ -168,7 +169,8 @@ class UsuarioController {
     }
     try{
       let usuario = await usuarioService.create(uuid,nome,sobrenome,matricula,unidade_id,email,avatar)
-      let token = authService.geraToken(usuario.id,usuario.email,usuario.nome,usuario.avatar,usuario.role=='ADMIN')
+      let regional_id = await regiaoService.getRegiaoDoUsuario(usuario.id)
+      let token = authService.geraToken(usuario.id,usuario.email,usuario.nome,usuario.avatar,usuario.role=='ADMIN',regional_id)
 
       res.cookie("token", token, COOKIE_OPTIONS);
 
