@@ -2,6 +2,7 @@ import { Op, Sequelize } from "sequelize";
 import { EquipamentoAttributes } from "../models/equipamento.model";
 import {
   Equipamento,
+  Regiao,
   Reserva,
   SmartLock,
   Unidade,
@@ -35,7 +36,7 @@ class EquipamentoService {
     }
   }
 
-  async listAll(): Promise<Equipamento[]> {
+  async listAll(regiao_id:number): Promise<Equipamento[]> {
     try {
       let equipametos = await Equipamento.findAll({
         where: { ativo: true },
@@ -59,6 +60,7 @@ class EquipamentoService {
                 model: Unidade,
                 as: "unidade",
                 attributes: [],
+                where:{regiao_id}
               },
             ],
           },
@@ -196,7 +198,12 @@ class EquipamentoService {
               {
                 model: Unidade,
                 as: "unidade",
-                attributes: ["nome", "regional"],
+                attributes: ["nome"],
+                include: [{
+                  model: Regiao,
+                  as: 'regional',
+                  attributes: ["id", "nome"], // adicionei "id" já que você quer retorná-lo
+                }],
               },
             ],
           },
@@ -212,6 +219,7 @@ class EquipamentoService {
         tipo: e.tipo,
         smartlock: e.smartlockBase.apelido,
         unidade: e.smartlockBase.unidade.nome,
+        regional: e.smartlockBase.unidade.regional.id,
         data_movimentacao: e.get("data_movimentacao"),
       }));
     } catch (e) {

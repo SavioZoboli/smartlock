@@ -3,6 +3,7 @@ import sequelize from "../config/database";
 import {
   Equipamento,
   ItensReserva,
+  Regiao,
   Reserva,
   SmartLock,
   Unidade,
@@ -52,11 +53,17 @@ class ReservaService {
           "motivo",
           [Sequelize.col("usuario.nome"), "responsavel"],
           [Sequelize.col("smartlock_origem.apelido"), "smartlock"],
-          [Sequelize.col("smartlock_origem.unidade.nome"), "unidade"],
-          [Sequelize.col("smartlock_origem.unidade.regional"), "regional"],
+          [Sequelize.col("smartlock_origem->unidade.nome"), "unidade"],
+          [Sequelize.col("smartlock_origem->unidade->regional.nome"), "regional"],
         ],
         include: [
-          { model: Usuario, as: "usuario", attributes: [] },
+          {
+            model: Usuario,
+            as: "usuario",
+            required: true,
+            attributes: [],
+            where: { id: usuario_id },
+          },
           {
             model: SmartLock,
             as: "smartlock_origem",
@@ -66,6 +73,13 @@ class ReservaService {
                 model: Unidade,
                 as: "unidade",
                 attributes: [],
+                include: [
+                  {
+                    model: Regiao,
+                    as: "regional",
+                    attributes: [],
+                  },
+                ],
               },
             ],
           },
@@ -166,22 +180,25 @@ class ReservaService {
     }
   }
 
-  async delete(reserva_id:number):Promise<void>{
-    let transaction = await sequelize.transaction()
-    try{
-      let itens = await ItensReserva.findAll({where:{reserva_id},transaction})
-      for(let item of itens){
-        await item.destroy({transaction})
+  async delete(reserva_id: number): Promise<void> {
+    let transaction = await sequelize.transaction();
+    try {
+      let itens = await ItensReserva.findAll({
+        where: { reserva_id },
+        transaction,
+      });
+      for (let item of itens) {
+        await item.destroy({ transaction });
       }
-      let reserva = await Reserva.findByPk(reserva_id)
-      if(!reserva){
-        throw new Error("ERR_RESERVA_NOT_FOUND")
+      let reserva = await Reserva.findByPk(reserva_id);
+      if (!reserva) {
+        throw new Error("ERR_RESERVA_NOT_FOUND");
       }
-      reserva.destroy()
-      await transaction.commit()
-    }catch(e){
-      await transaction.rollback()
-      throw e
+      reserva.destroy();
+      await transaction.commit();
+    } catch (e) {
+      await transaction.rollback();
+      throw e;
     }
   }
 }
