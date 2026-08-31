@@ -1,5 +1,3 @@
-//require('dotenv').config()
-
 
 class SistemaService {
   async enviaStatusAtual(mac: string, status: string) {
