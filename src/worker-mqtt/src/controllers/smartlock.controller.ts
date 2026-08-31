@@ -1,5 +1,4 @@
 import { mqttClient } from "../config/mqtt";
-import sistemaService from "../services/sistema.service";
 import smartlockService from "../services/smartlock.service";
 
 class SmartlockController {

@@ -1,5 +1,3 @@
-require('dotenv').config()
-
 class SmartlockService{
 
     private api_url = `${process.env.URL_API}/api/smartlock`;
