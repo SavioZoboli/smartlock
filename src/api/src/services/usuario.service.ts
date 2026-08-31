@@ -85,6 +85,15 @@ class UsuarioService {
     }
   }
 
+  async getByTag(uid:string):Promise<number|null>{
+    try{
+      let usuario = await Usuario.findOne({where:{uid_rfid:uid,ativo:true}})
+      return usuario?usuario.id:null;
+    }catch(e){
+      throw e
+    }
+  }
+
   async listAll(): Promise<Usuario[]> {
     try {
       let usuarios = await Usuario.findAll({

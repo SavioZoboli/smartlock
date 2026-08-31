@@ -4,10 +4,6 @@
 // CONFIGURAÇÕES DE HARDWARE (PINOUT)
 // ==========================================
 
-// --- Comunicação UHF (R200) ---
-#define R200_RX_PIN 16
-#define R200_TX_PIN 17
-
 // --- Comunicação SPI (MFRC522) ---
 #define MFRC522_RST_PIN 4
 #define MFRC522_SS_PIN 5
@@ -22,6 +18,13 @@
 #define RELE_PIN 26
 #define BUZZER_PIN 27
 #define SENSOR_PORTA_PIN 14
+
+// --- Link de comunicação entre os ESP32 ---
+
+#define PIN_RX_LINK 16
+#define PIN_TX_LINK 17
+
+
 
 // ==========================================
 // CONSTANTES DO SISTEMA

@@ -55,6 +55,7 @@ export const routes: Routes = [
         canActivate: [authGuard,adminGuard],
         component:MainLayoutComponent,
         children: [
+          // Telas de listagem
           { path: 'unidades/lista', component: ListaUnidade },
           { path: 'usuarios/lista', component: ListaUsuario },
           { path: 'smartlocks/lista', component: ListaSmartlock },

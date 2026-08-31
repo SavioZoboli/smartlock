@@ -5,6 +5,8 @@ const router = require('express').Router()
 
 router.post('/',authMiddleware,movimentacaoController.bulkMovimenta)
 
+router.post('/:mac',movimentacaoController.bulkMovimentaPorSmartlock)
+
 router.get('/ultimosDias/:dias',authMiddleware,movimentacaoController.getMovimentacoesUltimosDiasUsuario)
 
 module.exports = router

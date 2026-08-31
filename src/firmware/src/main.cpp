@@ -4,7 +4,7 @@
 #include "mqtt_handler.h"
 #include "display_handler.h"
 #include "rfid_hf_handler.h"
-#include "rfid_uhf_handler.h"
+#include "reader_module.h"
 #include "hardware_io_handler.h"
 #include "auth_handler.h"
 #include "buzzer_handler.h"
@@ -12,6 +12,11 @@
 #include "storage_handler.h"
 #include "system.h"
 #include "time_handler.h"
+
+
+unsigned long timerLeitura = 0; 
+const unsigned long TIMEOUT_LEITURA_MS = 45000; // 45 Segundos limite para o Slave responder
+
 
 void setup()
 {
@@ -38,7 +43,7 @@ void setup()
 
     // 3. Inicializa os periféricos de leitura
     RfidHfHandler::init();
-    UhfHandler::init();
+    ReaderModule::init();
     AuthHandler::init();
     StorageHandler::init();
 
@@ -74,17 +79,19 @@ void semResposta()
 
 void loop()
 {
-    
+
     WiFiHandler::update();
     Time::update();
     MqttHandler::update();
     StatusFeedback::update();
     System::update();
-    
-    if(System::getState()==SystemState::IDLE){
+
+    ReaderModule::update();
+
+    if (System::getState() == SystemState::IDLE)
+    {
         DisplayHandler::setFixedMessage("Aproxime o cracha...");
     }
-
 
     DisplayHandler::update();
 
@@ -98,8 +105,6 @@ void loop()
     // 1. Atualiza as rotinas de background
     HardwareIOHandler::update();
     AuthHandler::update();
-
-    InventoryManager::update();
 
     char uidLida[16] = {0};
 
@@ -151,36 +156,54 @@ void loop()
         }
     }
 
+
+    // USUÁRIO ESTÁ PEGANDO / DEVOLVENDO EQUIPAMENTOS
     if (System::getState() == SystemState::IN_PROCESS)
     {
         DisplayHandler::setFixedMessage("Feche a porta");
         if (HardwareIOHandler::doorJustClosed())
         {
-            // Liga o leitor e espera terminar (bloqueante por 4s aqui ou por máquina de estados)
             BuzzerHandler::play(SoundEffect::LOGOFF);
-            DisplayHandler::setTimeoutMessage("INVENTARIO", "Fazendo leitura", 4000);
-            InventoryManager::startScanFor(4000);
+            DisplayHandler::setFixedMessage("Fazendo leitura");
+            ReaderModule::beginReading();
             StatusFeedback::set(Component::PORTA, State::CLOSED);
             System::setState(SystemState::READING);
+            
+            timerLeitura = millis(); // INICIA O CRONÔMETRO DE SEGURANÇA
         }
     }
 
-    if (System::getState() == SystemState::READING && InventoryManager::scanJustFinished())
+    // FAZENDO A LEITURA
+    if (System::getState() == SystemState::READING)
     {
-
-        System::setState(SystemState::IDLE);
-        BuzzerHandler::play(SoundEffect::RFID_SUCCESS);
-        return;
-
-        // Remover e validar quando tiver o leitor de RFID UHF
-        auto eventos = InventoryManager::calculateDiff(); // Calcula os eventos
-
-        if (!eventos.empty())
+        // 1. Verifica se houve Timeout (Slave morreu ou cabo rompeu)
+        if (millis() - timerLeitura > TIMEOUT_LEITURA_MS) {
+            Serial.println("[ERRO CRÍTICO] Timeout! Slave não respondeu.");
+            BuzzerHandler::play(SoundEffect::OP_FAIL);
+            DisplayHandler::setTimeoutMessage("ERRO", "Leitor Falhou", 4000);
+            System::setState(SystemState::IDLE);
+        }
+        // 2. Verifica se o Slave respondeu (com Sucesso ou Erro)
+        else if (ReaderModule::scanJustFinished()) 
         {
-            String jsonEventos = InventoryManager::serializeEvents(eventos); // Transforma em JSON
-            StorageHandler::pushEventToQueue(jsonEventos.c_str());           // Empilha na fila (Flash)
-            InventoryManager::commitInventory();
-            System::setState(SystemState::IDLE); // Atualiza o estado atual
+            if (ReaderModule::wasSuccess()) {
+                // SUCESSO: Faz o cálculo de diferença de inventário normalmente
+                BuzzerHandler::play(SoundEffect::RFID_SUCCESS);
+                ReaderModule::populateCurrentInventory(InventoryManager::inventarioAtual);
+                auto eventos = InventoryManager::calculateDiff();
+
+                if (!eventos.empty()) {
+                    String jsonEventos = InventoryManager::serializeEvents(eventos);
+                    StorageHandler::pushEventToQueue(jsonEventos.c_str());
+                    InventoryManager::commitInventory();
+                }
+            } else {
+                // ERRO MECÂNICO: Motor travou no meio. Descarta a leitura para não gerar falsas retiradas!
+                BuzzerHandler::play(SoundEffect::OP_FAIL);
+                DisplayHandler::setTimeoutMessage("ERRO", "Falha Mecanica", 4000);
+            }
+            
+            System::setState(SystemState::IDLE);
         }
     }
 
