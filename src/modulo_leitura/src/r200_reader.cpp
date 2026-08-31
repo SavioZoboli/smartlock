@@ -1,16 +1,54 @@
 #include "r200_reader.h"
 
-R200Reader::R200Reader(HardwareSerial& port, uint8_t rxPin, uint8_t txPin, uint32_t baudRate)
-    : _serial(port), _rxPin(rxPin), _txPin(txPin), _baudRate(baudRate) {}
+// ======================================================================
+// 🐞 MODO DEBUG ATIVADO: Mude para 0 quando quiser parar de jorrar logs
+#define DEBUG_UHF 0 
+// ======================================================================
+
+const uint8_t FRAME_HEADER = 0xAA;
+const uint8_t FRAME_END    = 0xDD;
+const uint8_t TYPE_COMMAND      = 0x00;
+const uint8_t TYPE_NOTIFICATION = 0x02;
+
+R200Reader::R200Reader(Stream& port) : _stream(port) {}
 
 void R200Reader::init() {
-    _serial.begin(_baudRate, SERIAL_8N1, _rxPin, _txPin);
     delay(100);
+    while (_stream.available()) {
+        _stream.read(); // Limpa sujeira no buffer
+    }
 }
 
-void R200Reader::sendFrame(const uint8_t* cmd, size_t length) {
-    _serial.write(cmd, length);
-    _serial.flush();
+uint8_t R200Reader::calcularChecksum(const uint8_t* body, size_t length) {
+    uint32_t sum = 0;
+    for (size_t i = 0; i < length; i++) sum += body[i];
+    return static_cast<uint8_t>(sum & 0xFF);
+}
+
+void R200Reader::sendFrame(uint8_t frameType, uint8_t cmd, const uint8_t* params, uint16_t paramsLen) {
+    size_t bodyLen = 4 + paramsLen;
+    uint8_t body[bodyLen];
+
+    body[0] = frameType;
+    body[1] = cmd;
+    body[2] = static_cast<uint8_t>((paramsLen >> 8) & 0xFF);
+    body[3] = static_cast<uint8_t>(paramsLen & 0xFF);
+
+    for (uint16_t i = 0; i < paramsLen; i++) body[4 + i] = params[i];
+
+    uint8_t cs = calcularChecksum(body, bodyLen);
+
+    #if DEBUG_UHF
+    Serial.print("\n[UHF TX] Enviando: AA ");
+    for (size_t i = 0; i < bodyLen; i++) Serial.printf("%02X ", body[i]);
+    Serial.printf("%02X DD\n", cs);
+    #endif
+
+    _stream.write(FRAME_HEADER);
+    _stream.write(body, bodyLen);
+    _stream.write(cs);
+    _stream.write(FRAME_END);
+    _stream.flush();
 }
 
 void R200Reader::setPower(uint8_t powerDbm) {
@@ -18,85 +56,117 @@ void R200Reader::setPower(uint8_t powerDbm) {
     if (powerDbm > 26) powerDbm = 26;
 
     uint16_t powerVal = powerDbm * 100;
-    uint8_t cmd[9] = {
-        0xBB, 0x00, 0xB6, 0x00, 0x02,
+    uint8_t params[3] = {
+        0x02,
         static_cast<uint8_t>((powerVal >> 8) & 0xFF),
-        static_cast<uint8_t>(powerVal & 0xFF),
-        0x00, 0x7E
+        static_cast<uint8_t>(powerVal & 0xFF)
     };
-
-    uint8_t checksum = 0;
-    for (int i = 1; i < 7; i++) {
-        checksum += cmd[i];
-    }
-    cmd[7] = checksum;
-
-    sendFrame(cmd, sizeof(cmd));
+    
+    #if DEBUG_UHF
+    Serial.printf("[UHF CONFIG] Ajustando potencia para %u dBm...\n", powerDbm);
+    #endif
+    
+    sendFrame(TYPE_COMMAND, 0xB6, params, 3);
     delay(50);
 }
 
 void R200Reader::startInventory() {
-    // Limpa o buffer de leitura anterior
-    while (_serial.available()) {
-        _serial.read();
-    }
-    const uint8_t startInventoryCmd[] = {0xBB, 0x00, 0x27, 0x00, 0x03, 0x22, 0xFF, 0xFF, 0x4A, 0x7E};
-    sendFrame(startInventoryCmd, sizeof(startInventoryCmd));
+    while (_stream.available()) _stream.read();
+    uint8_t pollParams[] = {0x22, 0xFF, 0xFF};
+    
+    #if DEBUG_UHF
+    Serial.println("[UHF CONFIG] Iniciando Leitura Continua (CMD 0x27)...");
+    #endif
+    
+    sendFrame(TYPE_COMMAND, 0x27, pollParams, sizeof(pollParams));
 }
 
 void R200Reader::stopInventory() {
-    const uint8_t stopInventoryCmd[] = {0xBB, 0x00, 0x28, 0x00, 0x00, 0x28, 0x7E};
-    sendFrame(stopInventoryCmd, sizeof(stopInventoryCmd));
+    #if DEBUG_UHF
+    Serial.println("[UHF CONFIG] Parando Leitura Continua (CMD 0x28)...");
+    #endif
+    
+    sendFrame(TYPE_COMMAND, 0x28);
     delay(50);
-    while (_serial.available()) {
-        _serial.read();
-    }
+    while (_stream.available()) _stream.read();
 }
 
 void R200Reader::processBuffer(std::vector<String>& tagList) {
-    while (_serial.available() >= 7) {
-        if (_serial.peek() != 0xBB) {
-            _serial.read(); // Alinhamento de cabeçalho
+    while (_stream.available() > 0) {
+        // Se o byte não for 0xAA (Nosso Header Python), é lixo.
+        if (_stream.peek() != FRAME_HEADER) {
+            uint8_t lixo = _stream.read();
+            #if DEBUG_UHF
+            Serial.printf("[UHF RX RAW] Byte ignorado (Nao e 0xAA): %02X\n", lixo);
+            #endif
             continue;
         }
 
-        uint8_t header  = _serial.read();
-        uint8_t type    = _serial.read();
-        uint8_t cmd     = _serial.read();
-        uint8_t lenHigh = _serial.read();
-        uint8_t lenLow  = _serial.read();
-        uint16_t dataLen = (lenHigh << 8) | lenLow;
+        // Aguarda ter pelo menos os 5 bytes básicos do cabeçalho
+        if (_stream.available() < 5) return;
 
-        if (_serial.available() < dataLen + 2) {
-            break; // Frame incompleto no buffer
+        uint8_t header = _stream.read(); // Sempre será 0xAA
+        uint8_t type   = _stream.read();
+        uint8_t cmd    = _stream.read();
+        uint8_t lenH   = _stream.read();
+        uint8_t lenL   = _stream.read();
+        uint16_t paramLen = (lenH << 8) | lenL;
+
+        unsigned long inicioEspera = millis();
+        // Fica preso aqui no máximo 40ms esperando o resto da mensagem chegar
+        while (_stream.available() < paramLen + 2) {
+            if (millis() - inicioEspera > 40) {
+                #if DEBUG_UHF
+                Serial.printf("[UHF RX ERRO] Timeout. Esperava %d bytes, buffer tinha %d.\n", (paramLen + 2), _stream.available());
+                #endif
+                break;
+            }
         }
 
-        uint8_t payload[dataLen];
-        _serial.readBytes(payload, dataLen);
-        uint8_t checksum = _serial.read();
-        uint8_t endByte  = _serial.read();
+        if (_stream.available() < paramLen + 2) break;
 
-        // Frame de detecção (cmd == 0x22)
-        if (cmd == 0x22 && dataLen > 5) {
-            uint16_t epcLength = dataLen - 5;
-            char epcStr[epcLength * 2 + 1];
-            for (uint16_t i = 0; i < epcLength; i++) {
-                sprintf(&epcStr[i * 2], "%02X", payload[3 + i]);
+        uint8_t params[paramLen];
+        _stream.readBytes(params, paramLen);
+        uint8_t checksum = _stream.read();
+        uint8_t endByte  = _stream.read();
+
+        #if DEBUG_UHF
+        Serial.printf("[UHF RX PACOTE] Type:%02X | Cmd:%02X | Len:%d | CS:%02X | End:%02X\n", type, cmd, paramLen, checksum, endByte);
+        if (paramLen > 0) {
+            Serial.print("  -> Payload: ");
+            for(uint16_t i=0; i<paramLen; i++) Serial.printf("%02X ", params[i]);
+            Serial.println();
+        }
+        #endif
+
+        if (endByte != FRAME_END) {
+            #if DEBUG_UHF
+            Serial.println("[UHF RX ERRO] Frame descartado. Byte final incorreto (Diferente de 0xDD).");
+            #endif
+            continue;
+        }
+
+        // Filtra Notificação de Tag Detectada do protocolo Python que testamos
+        if (type == TYPE_NOTIFICATION && cmd == 0x22 && paramLen >= 5) {
+            uint8_t rssi = params[0];
+            uint16_t epcLen = paramLen - 5; 
+            char epcStr[epcLen * 2 + 1];
+            for (uint16_t i = 0; i < epcLen; i++) {
+                sprintf(&epcStr[i * 2], "%02X", params[3 + i]);
             }
-            epcStr[epcLength * 2] = '\0';
+            epcStr[epcLen * 2] = '\0';
 
             String tagHex = String(epcStr);
-
+            
+            #if DEBUG_UHF
+            Serial.printf("[TAG LIDA!] EPC: %s | RSSI: %02X\n", tagHex.c_str(), rssi);
+            #endif
+            
             bool exists = false;
             for (const auto& t : tagList) {
-                if (t == tagHex) {
-                    exists = true;
-                    break;
-                }
+                if (t == tagHex) { exists = true; break; }
             }
-            if (!exists) {
-                tagList.push_back(tagHex);
-            }
+            if (!exists) tagList.push_back(tagHex);
         }
     }
 }
