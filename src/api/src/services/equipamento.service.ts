@@ -449,6 +449,15 @@ class EquipamentoService {
     // Mapeia para o formato pedido, com "reserva" já no shape desejado
     return equipamentos;
   }
+
+  async listByTag(tags:string[]):Promise<number[]>{
+    try{
+      let equipamentos = await Equipamento.findAll({where:{tag:{[Op.in]:tags}}})
+      return equipamentos.map(e=>e.id)
+    }catch(e){
+      throw e
+    }
+  }
 }
 
 export default new EquipamentoService();
