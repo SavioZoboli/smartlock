@@ -1,35 +1,23 @@
 .server-status {
-    position:absolute;
-    right:10px;
-    bottom:10px;
-  display: inline-flex;
-  align-items: center;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 8px;
   font-size: 0.875rem;
 
-  .status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: #9e9e9e;
-    transition: background-color 0.3s ease;
+  .ok {
+    color: var(--app-success);
   }
 
-  &.ok .status-dot {
-    background-color: #4caf50;
+  .erro {
+    color: var(--app-danger);
   }
 
-  &.erro .status-dot {
-    background-color: #f44336;
-  }
-
-  &.carregando .status-dot {
-    background-color: #9e9e9e;
-    animation: pulse 1.2s infinite ease-in-out;
-  }
-
-  .status-label {
-    color: var(--mat-sys-on-surface);
+  .carregando {
+    color: var(--app-warning);
   }
 }
 

@@ -1,10 +1,45 @@
-<div class="server-status" [class]="status()">
-  <span class="status-dot"></span>
-  <span class="status-label">
-    @switch (status()) {
-      @case ('ok') { API online }
-      @case ('erro') { API indisponível }
-      @default { Verificando... }
-    }
-  </span>
+<div class="server-status" [class]="api()">
+  @if (searchedModule == 'all' || searchedModule == 'api') {
+    <div class="status-row" matTooltip="API">
+      <span class="status-indicator">
+        <mat-icon [class]="api()">api</mat-icon>
+      </span>
+    </div>
+  }
+  @if (searchedModule == 'all' || searchedModule == 'api') {
+    <div class="status-row">
+      <span class="status-indicator" matTooltip="Banco de dados">
+        <mat-icon [class]="database()">
+          @if (database() == "erro") {
+            database_off
+          }
+          @else {
+            database
+          }
+        </mat-icon>
+      </span>
+    </div>
+  }
+
+  @if (searchedModule == 'all' || searchedModule == 'mqtt') {
+    <div class="status-row">
+      <span class="status-indicator" matTooltip="Worker MQTT">
+        <mat-icon [class]="worker_mqtt()">
+          @if (worker_mqtt() == "erro") {
+            sensors_off
+          }
+          @else {
+            sensors
+          }
+        </mat-icon>
+      </span>
+    </div>
+  }
+  @if (searchedModule == 'all' || searchedModule == 'mqtt') {
+    <div class="status-row">
+      <span class="status-indicator" matTooltip="Broker MQTT">
+        <mat-icon [class]="broker_mqtt()">hive</mat-icon>
+      </span>
+    </div>
+  }
 </div>

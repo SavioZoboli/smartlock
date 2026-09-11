@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from 'cookie-parser';
+import systemStatusSingleton from "./system-status/system-status.singleton";
 
 // Garante o carregamento das variáveis de ambiente
 dotenv.config();
@@ -39,6 +40,8 @@ app.get("/status", (req, res) => {
 
 const indexRoutes = require("./routes/index.routes")
 app.use("/api",indexRoutes)
+
+systemStatusSingleton.polling()
 
 // Liga o servidor HTTP Express
 app.listen(PORT, () => {
