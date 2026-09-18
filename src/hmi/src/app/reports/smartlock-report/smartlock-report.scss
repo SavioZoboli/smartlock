@@ -70,6 +70,7 @@
 
 .equipment-card {
   @extend %equipment-card;
+  position: relative;
 
   // Indicador lateral: verde = online, cinza = offline.
   // Era #10b981/#94a3b8 (2.54:1 / 2.56:1 sobre branco — abaixo dos 3:1
@@ -81,6 +82,17 @@
 
   &.status-gray .status-indicator {
     background-color: var(--mat-sys-outline);
+  }
+
+  .employee-avatar {
+    position: absolute;
+    top: var(--app-space-md, 16px);
+    right: var(--app-space-md, 16px);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: default;
   }
 }
 
@@ -117,21 +129,6 @@
     }
   }
 
-  .employee-name {
-    font-size: 0.85rem;
-    color: var(--mat-sys-on-surface-variant);
-    font-weight: 500;
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-
-    &::before {
-      content: 'Retirado por: ';
-      color: var(--mat-sys-outline);
-      font-weight: 400;
-      margin-right: 4px;
-    }
-  }
 }
 
 

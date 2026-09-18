@@ -19,6 +19,7 @@ import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatButtonToggleGroup, MatButtonToggle } from '@angular/material/button-toggle';
+import { MatTooltip } from '@angular/material/tooltip';
 
 interface GrupoSmartlock {
   smartlockId: number;
@@ -42,7 +43,8 @@ interface GrupoSmartlock {
     MatExpansionModule,
     MatButtonToggleGroup,
     MatButtonToggle,
-  ],
+    MatTooltip
+],
   templateUrl: './smartlock-report.html',
   styleUrls: ['./smartlock-report.scss'],
 })
@@ -70,6 +72,9 @@ export class SmartlockReport implements OnInit {
   grupos = computed<GrupoSmartlock[]>(() => {
     const filtro = this.smartlockFiltro();
     const status = this.status();
+
+    console.log(this.equipamentos())
+
     const lista: any = filtro
       ? this.equipamentos().filter(
           (item: any) =>

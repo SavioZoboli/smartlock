@@ -70,6 +70,14 @@
               ]"
             >
               <div class="status-indicator"></div>
+              @if (!item.disponivel && item.avatar) {
+                <img
+                  class="employee-avatar"
+                  [src]="item.avatar"
+                  [matTooltip]="item.responsavel"
+                  alt="Foto de {{ item.responsavel }}"
+                />
+              }
               <div class="card-content">
                 <div class="card-header">
                   <mat-icon class="eq-icon">{{ item.icone }}</mat-icon>
@@ -83,7 +91,6 @@
                     <div class="status-badge unavailable">
                       <mat-icon class="sm-icon">person</mat-icon> Em uso
                     </div>
-                    <div class="employee-name">{{ item.responsavel }}</div>
                   } @else if (item.reservas?.length) {
                     <div class="status-badge reserved">
                       <mat-icon class="sm-icon">event</mat-icon>
