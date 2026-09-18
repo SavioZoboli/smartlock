@@ -51,6 +51,10 @@ class EquipamentoService {
           [Sequelize.col("smartlockBase.unidade.nome"), "unidade"],
           [Sequelize.col("usuarioAtual.nome"), "usuario"],
         ],
+        order: [
+          ["apelido", "asc"],
+          ["patrimonio", "asc"],
+        ],
         include: [
           {
             model: SmartLock,
@@ -160,6 +164,10 @@ class EquipamentoService {
     try {
       let equipamentos = await Equipamento.findAll({
         where: { smartlock_base_id: smartlock_id, ativo: true },
+        order: [
+          ["apelido", "asc"],
+          ["patrimonio", "asc"],
+        ],
       });
       return equipamentos;
     } catch (e) {
@@ -450,12 +458,14 @@ class EquipamentoService {
     return equipamentos;
   }
 
-  async listByTag(tags:string[]):Promise<number[]>{
-    try{
-      let equipamentos = await Equipamento.findAll({where:{tag:{[Op.in]:tags}}})
-      return equipamentos.map(e=>e.id)
-    }catch(e){
-      throw e
+  async listByTag(tags: string[]): Promise<number[]> {
+    try {
+      let equipamentos = await Equipamento.findAll({
+        where: { tag: { [Op.in]: tags } },
+      });
+      return equipamentos.map((e) => e.id);
+    } catch (e) {
+      throw e;
     }
   }
 }
