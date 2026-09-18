@@ -17,6 +17,8 @@ import { Smartlock } from '../../pages/smartlock/lista-smartlock/lista-smartlock
 import { SystemNotificationService } from '../../services/system-notification.service';
 import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatButtonToggleGroup, MatButtonToggle } from '@angular/material/button-toggle';
 
 interface GrupoSmartlock {
   smartlockId: number;
@@ -37,7 +39,9 @@ interface GrupoSmartlock {
     MatIconModule,
     MatChipsModule,
     MatProgressSpinnerModule,
-    MatExpansionModule
+    MatExpansionModule,
+    MatButtonToggleGroup,
+    MatButtonToggle,
   ],
   templateUrl: './smartlock-report.html',
   styleUrls: ['./smartlock-report.scss'],
@@ -45,6 +49,7 @@ interface GrupoSmartlock {
 export class SmartlockReport implements OnInit {
   unidadeCtrl = new FormControl();
   smartlockCtrl = new FormControl();
+  statusCtrl = new FormControl('todos');
 
   unidades: Unidade[] = [];
   smartlocks: Smartlock[] = [];
@@ -52,13 +57,9 @@ export class SmartlockReport implements OnInit {
   filteredUnidades = signal<Unidade[]>([]);
   filteredSmartlocks = signal<Smartlock[]>([]);
 
-  // Lista completa retornada pelo backend para a unidade selecionada.
-  // ATENÇÃO: assumi que cada item de Equipamento traz `smartlockId` e
-  // `smartlockApelido` (ajuste os nomes conforme o retorno real do backend).
   equipamentos = signal<Equipamento[]>([]);
-
-  // Smartlock escolhida no filtro (ou null = mostrar todas as smartlocks da unidade).
   smartlockFiltro = signal<Smartlock | null>(null);
+  status = signal<string>('todos');
 
   carregando = signal<boolean>(false);
 
@@ -68,13 +69,17 @@ export class SmartlockReport implements OnInit {
   // do filtro — sem nova chamada ao backend.
   grupos = computed<GrupoSmartlock[]>(() => {
     const filtro = this.smartlockFiltro();
-    const lista:any = filtro
-      ? this.equipamentos().filter((item:any) => item.smartlockId === filtro.id)
-      : this.equipamentos();
+    const status = this.status();
+    const lista: any = filtro
+      ? this.equipamentos().filter(
+          (item: any) =>
+            item.smartlockId === filtro.id && this.checkStatus(item.disponivel, status),
+        )
+      : this.equipamentos().filter((item: any) => this.checkStatus(item.disponivel, status));
 
     const mapa = new Map<number, GrupoSmartlock>();
     for (const item of lista) {
-      const grupo:any = mapa.get(item.smartlockId) ?? {
+      const grupo: any = mapa.get(item.smartlockId) ?? {
         smartlockId: item.smartlockId,
         smartlockApelido: item.smartlockApelido,
         itens: [],
@@ -86,6 +91,22 @@ export class SmartlockReport implements OnInit {
       a.smartlockApelido.localeCompare(b.smartlockApelido),
     );
   });
+
+  private checkStatus(disponivel: boolean, status: string) {
+    if (status == 'todos') {
+      return true;
+    }
+
+    if (status == 'disponiveis' && disponivel) {
+      return true;
+    }
+
+    if (status == 'emprestados' && !disponivel) {
+      return true;
+    }
+
+    return false;
+  }
 
   constructor(
     private equipamentoService: EquipamentoService,
@@ -130,6 +151,11 @@ export class SmartlockReport implements OnInit {
       this.filteredSmartlocks.set(this._filterSmartlock(val || ''));
       this.smartlockFiltro.set(val && typeof val !== 'string' ? val : null);
     });
+
+    this.statusCtrl.valueChanges.subscribe((val: string | null) => {
+      if (!val) return;
+      this.status.set(val);
+    });
   }
 
   buscaSmartlock(unidade_id: number) {
@@ -145,14 +171,12 @@ export class SmartlockReport implements OnInit {
     });
   }
 
-  // NOVO endpoint necessário no backend/serviço: retorna todos os
-  // equipamentos das smartlocks de uma unidade (não mais de uma smartlock só).
   buscarRelatorio(unidade_id: number) {
     this.carregando.set(true);
     this.equipamentoService.buscarRelatorioDisponibilidadePorUnidade(unidade_id).subscribe({
       next: (res) => {
         this.equipamentos.set(
-          res.map((linha:any) => ({
+          res.map((linha: any) => ({
             ...linha,
             icone: this.tiposEquipamentos.find((t) => t.descricao == linha.tipo)?.icone,
           })),

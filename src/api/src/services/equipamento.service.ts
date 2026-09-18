@@ -338,6 +338,7 @@ class EquipamentoService {
           [Sequelize.col("smartlockBase.id"), "smartlock_id"],
           [Sequelize.col("smartlockBase.apelido"), "smartlock_apelido"],
           [Sequelize.col("usuarioAtual.nome"), "responsavel"],
+          [Sequelize.col("usaurioAtual.avatar"),'avatar'],
           [Sequelize.col("reservas.reserva_inicio"), "reserva_inicio"],
           [Sequelize.col("reservas.reserva_fim"), "reserva_fim"],
           [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],

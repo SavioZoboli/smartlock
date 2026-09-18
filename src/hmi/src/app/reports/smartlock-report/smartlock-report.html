@@ -18,7 +18,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-filter-field">
-        <mat-label>Armário / SmartLock</mat-label>
+        <mat-label>SmartLock</mat-label>
         <input
           type="text"
           matInput
@@ -32,6 +32,11 @@
           }
         </mat-autocomplete>
       </mat-form-field>
+      <mat-button-toggle-group [formControl]="statusCtrl">
+        <mat-button-toggle value="todos">Todos</mat-button-toggle>
+        <mat-button-toggle value="disponiveis">Disponíveis</mat-button-toggle>
+        <mat-button-toggle value="emprestados">Emprestados</mat-button-toggle>
+      </mat-button-toggle-group>
     </div>
   </div>
 
