@@ -61,10 +61,6 @@ export class ConcluirCadastro implements OnInit {
   }
 
   ngOnInit(): void {
-
-    
-    console.log(this.dadosGoogle)
-
     // Se não há token temporário, expulsa para o login
     if (!this.dadosGoogle || !this.dadosGoogle.signupToken) {
       this.router.navigate(['/login']);
@@ -163,4 +159,9 @@ export class ConcluirCadastro implements OnInit {
     if (typeof unidade === 'string') return unidade;
     return `${unidade.nome} / ${unidade.regional}`;
   };
+
+  cancelar(){
+    this.authService.logout()
+    this.router.navigate(['/login'])
+  }
 }
