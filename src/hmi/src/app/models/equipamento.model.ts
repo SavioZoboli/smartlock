@@ -8,6 +8,7 @@ export interface Equipamento {
   responsavel?: string;
   icone?:string;
   reservas?:any
+  avatar?:string
 }
 
 export interface TipoEquipamento {
