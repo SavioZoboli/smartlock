@@ -20,6 +20,7 @@ import { ListaMovimentacao } from './pages/movimentacao/lista-movimentacao/lista
 import { CadastroMovimentacao } from './pages/movimentacao/cadastro-movimentacao/cadastro-movimentacao';
 import { ListaReserva } from './pages/reserva/lista-reserva/lista-reserva';
 import { CadastroReserva } from './pages/reserva/cadastro-reserva/cadastro-reserva';
+import { ExtratoEmprestimosComponent } from './reports/extrato-emprestimos/extrato-emprestimos';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
@@ -40,6 +41,7 @@ export const routes: Routes = [
 
       //Telas de relatório
       { path: 'relatorios/disponibilidade', component: SmartlockReport },
+      {path:'relatorios/extrato',component:ExtratoEmprestimosComponent},
 
       {path:'movimentacoes/lista',component:ListaMovimentacao},
       {path:'movimentacoes/cadastro',component:CadastroMovimentacao},

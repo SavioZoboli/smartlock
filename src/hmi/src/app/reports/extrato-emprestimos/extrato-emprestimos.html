@@ -1,0 +1,185 @@
+<mat-drawer-container class="extrato-drawer-container">
+  <!-- GAVETA LATERAL (DRAWER) -->
+  <mat-drawer #drawer mode="over" position="end" class="user-detail-drawer">
+    @if (usuarioSelecionado(); as user) {
+      <div class="drawer-header">
+        <button mat-icon-button (click)="fecharDrawer()">
+          <mat-icon>close</mat-icon>
+        </button>
+        <div class="user-profile-header">
+          <img class="avatar-large" [src]="user.avatar" alt="Avatar" />
+          <div class="profile-info">
+            <h3>{{ user.nome }}</h3>
+            <span>{{ user.email }}</span>
+          </div>
+        </div>
+      </div>
+
+      <mat-tab-group animationDuration="0ms" class="drawer-tabs">
+        <!-- ABA 1: O que está com ele agora -->
+        <mat-tab label="Em Uso ({{ user.qtd_equipamentos }})">
+          <div class="tab-content">
+            @if (carregandoEmUso()) {
+              <div class="state-message compact">
+                <mat-spinner diameter="24"></mat-spinner>
+              </div>
+            } @else if (equipamentosEmUso().length === 0) {
+              <div class="state-message compact">
+                <mat-icon>check_circle</mat-icon>
+                <span>Nenhum equipamento retido.</span>
+              </div>
+            } @else {
+              <div class="equipment-list">
+                @for (eq of equipamentosEmUso(); track eq.id) {
+                  <div class="eq-list-item">
+                    <mat-icon class="eq-icon">{{ eq.icone }}</mat-icon>
+                    <div class="eq-details">
+                      <span class="eq-name">{{ eq.apelido }}</span>
+                      <span class="eq-time"
+                        >Retirado em {{ eq.dataRetirada | date: 'dd/MM HH:mm' }}</span
+                      >
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- ABA 2: Histórico passado -->
+        <mat-tab label="Histórico">
+          <div class="tab-content">
+            @if (historico().length === 0 && !carregandoHistorico()) {
+              <div class="state-message compact">
+                <mat-icon>history_toggle_off</mat-icon>
+                <span>Nenhum histórico recente.</span>
+              </div>
+            }
+
+            <div class="equipment-list">
+              @for (evento of historico(); track evento.id) {
+                <div
+                  class="history-event"
+                  [class.event-retirada]="isRetirada(evento.tipo_movimento)"
+                  [class.event-devolucao]="!isRetirada(evento.tipo_movimento)"
+                >
+                  <div class="event-header">
+                    <mat-icon class="event-icon">{{
+                      iconeMovimento(evento.tipo_movimento)
+                    }}</mat-icon>
+                    <span class="event-label">{{ labelMovimento(evento.tipo_movimento) }}</span>
+                    <span class="event-time">{{
+                      evento.timestamp | date: 'dd/MM/yyyy HH:mm'
+                    }}</span>
+                  </div>
+
+                  <div class="event-equipamentos">
+                    @for (eq of evento.equipamentos; track eq.id) {
+                      <div class="eq-chip">
+                        <span class="eq-apelido">{{ eq.apelido ?? eq.patrimonio }}</span>
+                        <span class="eq-tipo">{{ eq.tipo }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (carregandoHistorico()) {
+              <div class="state-message compact">
+                <mat-spinner diameter="24"></mat-spinner>
+              </div>
+            } @else if (historico().length < historicoTotal()) {
+              <button mat-stroked-button class="load-more-btn" (click)="carregarMaisHistorico()">
+                Carregar mais
+              </button>
+            }
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    }
+  </mat-drawer>
+
+  <!-- CONTEÚDO PRINCIPAL (TELA DE FUNDO) -->
+  <mat-drawer-content>
+    <div class="dashboard-container">
+      <div class="page-header-container">
+        <div class="title-area">
+          <div class="breadcrumb">Monitoramento / Pessoas</div>
+          <h2>Extrato de Empréstimos</h2>
+        </div>
+
+        <div class="header-controls">
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="compact-filter-field"
+          >
+            <mat-label>Unidade Operacional</mat-label>
+            <input
+              type="text"
+              matInput
+              [formControl]="unidadeCtrl"
+              [matAutocomplete]="autoUnidade"
+            />
+            <mat-icon matPrefix class="filter-icon">business</mat-icon>
+            <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="_displayWithUnidade">
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="compact-filter-field"
+          >
+            <mat-label>Buscar Usuário</mat-label>
+            <input
+              type="text"
+              matInput
+              [formControl]="usuarioCtrl"
+              [matAutocomplete]="autoUsuario"
+            />
+            <mat-icon matPrefix class="filter-icon">person_search</mat-icon>
+            <mat-autocomplete #autoUsuario="matAutocomplete" [displayWith]="_displayWithUsuario">
+              <!-- Loop mockado pro skeleton -->
+              <mat-option value="João">João Silva</mat-option>
+            </mat-autocomplete>
+          </mat-form-field>
+        </div>
+      </div>
+
+      @if (carregando()) {
+        <div class="state-message">
+          <mat-spinner diameter="32"></mat-spinner>
+          <span>Buscando registros de empréstimos...</span>
+        </div>
+      } @else if (usuariosAtivos().length === 0) {
+        <div class="state-message">
+          <mat-icon>sentiment_satisfied</mat-icon>
+          <span>Todos os equipamentos estão nas Smartlocks.</span>
+        </div>
+      } @else {
+        <!-- Grid de Usuários -->
+        <div class="user-grid">
+          @for (user of usuariosAtivos(); track user.id) {
+            <mat-card class="user-card" (click)="abrirDetalhesUsuario(user)">
+              <div class="card-content">
+                <img class="user-avatar" [src]="user.avatar" alt="Foto" />
+                <div class="user-info">
+                  <h3 class="user-name">{{ user.nome }}</h3>
+                  <span class="user-role">{{ user.email }}</span>
+                  <div class="user-badges">
+                    <span class="badge-warning">
+                      <mat-icon>build</mat-icon> {{ user.qtd_equipamentos }} em uso
+                    </span>
+                  </div>
+                </div>
+                <mat-icon class="chevron-icon">chevron_right</mat-icon>
+              </div>
+            </mat-card>
+          }
+        </div>
+      }
+    </div>
+  </mat-drawer-content>
+</mat-drawer-container>

@@ -1,7 +1,8 @@
-import { Op, Sequelize } from "sequelize";
+import { col, fn, Op, Sequelize } from "sequelize";
 import { EquipamentoAttributes } from "../models/equipamento.model";
 import {
   Equipamento,
+  Movimentacao,
   Regiao,
   Reserva,
   SmartLock,
@@ -9,6 +10,37 @@ import {
   Usuario,
 } from "../models/index.model";
 import Smartlock from "../models/smartlock.model";
+
+interface EquipamentoEmUsoDTO {
+  id: number;
+  apelido: string | null;
+  tag: string;
+  patrimonio: string;
+  tipo: string;
+  dataRetirada: Date | null;
+}
+
+interface EquipamentoResumoDTO {
+  id: number;
+  apelido: string | null;
+  tag: string;
+  patrimonio: string;
+  tipo: string;
+}
+
+interface MovimentacaoHistoricoDTO {
+  id: number;
+  tipo_movimento: string;
+  timestamp: Date;
+  equipamentos: EquipamentoResumoDTO[];
+}
+
+interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
 
 class EquipamentoService {
   async bulkCreate(equipamentos: EquipamentoAttributes[]): Promise<number> {
@@ -338,7 +370,7 @@ class EquipamentoService {
           [Sequelize.col("smartlockBase.id"), "smartlock_id"],
           [Sequelize.col("smartlockBase.apelido"), "smartlock_apelido"],
           [Sequelize.col("usuarioAtual.nome"), "responsavel"],
-          [Sequelize.col("usuarioAtual.avatar"),'avatar'],
+          [Sequelize.col("usuarioAtual.avatar"), "avatar"],
           [Sequelize.col("reservas.reserva_inicio"), "reserva_inicio"],
           [Sequelize.col("reservas.reserva_fim"), "reserva_fim"],
           [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],
@@ -397,7 +429,7 @@ class EquipamentoService {
             tipo: linha.tipo,
             patrimonio: linha.patrimonio,
             responsavel: linha.responsavel,
-            avatar:linha.avatar,
+            avatar: linha.avatar,
             disponivel: linha.responsavel == null,
             smartlockId: linha.smartlock_id,
             smartlockApelido: linha.smartlock_apelido,
@@ -469,6 +501,101 @@ class EquipamentoService {
     } catch (e) {
       throw e;
     }
+  }
+
+  async getRelatorioUsuariosUsando() {
+    try {
+      const resultado = await Usuario.findAll({
+        attributes: [
+          "Usuario.id",
+          [
+            fn("concat", col("Usuario.nome"), " ", col("Usuario.sobrenome")),
+            "nome",
+          ],
+          "avatar",
+          "email",
+          [fn("count", col("equipamentosEmUso.id")), "qtd_equipamentos"],
+        ],
+        include: [
+          {
+            model: Equipamento,
+            as: "equipamentosEmUso",
+            attributes: [],
+            required: true, // inner join
+          },
+        ],
+        group: ["Usuario.id", "Usuario.avatar", "Usuario.email"],
+        raw: true,
+      });
+      return resultado;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+ async buscarEquipamentosEmUso(usuarioId: number): Promise<EquipamentoEmUsoDTO[]> {
+    const equipamentos = await Equipamento.findAll({
+      where: { usuario_atual_id: usuarioId },
+      include: [
+        {
+          model: Movimentacao,
+          as: 'movimentacoes',
+          where: { usuario_id: usuarioId, tipo_movimento: {[Op.like]:'emprestimo%'} },
+          required: false,
+          through: { attributes: [] },
+          attributes: ['timestamp'],
+        },
+      ],
+    });
+
+    return equipamentos.map((eq: any) => {
+      const movs: Movimentacao[] = eq.movimentacoes ?? [];
+      const dataRetirada = movs.length
+        ? movs.reduce((max, m: any) => (m.timestamp > max ? m.timestamp : max), movs[0]!.timestamp)
+        : null;
+
+      return {
+        id: eq.id,
+        apelido: eq.apelido ?? null,
+        tag: eq.tag,
+        patrimonio: eq.patrimonio,
+        tipo: eq.tipo,
+        dataRetirada,
+      };
+    });
+  }
+
+  async buscarHistoricoPaginado(
+    usuarioId: number,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResult<MovimentacaoHistoricoDTO>> {
+    const offset = (page - 1) * pageSize;
+
+    const { rows, count } = await Movimentacao.findAndCountAll({
+      where: { usuario_id: usuarioId },
+      include: [
+        {
+          model: Equipamento,
+          as: 'equipamentos',
+          through: { attributes: [] },
+          attributes: ['id', 'apelido', 'tag', 'patrimonio', 'tipo'],
+        },
+      ],
+      order: [['timestamp', 'DESC']],
+      limit: pageSize,
+      offset,
+      distinct: true, // essencial: sem isso o count vem inflado pelo JOIN belongsToMany
+    });
+
+    const items: MovimentacaoHistoricoDTO[] = rows.map((m: any) => ({
+      id: m.id,
+      tipo_movimento: m.tipo_movimento,
+      timestamp: m.timestamp,
+      equipamentos: m.equipamentos,
+    }));
+
+    return { items, total: count, page, pageSize };
   }
 }
 

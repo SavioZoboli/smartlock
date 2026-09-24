@@ -1,0 +1,308 @@
+@use '../../../assets/scss/shared-patterns';
+
+:host {
+  display: block;
+  height: 100%;
+  flex: 1;
+}
+
+// Garante que o container do Drawer ocupe a tela toda sem quebrar o layout
+.extrato-drawer-container {
+  height: calc(100vh - 64px);
+  background-color: transparent;;
+}
+
+.dashboard-container {
+  @extend %report-container;
+}
+
+.page-header-container {
+  @extend %report-header;
+  flex-wrap: wrap;
+  gap: var(--app-space-lg);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-md);
+  flex-wrap: wrap;
+
+  .compact-filter-field {
+    width: 240px;
+    ::ng-deep .mat-mdc-text-field-wrapper {
+      background-color: var(--mat-sys-surface-container-low);
+    }
+    .filter-icon {
+      color: var(--mat-sys-on-surface-variant);
+      margin-right: var(--app-space-sm);
+    }
+  }
+}
+
+.state-message {
+  @extend %state-message;
+  &.compact {
+    padding: 2rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+// ---- GRID DE USUÁRIOS NA TELA PRINCIPAL ----
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--app-space-md);
+}
+
+.user-card {
+  border-radius: var(--app-radius-lg);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--mat-sys-outline-variant);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--app-shadow-md);
+    border-color: var(--mat-sys-primary);
+    
+    .chevron-icon {
+      color: var(--mat-sys-primary);
+      transform: translateX(4px);
+    }
+  }
+
+  .card-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .user-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--mat-sys-surface-container-highest);
+  }
+
+  .user-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .user-name {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .user-role {
+      font-size: 0.8rem;
+      color: var(--mat-sys-on-surface-variant);
+      margin-bottom: 8px;
+    }
+  }
+
+  .chevron-icon {
+    color: var(--mat-sys-outline);
+    transition: transform 0.2s, color 0.2s;
+  }
+}
+
+.badge-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--app-radius-sm);
+  background-color: var(--app-warning-soft-bg);
+  color: var(--app-warning-soft-on);
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+// ---- GAVETA LATERAL (DRAWER) ----
+.user-detail-drawer {
+  width: 400px;
+  max-width: 90vw;
+  background-color: var(--mat-sys-surface);
+  border-left: 1px solid var(--mat-sys-outline-variant);
+  
+  .drawer-header {
+    padding: var(--app-space-md);
+    background-color: var(--mat-sys-surface-container-lowest);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    button {
+      margin-bottom: 8px;
+    }
+  }
+
+  .user-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 8px 8px 8px;
+
+    .avatar-large {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--mat-sys-primary);
+    }
+
+    span {
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+
+  .tab-content {
+    padding: var(--app-space-md);
+  }
+}
+
+// ---- LISTA DE EQUIPAMENTOS DENTRO DAS ABAS ----
+.equipment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eq-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: var(--app-radius-md);
+  background-color: var(--mat-sys-surface-container-lowest);
+  border: 1px solid var(--mat-sys-outline-variant);
+
+  &.active-loan {
+    border-left: 4px solid var(--app-warning);
+  }
+
+  &.history-loan {
+    border-left: 4px solid var(--mat-sys-outline);
+    opacity: 0.8;
+  }
+
+  .eq-icon {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .eq-details {
+    display: flex;
+    flex-direction: column;
+
+    .eq-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--mat-sys-on-surface);
+    }
+
+    .eq-patrimony {
+      font-size: 0.75rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .eq-time {
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 4px;
+      color: var(--mat-sys-primary);
+    }
+  }
+}
+
+
+// =============================================================================
+// Histórico de movimentações (aba "Histórico")
+// =============================================================================
+.history-event {
+  border-left: 3px solid var(--app-info);
+  border-radius: var(--app-radius-sm);
+  background-color: var(--mat-sys-surface-container-low);
+  padding: var(--app-space-sm) var(--app-space-md);
+ 
+  &.event-retirada {
+    border-left-color: var(--app-warning-soft-on);
+  }
+ 
+  &.event-devolucao {
+    border-left-color: var(--app-success-soft-on);
+  }
+}
+ 
+.event-header {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-xs);
+  margin-bottom: var(--app-space-sm);
+ 
+  .event-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+ 
+  .event-label {
+    @extend %fw-500;
+    font-size: 0.85rem;
+  }
+ 
+  .event-time {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+ 
+.event-equipamentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--app-space-xs);
+}
+ 
+.eq-chip {
+  @extend %status-chip;
+  @extend %status-chip, .info;
+  font-weight: 500;
+ 
+  .eq-tipo {
+    font-weight: 400;
+    opacity: 0.8;
+    margin-left: 4px;
+  }
+}
+ 
+// =============================================================================
+// Ações da lista (paginação "Carregar mais")
+// =============================================================================
+.load-more-btn {
+  @extend %btn-discrete;
+  align-self: center;
+  margin-top: var(--app-space-sm);
+  height: 36px;
+  font-size: 0.85rem;
+}
