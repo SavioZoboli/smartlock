@@ -20,6 +20,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatButtonToggleGroup, MatButtonToggle } from '@angular/material/button-toggle';
 import { MatTooltip } from '@angular/material/tooltip';
+import { IUnidade } from '../../interfaces/unidade.interface';
+import { ISmartlock } from '../../interfaces/smartlock.interface';
 
 interface GrupoSmartlock {
   smartlockId: number;
@@ -53,14 +55,14 @@ export class SmartlockReport implements OnInit {
   smartlockCtrl = new FormControl();
   statusCtrl = new FormControl('todos');
 
-  unidades: Unidade[] = [];
-  smartlocks: Smartlock[] = [];
+  unidades: IUnidade[] = [];
+  smartlocks: ISmartlock[] = [];
 
-  filteredUnidades = signal<Unidade[]>([]);
-  filteredSmartlocks = signal<Smartlock[]>([]);
+  filteredUnidades = signal<IUnidade[]>([]);
+  filteredSmartlocks = signal<ISmartlock[]>([]);
 
   equipamentos = signal<Equipamento[]>([]);
-  smartlockFiltro = signal<Smartlock | null>(null);
+  smartlockFiltro = signal<ISmartlock | null>(null);
   status = signal<string>('todos');
 
   carregando = signal<boolean>(false);
@@ -135,7 +137,7 @@ export class SmartlockReport implements OnInit {
       },
     });
 
-    this.unidadeCtrl.valueChanges.subscribe((val: string | Unidade) => {
+    this.unidadeCtrl.valueChanges.subscribe((val: string | IUnidade) => {
       this.filteredUnidades.set(this._filterUnidade(val || ''));
 
       if (val && typeof val !== 'string') {
@@ -152,7 +154,7 @@ export class SmartlockReport implements OnInit {
     });
 
     // Agora só filtra o array já carregado — não dispara requisição.
-    this.smartlockCtrl.valueChanges.subscribe((val: string | Smartlock) => {
+    this.smartlockCtrl.valueChanges.subscribe((val: string | ISmartlock) => {
       this.filteredSmartlocks.set(this._filterSmartlock(val || ''));
       this.smartlockFiltro.set(val && typeof val !== 'string' ? val : null);
     });
@@ -196,13 +198,13 @@ export class SmartlockReport implements OnInit {
     });
   }
 
-  private _filterUnidade(value: string | Unidade): Unidade[] {
+  private _filterUnidade(value: string | IUnidade): IUnidade[] {
     return this.unidades.filter((option) =>
       option.nome.toLowerCase().includes(typeof value == 'string' ? value : value.nome),
     );
   }
 
-  private _filterSmartlock(value: string | Smartlock): Smartlock[] {
+  private _filterSmartlock(value: string | ISmartlock): ISmartlock[] {
     return this.smartlocks.filter((option) =>
       option.apelido.toLowerCase().includes(typeof value == 'string' ? value : value.apelido),
     );

@@ -43,8 +43,6 @@ export class ConcluirCadastro implements OnInit {
     private unidadeService:UnidadeService,
     private cdr:ChangeDetectorRef
   ) {
-
-    this.buscarUnidades()
     // Captura os dados invisíveis vindos da rota de Login
     const navigation = this.router.currentNavigation();
     this.dadosGoogle = navigation?.extras?.state;
@@ -114,7 +112,7 @@ export class ConcluirCadastro implements OnInit {
   }
 
   private async inicializaUnidades(){
-    const unidadesCarregadas = await this.buscarUnidades();
+    const unidadesCarregadas = this.unidadeService.unidades()
     if (!unidadesCarregadas) {
       return;
     }
@@ -122,18 +120,6 @@ export class ConcluirCadastro implements OnInit {
     this.initAutocompleteFilter();
 
     this.cdr.detectChanges();
-  }
-
-
-  private async buscarUnidades(): Promise<boolean> {
-    try {
-      this.unidades = await firstValueFrom(this.unidadeService.listAll());
-      console.log(this.unidades)
-      return true;
-    } catch {
-      this.sns.notificar('Não foi possível buscar as unidades', 'erro');
-      return false;
-    }
   }
 
   private initAutocompleteFilter() {

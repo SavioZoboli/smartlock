@@ -34,7 +34,7 @@
           <mat-label>SmartLock</mat-label>
           <mat-select formControlName="smartlock">
             @for (sl of smartlocks; track sl.id) {
-              <mat-option [value]="sl.id">{{ sl.apelido }} (nº {{ sl.numero }})</mat-option>
+              <mat-option [value]="sl.id">{{ sl.apelido }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>lock</mat-icon>

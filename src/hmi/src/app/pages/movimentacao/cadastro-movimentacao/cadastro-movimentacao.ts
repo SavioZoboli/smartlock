@@ -19,6 +19,9 @@ import { Unidade } from '../../unidade/lista-unidade/lista-unidade';
 import { UnidadeService } from '../../../services/unidade.service';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
+import { IUnidade } from '../../../interfaces/unidade.interface';
+import { ISmartlock } from '../../../interfaces/smartlock.interface';
+import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
 
 export interface SmartLock {
   id: number;
@@ -35,7 +38,7 @@ export interface Equipamento {
   status_atual: 'DISPONIVEL' | 'EM USO';
   emprestado_por?: number | null;
   selecionado?: boolean;
-  icone?:string
+  icone?: string;
 }
 
 type TipoMovimento = 'emprestimo_manual' | 'devolucao_manual';
@@ -62,10 +65,10 @@ type TipoMovimento = 'emprestimo_manual' | 'devolucao_manual';
 export class CadastroMovimentacao implements OnInit {
   movForm: FormGroup;
 
-  unidades!: Unidade[];
-  filteredUnidades!: Observable<Unidade[]>;
+  unidades!: UnidadeComRegionalDTO[];
+  filteredUnidades!: Observable<UnidadeComRegionalDTO[]>;
 
-  smartlocks: SmartLock[] = [];
+  smartlocks: ISmartlock[] = [];
   equipamentos: Equipamento[] = [];
 
   isLoading = false;
@@ -97,19 +100,7 @@ export class CadastroMovimentacao implements OnInit {
   }
 
   private inicializaUnidades(): void {
-    this.isLoading = true;
-    this.unidadeService.listAll().subscribe({
-      next: (res) => {
-        this.unidades = res;
-        this.initAutocompleteFilter();
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.isLoading = false;
-        this.sns.notificar('Erro ao carregar unidades.', 'erro');
-      },
-    });
+    this.unidades = this.unidadeService.unidades();
   }
 
   private initAutocompleteFilter(): void {
@@ -119,7 +110,7 @@ export class CadastroMovimentacao implements OnInit {
     );
   }
 
-  private _filter(value: any): Unidade[] {
+  private _filter(value: any): UnidadeComRegionalDTO[] {
     if (!this.unidades) return [];
     const stringValue = typeof value === 'string' ? value : value?.nome || '';
     const filterValue = stringValue.toLowerCase();
@@ -147,17 +138,11 @@ export class CadastroMovimentacao implements OnInit {
 
   private carregarSmartlocks(unidadeId: number): void {
     this.isLoadingSmartlocks = true;
-    this.smartlockService.listByUnidade(unidadeId).subscribe({
-      next: (res: SmartLock[]) => {
-        this.smartlocks = res;
-        this.movForm.get('smartlock')!.enable();
-        this.isLoadingSmartlocks = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.isLoadingSmartlocks = false;
-        this.sns.notificar('Erro ao carregar SmartLocks da unidade.', 'erro');
-      },
+    this.smartlockService.listByUnidade(unidadeId).subscribe((val) => {
+      this.smartlocks = val;
+      this.movForm.get('smartlock')!.enable();
+      this.isLoadingSmartlocks = false;
+      this.cdr.detectChanges();
     });
   }
 
