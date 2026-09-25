@@ -16,11 +16,8 @@ import { Router } from '@angular/router';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
+import { ISmartlock } from '../../../interfaces/smartlock.interface';
 
-interface SmartLock {
-  id: number;
-  apelido: string;
-}
 
 interface Equipamento {
   id: number;
@@ -45,12 +42,12 @@ interface Equipamento {
 export class RedirectEquipamento {
   form: FormGroup;
 
-  smartlocks: SmartLock[] = [];
-  filteredOrigem!: Observable<SmartLock[]>;
-  filteredDestino!: Observable<SmartLock[]>;
+  smartlocks: ISmartlock[] = [];
+  filteredOrigem!: Observable<ISmartlock[]>;
+  filteredDestino!: Observable<ISmartlock[]>;
 
-  origemSelecionada: SmartLock | null = null;
-  destinoSelecionado: SmartLock | null = null;
+  origemSelecionada: ISmartlock | null = null;
+  destinoSelecionado: ISmartlock | null = null;
 
   equipamentosDisponiveis: Equipamento[] = [];
   equipamentosParaTransferir: Equipamento[] = [];
@@ -76,7 +73,7 @@ export class RedirectEquipamento {
 
   private async init(): Promise<void> {
     this.isLoading = true;
-    this.smartlocks = await firstValueFrom(this.smartlockService.listAll());
+    this.smartlocks = this.smartlockService.smartlocks();
     this.initFiltros();
     this.isLoading = false;
     this.cdr.detectChanges();
@@ -97,20 +94,20 @@ export class RedirectEquipamento {
     );
   }
 
-  private _filter(value: any, lista: SmartLock[]): SmartLock[] {
+  private _filter(value: any, lista: ISmartlock[]): ISmartlock[] {
     const stringValue = typeof value === 'string' ? value : value?.apelido || '';
     const filterValue = stringValue.toLowerCase();
-    return lista.filter((option) => option.apelido.toLowerCase().includes(filterValue));
+    return lista.filter((option) => option.apelido?.toLowerCase().includes(filterValue));
   }
 
-  displaySmartlock = (smartlock: SmartLock | string): string => {
+  displaySmartlock = (smartlock: ISmartlock | string): string => {
     if (!smartlock) return '';
     if (typeof smartlock === 'string') return smartlock;
-    return smartlock.apelido;
+    return smartlock.apelido||'';
   };
 
   async onOrigemSelecionada(): Promise<void> {
-    const origem = this.form.get('origem')!.value as SmartLock;
+    const origem = this.form.get('origem')!.value as ISmartlock;
     if (!origem || typeof origem === 'string') return;
 
     this.origemSelecionada = origem;
@@ -125,7 +122,7 @@ export class RedirectEquipamento {
   }
 
   onDestinoSelecionada(): void {
-    const destino = this.form.get('destino')!.value as SmartLock;
+    const destino = this.form.get('destino')!.value as ISmartlock;
     if (!destino || typeof destino === 'string') return;
     this.destinoSelecionado = destino;
   }

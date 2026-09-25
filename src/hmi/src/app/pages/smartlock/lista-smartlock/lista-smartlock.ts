@@ -12,9 +12,8 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { SmartlockService } from '../../../services/smartlock.service';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog';
-import { MatDialog } from '@angular/material/dialog';
-import { SystemNotificationService } from '../../../services/system-notification.service';
+import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
+import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
 
 export interface Smartlock {
   id: number;
@@ -46,15 +45,7 @@ export interface Smartlock {
   styleUrl: './lista-smartlock.scss',
 })
 export class ListaSmartlock {
-  displayedColumns: string[] = [
-    'apelido',
-    'mac',
-    'unidade',
-    'regional',
-    'status',
-    'equipamentos',
-    'acoes',
-  ];
+  displayedColumns: string[] = ['apelido', 'mac', 'unidade', 'regional', 'status', 'equipamentos', 'acoes'];
 
   dataSource = new MatTableDataSource<Smartlock>([]);
 
@@ -65,7 +56,7 @@ export class ListaSmartlock {
     unidade: new FormControl(''),
     regional: new FormControl(''),
     apenasOnline: new FormControl(false),
-    provisionando:new FormControl(false),
+    provisionando: new FormControl(false),
     apenasComEquipamentos: new FormControl(false),
   });
 
@@ -77,8 +68,7 @@ export class ListaSmartlock {
   constructor(
     private router: Router,
     private smartlockService: SmartlockService,
-    private dialog: MatDialog,
-    private sns: SystemNotificationService,
+    private confirmDelete: ConfirmDeleteService,
   ) {}
 
   ngOnInit(): void {
@@ -91,47 +81,27 @@ export class ListaSmartlock {
   }
 
   carregarSmartlocks(): void {
+    // TODO: mesmo ponto de atenção da lista-unidade — este `any` esconde que o
+    // shape real (com unidade/regional resolvidos) difere de ISmartlock puro.
     this.smartlockService.listAll().subscribe({
-      next: (res) => {
-
-        console.log(res)
-
+      next: (res: any) => {
         this.dataSource.data = res;
-        this.unidadesDisponiveis = [
-          ...new Set(res.map((s: any) => s.unidade)),
-        ].sort() as string[];
-        this.regionaisDisponiveis = [
-          ...new Set(res.map((s: any) => s.regional)),
-        ].sort() as string[];
-      },
-      error: (err) => {
-        console.log(err);
-        this.dataSource.data = [];
+        this.unidadesDisponiveis = [...new Set(res.map((s: any) => s.unidade))].sort() as string[];
+        this.regionaisDisponiveis = [...new Set(res.map((s: any) => s.regional))].sort() as string[];
       },
     });
   }
 
-  // Remove acentos: decompõe caracteres acentuados em base + diacrítico (NFD)
-  // e usa uma regex para eliminar os diacríticos (faixa Unicode \u0300-\u036f).
-  private normalizarTexto(valor: string): string {
-    return valor
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
-
   private initFiltro(): void {
     this.dataSource.filterPredicate = (data: Smartlock, filtro: string): boolean => {
-      const { apelido, unidade, regional, apenasOnline, apenasComEquipamentos,provisionando } =
+      const { apelido, unidade, regional, apenasOnline, apenasComEquipamentos, provisionando } =
         JSON.parse(filtro);
 
-      const apelidoConfere = this.normalizarTexto(data.apelido).includes(
-        this.normalizarTexto(apelido.trim()),
-      );
+      const apelidoConfere = normalizarTexto(data.apelido).includes(normalizarTexto(apelido.trim()));
       const unidadeConfere = !unidade || data.unidade === unidade;
       const regionalConfere = !regional || data.regional === regional;
       const onlineConfere = !apenasOnline || data.is_online;
-      const provisionandoConfere = !provisionando || data.unidade != ''
+      const provisionandoConfere = !provisionando || data.unidade != '';
       const equipamentosConfere = !apenasComEquipamentos || data.has_equipamentos;
 
       return (
@@ -146,7 +116,6 @@ export class ListaSmartlock {
 
     this.filtros.valueChanges.subscribe((valores) => {
       this.dataSource.filter = JSON.stringify(valores);
-
       if (this.dataSource.paginator) {
         this.dataSource.paginator.firstPage();
       }
@@ -163,8 +132,6 @@ export class ListaSmartlock {
     });
   }
 
-  // --- AÇÕES DA TELA ---
-
   onNovoSmartlock(): void {
     this.router.navigate(['/smartlocks/cadastro']);
   }
@@ -174,34 +141,17 @@ export class ListaSmartlock {
   }
 
   onExcluir(smartlock: Smartlock): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
+    this.confirmDelete
+      .confirmarEExcluir({
         titulo: 'Excluir smartlock',
         mensagem: `Tem certeza que deseja excluir o smartlock "${smartlock.apelido}"? Esta ação não pode ser desfeita.`,
-        textoConfirmar: 'Excluir',
-        textoCancelar: 'Cancelar',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((confirmado: boolean) => {
-      if (confirmado) {
-        this.executarExclusao(smartlock);
-      }
-    });
-  }
-
-  private executarExclusao(smartlock: Smartlock): void {
-    console.log(`Tentando excluir o smartlock ${smartlock.id}`);
-    this.smartlockService.delete(smartlock.id).subscribe({
-      next: () => {
-        this.dataSource.data = this.dataSource.data.filter((s) => s.id !== smartlock.id);
-        this.sns.notificar('Smartlock removido com sucesso', 'sucesso');
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar(err.message, 'erro');
-      },
-    });
+        excluir$: this.smartlockService.delete(smartlock.id),
+        mensagemSucesso: 'Smartlock removido com sucesso',
+      })
+      .subscribe((excluido) => {
+        if (excluido) {
+          this.dataSource.data = this.dataSource.data.filter((s) => s.id !== smartlock.id);
+        }
+      });
   }
 }

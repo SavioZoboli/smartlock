@@ -16,12 +16,8 @@ import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog';
+import { ISmartlock } from '../../../interfaces/smartlock.interface';
 
-// Ajuste conforme o model real de SmartLock usado no seu smartlockService.listAll()
-interface SmartLock {
-  id: number;
-  apelido: string;
-}
 
 @Component({
   selector: 'app-update-equipamento',
@@ -43,8 +39,8 @@ interface SmartLock {
 })
 export class UpdateEquipamento implements OnInit {
   eqForm: FormGroup;
-  smartlocks!: SmartLock[];
-  filteredSmartlocks!: Observable<SmartLock[]>;
+  smartlocks!: ISmartlock[];
+  filteredSmartlocks!: Observable<ISmartlock[]>;
   tipos = TIPO_EQUIPAMENTOS;
 
   equipamento_id!: number;
@@ -96,7 +92,7 @@ export class UpdateEquipamento implements OnInit {
   }
 
   private async inicializaSmartlocks(): Promise<void> {
-    this.smartlocks = await firstValueFrom(this.smartlockService.listAll());
+    this.smartlocks = this.smartlockService.smartlocks()
     this.initAutocompleteFilter();
   }
 
@@ -107,19 +103,19 @@ export class UpdateEquipamento implements OnInit {
     );
   }
 
-  private _filter(value: any): SmartLock[] {
+  private _filter(value: any): ISmartlock[] {
     if (!this.smartlocks) return [];
 
     const stringValue = typeof value === 'string' ? value : value?.apelido || '';
     const filterValue = stringValue.toLowerCase();
 
-    return this.smartlocks.filter((option) => option.apelido.toLowerCase().includes(filterValue));
+    return this.smartlocks.filter((option) => option.apelido?.toLowerCase().includes(filterValue));
   }
 
-  displaySmartlock = (smartlock: SmartLock | string): string => {
+  displaySmartlock = (smartlock: ISmartlock | string): string => {
     if (!smartlock) return '';
     if (typeof smartlock === 'string') return smartlock;
-    return smartlock.apelido;
+    return smartlock.apelido || '';
   };
 
   private async carregarDadosEquipamento(): Promise<void> {

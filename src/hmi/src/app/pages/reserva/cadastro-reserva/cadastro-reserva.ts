@@ -29,6 +29,9 @@ import { Equipamento } from '../../../models/equipamento.model';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { ReservaService } from '../../../services/reserva.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
+import { ISmartlock } from '../../../interfaces/smartlock.interface';
+import { IUnidade } from '../../../interfaces/unidade.interface';
+import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
 
 @Component({
   selector: 'app-cadastro-reserva',
@@ -53,10 +56,10 @@ import { SystemNotificationService } from '../../../services/system-notification
 export class CadastroReserva implements OnInit {
   reservaForm: FormGroup;
 
-  unidades: Unidade[] = [];
-  filteredUnidades!: Observable<Unidade[]>;
+  unidades: UnidadeComRegionalDTO[] = [];
+  filteredUnidades!: Observable<UnidadeComRegionalDTO[]>;
 
-  smartlocks: Smartlock[] = [];
+  smartlocks: ISmartlock[] = [];
 
   equipamentosDisponiveis = signal<any>([]);
   equipamentosSelecionados = new Set<number>();
@@ -126,15 +129,7 @@ export class CadastroReserva implements OnInit {
   }
 
   private carregarUnidades() {
-    this.unidadeService.listAll().subscribe({
-      next: (res) => {
-        this.unidades = res;
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
-      },
-    });
+    this.unidades = this.unidadeService.unidades()
   }
 
   private async carregarSmartlocks(unidade_id: number): Promise<void> {
@@ -153,13 +148,13 @@ export class CadastroReserva implements OnInit {
     );
   }
 
-  private _filterUnidade(value: any): Unidade[] {
+  private _filterUnidade(value: any): UnidadeComRegionalDTO[] {
     const stringValue = typeof value === 'string' ? value : value?.nome || '';
     const filterValue = stringValue.toLowerCase();
     return this.unidades.filter((u) => u.nome.toLowerCase().includes(filterValue));
   }
 
-  displayUnidade = (unidade: Unidade | string): string => {
+  displayUnidade = (unidade: UnidadeComRegionalDTO | string): string => {
     if (!unidade) return '';
     if (typeof unidade === 'string') return unidade;
     return `${unidade.nome} / ${unidade.regional}`;

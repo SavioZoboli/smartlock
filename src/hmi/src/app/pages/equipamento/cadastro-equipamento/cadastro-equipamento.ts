@@ -1,5 +1,6 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormArray,
@@ -16,7 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { map, Observable, startWith } from 'rxjs';
+import { combineLatest, map, Observable, startWith } from 'rxjs';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { UnidadeService } from '../../../services/unidade.service';
@@ -24,12 +25,10 @@ import { EquipamentoService } from '../../../services/equipamento.service';
 import { Router } from '@angular/router';
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
 import { HttpErrorResponse } from '@angular/common/http';
+import { IUnidade } from '../../../interfaces/unidade.interface';
 
-export interface Unidade {
-  id: number;
-  nome: string;
-}
-
+// Estrutura mínima usada só pro autocomplete de smartlock; apelido nunca fica null aqui
+// (o model permite null, mas na tela não faz sentido listar smartlock sem apelido pra buscar).
 export interface SmartlockOption {
   id: number;
   apelido: string;
@@ -58,11 +57,8 @@ export class CadastroEquipamento implements OnInit {
 
   tiposEquipamento = TIPO_EQUIPAMENTOS;
 
-  unidadesDisponiveis: Unidade[] = [];
-  smartlocksDisponiveis: SmartlockOption[] = [];
-
-  filteredUnidades!: Observable<Unidade[]>;
-  filteredSmartlocks!: Observable<SmartlockOption[]>;
+  filteredUnidades!: Observable<IUnidade[]>;
+  filteredSmartlocks: Observable<SmartlockOption[]> = new Observable();
 
   nomeArquivoSelecionado = '';
 
@@ -90,37 +86,21 @@ export class CadastroEquipamento implements OnInit {
       tag: ['', Validators.required],
       patrimonio: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
       tipo: ['', Validators.required],
-      apelido:['']
+      apelido: [''],
     });
 
-    this.carregarUnidades();
+    // Dispara a busca (ou reaproveita o cache); o resultado atualiza o signal
+    // `unidadeService.unidades` direto — não precisa guardar cópia local aqui.
+    this.unidadeService.listAll().subscribe();
 
-    this.filteredUnidades = this.importForm.get('unidade')!.valueChanges.pipe(
-      startWith(''),
-      map((valor) => this.filtrar(valor, this.unidadesDisponiveis, 'nome')),
-    );
-
-    this.filteredSmartlocks = this.importForm.get('smartlock')!.valueChanges.pipe(
-      startWith(''),
-      map((valor) => this.filtrar(valor, this.smartlocksDisponiveis, 'apelido')),
-    );
+    this.filteredUnidades = combineLatest([
+      this.importForm.get('unidade')!.valueChanges.pipe(startWith('')),
+      toObservable(this.unidadeService.unidades),
+    ]).pipe(map(([valor, unidades]) => this.filtrar(valor, unidades, 'nome')));
   }
 
   get equipamentosArray(): FormArray {
     return this.importForm.get('equipamentos') as FormArray;
-  }
-
-  private carregarUnidades(): void {
-    this.unidadeService.listAll().subscribe({
-      next: (res) => {
-        console.log(res);
-        this.unidadesDisponiveis = res;
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar('Não foi possível carregar as unidades', 'erro');
-      },
-    });
   }
 
   // Garante que o valor do controle seja o objeto selecionado no autocomplete
@@ -140,7 +120,7 @@ export class CadastroEquipamento implements OnInit {
     return lista.filter((item) => item[campo].toLowerCase().includes(filtro));
   }
 
-  unidadeDisplayFn(unidade: Unidade): string {
+  unidadeDisplayFn(unidade: IUnidade): string {
     return unidade?.nome ?? '';
   }
 
@@ -148,22 +128,29 @@ export class CadastroEquipamento implements OnInit {
     return smartlock?.apelido ?? '';
   }
 
-  onUnidadeSelecionada(unidade: Unidade): void {
-    this.smartlocksDisponiveis = [];
+  onUnidadeSelecionada(unidade: IUnidade): void {
     const smartlockControl = this.importForm.get('smartlock')!;
     smartlockControl.reset(null);
     smartlockControl.disable();
 
     this.smartlockService.listByUnidade(unidade.id).subscribe({
-      next: (res) => {
-        this.smartlocksDisponiveis = res;
-        smartlockControl.enable();
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar('Não foi possível carregar os smartlocks da unidade', 'erro');
-      },
+      next: () => smartlockControl.enable(),
+      // Nota: o service já notifica o erro internamente (onError do CachedResourceMap);
+      // aqui só reagimos pra não deixar o campo habilitado sem dado nenhum.
     });
+
+    this.filteredSmartlocks = combineLatest([
+      this.importForm.get('smartlock')!.valueChanges.pipe(startWith('')),
+      toObservable(this.smartlockService.smartlocksByUnidade),
+    ]).pipe(
+      map(([valor, porUnidade]) => {
+        const lista: SmartlockOption[] = (porUnidade.get(unidade.id) ?? []).map((s) => ({
+          id: s.id,
+          apelido: s.apelido ?? '',
+        }));
+        return this.filtrar(valor, lista, 'apelido');
+      }),
+    );
   }
 
   // --- ITENS: adição manual ---
@@ -174,23 +161,23 @@ export class CadastroEquipamento implements OnInit {
       return;
     }
 
-    const { tag, patrimonio, tipo,apelido } = this.novoItemForm.value;
-    this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipo,apelido));
+    const { tag, patrimonio, tipo, apelido } = this.novoItemForm.value;
+    this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipo, apelido));
 
     // Mantém o tipo selecionado para agilizar o cadastro de vários itens do mesmo tipo em sequência
-    this.novoItemForm.reset({ tag: '', patrimonio: '', tipo ,apelido:''});
+    this.novoItemForm.reset({ tag: '', patrimonio: '', tipo, apelido: '' });
   }
 
   removerItem(index: number): void {
     this.equipamentosArray.removeAt(index);
   }
 
-  private criarItemGroup(tag: string, patrimonio: string, tipo: string,apelido:string): FormGroup {
+  private criarItemGroup(tag: string, patrimonio: string, tipo: string, apelido: string): FormGroup {
     return this.fb.group({
       tag: [tag, Validators.required],
       patrimonio: [patrimonio, [Validators.required, Validators.pattern(/^\d{6}$/)]],
       tipo: [tipo, Validators.required],
-      apelido:[apelido]
+      apelido: [apelido],
     });
   }
 
@@ -241,7 +228,7 @@ export class CadastroEquipamento implements OnInit {
       if (colunas.length >= 2) {
         const tag = colunas[0].trim();
         const patrimonio = colunas[1].trim();
-        this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipoGlobal,''));
+        this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipoGlobal, ''));
         importados++;
       }
     }
@@ -284,14 +271,14 @@ export class CadastroEquipamento implements OnInit {
   }
 
   private destacarDuplicados(duplicados: string[]): void {
-  this.equipamentosArray.controls.forEach((grupo) => {
-    const control = grupo.get('patrimonio');
-    if (duplicados.includes(control?.value)) {
-      control?.setErrors({ duplicado: true });
-      control?.markAsTouched();
-    }
-  });
-}
+    this.equipamentosArray.controls.forEach((grupo) => {
+      const control = grupo.get('patrimonio');
+      if (duplicados.includes(control?.value)) {
+        control?.setErrors({ duplicado: true });
+        control?.markAsTouched();
+      }
+    });
+  }
 
   onCancelar() {
     this.importForm.reset();
