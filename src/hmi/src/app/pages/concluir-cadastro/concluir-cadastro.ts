@@ -112,6 +112,8 @@ export class ConcluirCadastro implements OnInit {
 
   private async inicializaUnidades(){
 
+    this.unidadeService.listAll().subscribe();
+
     this.initAutocompleteFilter();
 
     this.cdr.detectChanges();

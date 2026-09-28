@@ -64,7 +64,7 @@
       </div>
 
         <div class="form-actions">
-          <button mat-stroked-button type="button" routerLink="/login">Cancelar</button>
+          <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
           <button mat-flat-button color="primary" type="submit" [disabled]="userForm.invalid">
             Finalizar Cadastro
           </button>
