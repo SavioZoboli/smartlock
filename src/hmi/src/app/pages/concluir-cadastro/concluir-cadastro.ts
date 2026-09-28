@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -32,7 +32,6 @@ export class ConcluirCadastro implements OnInit {
   userForm: FormGroup;
   dadosGoogle: any;
 
-  unidades!: Unidade[];
   filteredUnidades!: Observable<Unidade[]>;
 
   constructor(
@@ -68,9 +67,9 @@ export class ConcluirCadastro implements OnInit {
     this.inicializaUnidades()
 
     let nomeQuebrado = this.dadosGoogle.nome.split(' ');
-    let sobrenome = nomeQuebrado[nomeQuebrado.length - 1];
+    let sobrenome = nomeQuebrado[nomeQuebrado.length - 1].trim();
 
-    let nomeSemSobrenome = this.dadosGoogle.nome.replace(sobrenome, '');
+    let nomeSemSobrenome = this.dadosGoogle.nome.replace(sobrenome, '').trim();
 
     // Pré-preenche os dados recebidos do Google
     this.userForm.patchValue({
@@ -112,10 +111,6 @@ export class ConcluirCadastro implements OnInit {
   }
 
   private async inicializaUnidades(){
-    const unidadesCarregadas = this.unidadeService.unidades()
-    if (!unidadesCarregadas) {
-      return;
-    }
 
     this.initAutocompleteFilter();
 
@@ -130,12 +125,12 @@ export class ConcluirCadastro implements OnInit {
   }
 
   private _filter(value: any): Unidade[] {
-    if (!this.unidades) return [];
+    if (!this.unidadeService.unidades()) return [];
 
     const stringValue = typeof value === 'string' ? value : value?.nome || '';
     const filterValue = stringValue.toLowerCase();
 
-    return this.unidades.filter((option) => option.nome.toLowerCase().includes(filterValue));
+    return this.unidadeService.unidades().filter((option) => option.nome.toLowerCase().includes(filterValue));
   }
 
   // Usado pelo [displayWith] do mat-autocomplete: define o texto exibido
