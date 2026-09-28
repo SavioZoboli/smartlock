@@ -19,7 +19,7 @@ export class UnidadeService {
   private sns = inject(SystemNotificationService);
 
   private cache = new CachedResource<UnidadeComRegionalDTO[]>(
-    () => this.http.get<UnidadeComRegionalDTO[]>(`${this.api_url}/api/unidade`),
+    () => this.consultaUnidades(),
     [],
     30 * 60 * 1000,
     (v) => v.length === 0,
@@ -30,6 +30,11 @@ export class UnidadeService {
   public readonly unidades = this.cache.data;
 
   constructor(private http: HttpClient) {}
+
+  private consultaUnidades():Observable<UnidadeComRegionalDTO[]>{
+    console.log("Buscando Unidades");
+    return this.http.get<UnidadeComRegionalDTO[]>(`${this.api_url}/api/unidade`)
+  }
 
   public create(nome: string, regiao_id: string, entidade: string): Observable<IUnidade> {
     return this.http
