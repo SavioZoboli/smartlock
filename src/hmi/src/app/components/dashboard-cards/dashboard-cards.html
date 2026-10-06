@@ -31,11 +31,13 @@
         <mat-card class="kpi-card">
           <mat-icon class="kpi-icon">{{ kpi.icon }}</mat-icon>
 
-          <span class="kpi-value">{{ kpi.valor != undefined ? kpi.valor : '--' }}</span>
+          @if (carregando()) {
+            <mat-spinner></mat-spinner>
+          } @else {
+            <span class="kpi-value">{{ kpi.valor != undefined ? kpi.valor : '--' }}</span>
+          }
 
           <span class="kpi-label">{{ kpi.label }}</span>
-
-          
         </mat-card>
       }
     </div>
