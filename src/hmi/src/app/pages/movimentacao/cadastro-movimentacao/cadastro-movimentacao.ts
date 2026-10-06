@@ -100,7 +100,8 @@ export class CadastroMovimentacao implements OnInit {
   }
 
   private inicializaUnidades(): void {
-    this.unidades = this.unidadeService.unidades();
+    this.unidadeService.listAll().subscribe()
+    this.initAutocompleteFilter()
   }
 
   private initAutocompleteFilter(): void {
@@ -111,10 +112,13 @@ export class CadastroMovimentacao implements OnInit {
   }
 
   private _filter(value: any): UnidadeComRegionalDTO[] {
-    if (!this.unidades) return [];
+    if (!this.unidadeService.unidades()){
+      this.unidadeService.listAll().subscribe()
+      return []
+    }
     const stringValue = typeof value === 'string' ? value : value?.nome || '';
     const filterValue = stringValue.toLowerCase();
-    return this.unidades.filter((option) => option.nome.toLowerCase().includes(filterValue));
+    return this.unidadeService.unidades().filter((option) => option.nome.toLowerCase().includes(filterValue));
   }
 
   displayUnidade = (unidade: Unidade | string): string => {
