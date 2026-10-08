@@ -87,4 +87,71 @@
       </button>
     </mat-menu>
   </div>
+
+  <!-- Mobile: botão sanduíche -->
+  <button mat-icon-button class="hamburger-btn" [matMenuTriggerFor]="mobileMenu" aria-label="Abrir menu">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <mat-menu #mobileMenu="matMenu" class="custom-navbar-menu">
+    @if (usuario$ | async; as usuario) {
+      <div class="mobile-user" (click)="$event.stopPropagation()">
+        @if (usuario.avatar) {
+          <img [src]="usuario.avatar" [alt]="usuario.nome" class="user-avatar" />
+        } @else {
+          <div class="user-avatar">{{ obterIniciais(usuario.nome) }}</div>
+        }
+        <div class="user-meta">
+          <span class="user-name">{{ usuario.nome }}</span>
+          <span class="user-role">{{ usuario.email }}</span>
+        </div>
+      </div>
+      <mat-divider></mat-divider>
+    }
+
+    <a mat-menu-item routerLink="/dashboard" routerLinkActive="active-menu-item">
+      <mat-icon>dashboard</mat-icon> <span>Dashboard</span>
+    </a>
+    <a mat-menu-item routerLink="/movimentacoes/lista" routerLinkActive="active-menu-item">
+      <mat-icon>important_devices</mat-icon> <span>Movimentações</span>
+    </a>
+    <a mat-menu-item routerLink="/reservas/lista" routerLinkActive="active-menu-item">
+      <mat-icon>event</mat-icon> <span>Reservas</span>
+    </a>
+
+    <mat-divider></mat-divider>
+    <a mat-menu-item routerLink="/relatorios/disponibilidade">
+      <mat-icon>inventory</mat-icon> <span>Relatório: Disponibilidade</span>
+    </a>
+    <a mat-menu-item routerLink="/relatorios/extrato">
+      <mat-icon>history</mat-icon> <span>Relatório: Extrato</span>
+    </a>
+
+    @if (usuario$ | async; as usuario) {
+      @if (usuario.is_admin) {
+        <mat-divider></mat-divider>
+        <a mat-menu-item routerLink="/usuarios/lista">
+          <mat-icon>badge</mat-icon> <span>Usuários</span>
+        </a>
+        <a mat-menu-item routerLink="/unidades/lista">
+          <mat-icon>apartment</mat-icon> <span>Unidades</span>
+        </a>
+        <a mat-menu-item routerLink="/equipamentos/lista">
+          <mat-icon>devices</mat-icon> <span>Equipamentos</span>
+        </a>
+        <a mat-menu-item routerLink="/smartlocks/lista">
+          <mat-icon>dns</mat-icon> <span>SmartLocks</span>
+        </a>
+      }
+    }
+
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="themeService.toggleTheme()">
+      <mat-icon>{{ themeService.isDarkTheme() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      <span>{{ themeService.isDarkTheme() ? 'Tema claro' : 'Tema escuro' }}</span>
+    </button>
+    <button mat-menu-item (click)="logout()">
+      <mat-icon>exit_to_app</mat-icon> <span>Sair do Sistema</span>
+    </button>
+  </mat-menu>
 </mat-toolbar>
