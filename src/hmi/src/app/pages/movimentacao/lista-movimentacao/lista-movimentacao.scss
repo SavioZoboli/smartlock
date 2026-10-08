@@ -52,7 +52,7 @@
 
 .emprestimo-list {
   display: grid;
-  grid-template-columns: repeat(4,1fr);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
   gap: var(--app-space-sm);
   max-height: 320px;
   overflow-y: auto;

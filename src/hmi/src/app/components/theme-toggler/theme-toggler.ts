@@ -7,7 +7,7 @@ import { MatSlideToggle } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'app-theme-toggler',
-  imports: [MatTooltip, MatIcon, MatButtonModule, MatSlideToggle],
+  imports: [MatTooltip, MatIcon, MatButtonModule],
   templateUrl: './theme-toggler.html',
   styleUrl: './theme-toggler.scss',
 })

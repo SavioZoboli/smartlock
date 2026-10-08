@@ -24,6 +24,32 @@ html {
   height: 100%;
 }
 
+// Sem rolagem lateral no documento. Usa só o body (o overflow propaga para o
+// viewport), evitando criar uma segunda barra de rolagem vertical.
+body {
+  overflow-x: hidden;
+}
+
+// O componente da rota é renderizado como irmão do <router-outlet>, numa tag
+// customizada (display: inline por padrão). Forçar bloco com min-width: 0 impede
+// que o conteúdo da página estique além da largura da tela.
+main {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  > :not(router-outlet) {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+*{
+  box-sizing: border-box;
+}
+
 .material-symbols-rounded {
   font-variation-settings:
     'FILL' 0,

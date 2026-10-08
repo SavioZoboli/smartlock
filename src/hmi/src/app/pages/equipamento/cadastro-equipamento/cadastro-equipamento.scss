@@ -3,6 +3,8 @@
 .page-container {
   @extend %page-container;
   width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .page-header-container {

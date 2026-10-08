@@ -30,6 +30,11 @@
 
   .compact-filter-field {
     width: 240px;
+
+    @include shared-patterns.down(sm) {
+      width: 100%;
+    }
+
     ::ng-deep .mat-mdc-text-field-wrapper {
       background-color: var(--mat-sys-surface-container-low);
     }
