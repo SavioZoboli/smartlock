@@ -12,8 +12,8 @@ import { Equipamento } from '../../models/equipamento.model';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { UnidadeService } from '../../services/unidade.service';
 import { SmartlockService } from '../../services/smartlock.service';
-import { Unidade } from '../../pages/unidade/lista-unidade/lista-unidade';
-import { Smartlock } from '../../pages/smartlock/lista-smartlock/lista-smartlock';
+import { filtrarLista } from '../../shared/util/autocomplete-filtro.util';
+import { displayPorCampo } from '../../shared/util/autocomplete-display.util';
 import { SystemNotificationService } from '../../services/system-notification.service';
 import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -74,8 +74,6 @@ export class SmartlockReport implements OnInit {
   grupos = computed<GrupoSmartlock[]>(() => {
     const filtro = this.smartlockFiltro();
     const status = this.status();
-
-    console.log(this.equipamentos())
 
     const lista: any = filtro
       ? this.equipamentos().filter(
@@ -199,24 +197,14 @@ export class SmartlockReport implements OnInit {
   }
 
   private _filterUnidade(value: string | IUnidade): IUnidade[] {
-    return this.unidades.filter((option) =>
-      option.nome.toLowerCase().includes(typeof value == 'string' ? value : value.nome),
-    );
+    return filtrarLista(this.unidades, value, 'nome');
   }
 
   private _filterSmartlock(value: string | ISmartlock): ISmartlock[] {
-    return this.smartlocks.filter((option) =>
-      option.apelido.toLowerCase().includes(typeof value == 'string' ? value : value.apelido),
-    );
+    return filtrarLista(this.smartlocks, value, 'apelido');
   }
 
-  public _displayWithUnidade(valor: string | Unidade): string {
-    if (!valor) return '';
-    return typeof valor === 'string' ? valor : valor.nome;
-  }
+  public _displayWithUnidade = displayPorCampo<IUnidade>('nome');
 
-  public _displayWithSmartlock(valor: string | Smartlock): string {
-    if (!valor) return '';
-    return typeof valor === 'string' ? valor : valor.apelido;
-  }
+  public _displayWithSmartlock = displayPorCampo<ISmartlock>('apelido');
 }

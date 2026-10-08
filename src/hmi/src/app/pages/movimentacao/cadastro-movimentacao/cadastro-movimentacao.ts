@@ -15,7 +15,8 @@ import { Router } from '@angular/router';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
-import { Unidade } from '../../unidade/lista-unidade/lista-unidade';
+import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
 import { UnidadeService } from '../../../services/unidade.service';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
@@ -116,16 +117,10 @@ export class CadastroMovimentacao implements OnInit {
       this.unidadeService.listAll().subscribe()
       return []
     }
-    const stringValue = typeof value === 'string' ? value : value?.nome || '';
-    const filterValue = stringValue.toLowerCase();
-    return this.unidadeService.unidades().filter((option) => option.nome.toLowerCase().includes(filterValue));
+    return filtrarLista(this.unidadeService.unidades(), value, 'nome');
   }
 
-  displayUnidade = (unidade: Unidade | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
+  displayUnidade = displayUnidadeComRegional;
 
   // Quando a unidade muda: reseta smartlock e equipamentos, e busca as novas smartlocks
   private observarUnidade(): void {

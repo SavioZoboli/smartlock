@@ -17,6 +17,8 @@ import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
+import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
+import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
 
 
 interface Equipamento {
@@ -82,29 +84,19 @@ export class RedirectEquipamento {
   private initFiltros(): void {
     this.filteredOrigem = this.form.get('origem')!.valueChanges.pipe(
       startWith(''),
-      map((value) => this._filter(value, this.smartlocks)),
+      map((value) => filtrarLista(this.smartlocks, value || '', 'apelido')),
     );
 
     this.filteredDestino = this.form.get('destino')!.valueChanges.pipe(
       startWith(''),
       map((value) => {
         const disponiveis = this.smartlocks.filter(s => s.id !== this.origemSelecionada?.id);
-        return this._filter(value, disponiveis);
+        return filtrarLista(disponiveis, value || '', 'apelido');
       }),
     );
   }
 
-  private _filter(value: any, lista: ISmartlock[]): ISmartlock[] {
-    const stringValue = typeof value === 'string' ? value : value?.apelido || '';
-    const filterValue = stringValue.toLowerCase();
-    return lista.filter((option) => option.apelido?.toLowerCase().includes(filterValue));
-  }
-
-  displaySmartlock = (smartlock: ISmartlock | string): string => {
-    if (!smartlock) return '';
-    if (typeof smartlock === 'string') return smartlock;
-    return smartlock.apelido||'';
-  };
+  displaySmartlock = displayPorCampo<ISmartlock>('apelido');
 
   async onOrigemSelecionada(): Promise<void> {
     const origem = this.form.get('origem')!.value as ISmartlock;

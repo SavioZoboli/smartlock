@@ -2,12 +2,10 @@ import { AsyncPipe, CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import {
-  AbstractControl,
   FormArray,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
-  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -26,6 +24,8 @@ import { Router } from '@angular/router';
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
 import { HttpErrorResponse } from '@angular/common/http';
 import { IUnidade } from '../../../interfaces/unidade.interface';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
+import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
 
 // Estrutura mínima usada só pro autocomplete de smartlock; apelido nunca fica null aqui
 // (o model permite null, mas na tela não faz sentido listar smartlock sem apelido pra buscar).
@@ -73,10 +73,10 @@ export class CadastroEquipamento implements OnInit {
 
   ngOnInit(): void {
     this.importForm = this.fb.group({
-      unidade: [null, [Validators.required, this.objetoSelecionadoValidator]],
+      unidade: [null, [Validators.required, objetoSelecionadoValidator]],
       smartlock: [
         { value: null, disabled: true },
-        [Validators.required, this.objetoSelecionadoValidator],
+        [Validators.required, objetoSelecionadoValidator],
       ],
       tipoGlobal: [''],
       equipamentos: this.fb.array([]),
@@ -96,28 +96,11 @@ export class CadastroEquipamento implements OnInit {
     this.filteredUnidades = combineLatest([
       this.importForm.get('unidade')!.valueChanges.pipe(startWith('')),
       toObservable(this.unidadeService.unidades),
-    ]).pipe(map(([valor, unidades]) => this.filtrar(valor, unidades, 'nome')));
+    ]).pipe(map(([valor, unidades]) => filtrarLista(unidades, valor, 'nome')));
   }
 
   get equipamentosArray(): FormArray {
     return this.importForm.get('equipamentos') as FormArray;
-  }
-
-  // Garante que o valor do controle seja o objeto selecionado no autocomplete
-  // (com id), e não apenas o texto digitado sem uma opção escolhida.
-  private objetoSelecionadoValidator(control: AbstractControl): ValidationErrors | null {
-    const valor = control.value;
-    return valor && typeof valor === 'object' && 'id' in valor ? null : { objetoInvalido: true };
-  }
-
-  private filtrar<T extends Record<string, any>>(
-    valor: T | string,
-    lista: T[],
-    campo: string,
-  ): T[] {
-    const texto = typeof valor === 'string' ? valor : (valor?.[campo] ?? '');
-    const filtro = texto.toLowerCase();
-    return lista.filter((item) => item[campo].toLowerCase().includes(filtro));
   }
 
   unidadeDisplayFn(unidade: IUnidade): string {
@@ -148,7 +131,7 @@ export class CadastroEquipamento implements OnInit {
           id: s.id,
           apelido: s.apelido ?? '',
         }));
-        return this.filtrar(valor, lista, 'apelido');
+        return filtrarLista(lista, valor, 'apelido');
       }),
     );
   }

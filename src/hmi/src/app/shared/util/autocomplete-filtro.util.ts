@@ -15,10 +15,21 @@ export function filtrarAutocomplete<T extends Record<string, any>>(
   campo: keyof T,
 ): Observable<T[]> {
   return combineLatest([control.valueChanges.pipe(startWith('')), fonte$]).pipe(
-    map(([valor, lista]) => {
-      const texto = typeof valor === 'string' ? valor : ((valor?.[campo] as string) ?? '');
-      const filtro = texto.toLowerCase();
-      return (lista ?? []).filter((item) => String(item[campo] ?? '').toLowerCase().includes(filtro));
-    }),
+    map(([valor, lista]) => filtrarLista(lista, valor, campo)),
   );
+}
+
+/**
+ * Versão pura (sem Observable) do filtro de autocomplete: filtra `lista`
+ * pelo `campo`, aceitando como `valor` tanto o texto digitado quanto o objeto
+ * já selecionado (nesse caso usa o próprio `campo` do objeto).
+ */
+export function filtrarLista<T extends Record<string, any>>(
+  lista: T[] | null | undefined,
+  valor: string | T | null | undefined,
+  campo: keyof T,
+): T[] {
+  const texto = typeof valor === 'string' ? valor : ((valor?.[campo] as string) ?? '');
+  const filtro = texto.toLowerCase();
+  return (lista ?? []).filter((item) => String(item[campo] ?? '').toLowerCase().includes(filtro));
 }

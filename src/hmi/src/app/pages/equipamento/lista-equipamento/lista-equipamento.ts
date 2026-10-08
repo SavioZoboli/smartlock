@@ -10,10 +10,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog';
-import { MatDialog } from '@angular/material/dialog';
-import { SystemNotificationService } from '../../../services/system-notification.service';
+import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
+import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
 
 export type StatusEquipamento = 'emprestado' | 'disponivel' | 'manutencao';
 
@@ -82,8 +81,7 @@ export class ListaEquipamento {
   constructor(
     private router: Router,
     private equipamentoService: EquipamentoService,
-    private dialog: MatDialog,
-    private sns: SystemNotificationService,
+    private confirmDelete: ConfirmDeleteService,
   ) {}
 
   ngOnInit(): void {
@@ -113,25 +111,16 @@ export class ListaEquipamento {
     });
   }
 
-  // Remove acentos: decompõe caracteres acentuados em base + diacrítico (NFD)
-  // e usa uma regex para eliminar os diacríticos (faixa Unicode \u0300-\u036f).
-  private normalizarTexto(valor: string): string {
-    return valor
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
-
   private initFiltro(): void {
     this.dataSource.filterPredicate = (data: Equipamento, filtro: string): boolean => {
       const { geral, unidade, smartlock, status } = JSON.parse(filtro);
 
-      const geralNormalizado = this.normalizarTexto(geral.trim());
+      const geralNormalizado = normalizarTexto(geral.trim());
       const geralConfere =
         !geralNormalizado ||
-        this.normalizarTexto(data.usuario_atual ?? '').includes(geralNormalizado) ||
-        this.normalizarTexto(data.patrimonio).includes(geralNormalizado) ||
-        this.normalizarTexto(data.tipo).includes(geralNormalizado);
+        normalizarTexto(data.usuario_atual ?? '').includes(geralNormalizado) ||
+        normalizarTexto(data.patrimonio).includes(geralNormalizado) ||
+        normalizarTexto(data.tipo).includes(geralNormalizado);
 
       const unidadeConfere = !unidade || data.unidade === unidade;
       const smartlockConfere = !smartlock || data.smartlock === smartlock;
@@ -177,33 +166,17 @@ export class ListaEquipamento {
   }
 
   onExcluir(equipamento: Equipamento): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
+    this.confirmDelete
+      .confirmarEExcluir({
         titulo: 'Excluir equipamento',
         mensagem: `Tem certeza que deseja excluir o equipamento de patrimônio "${equipamento.patrimonio}"? Esta ação não pode ser desfeita.`,
-        textoConfirmar: 'Excluir',
-        textoCancelar: 'Cancelar',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((confirmado: boolean) => {
-      if (confirmado) {
-        this.executarExclusao(equipamento);
-      }
-    });
-  }
-
-  private executarExclusao(equipamento: Equipamento): void {
-    this.equipamentoService.delete(equipamento.id).subscribe({
-      next: () => {
-        this.dataSource.data = this.dataSource.data.filter((e) => e.id !== equipamento.id);
-        this.sns.notificar('Equipamento removido com sucesso', 'sucesso');
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar(err.message, 'erro');
-      },
-    });
+        excluir$: this.equipamentoService.delete(equipamento.id),
+        mensagemSucesso: 'Equipamento removido com sucesso',
+      })
+      .subscribe((excluido) => {
+        if (excluido) {
+          this.dataSource.data = this.dataSource.data.filter((e) => e.id !== equipamento.id);
+        }
+      });
   }
 }

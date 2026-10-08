@@ -15,6 +15,7 @@ import { Router } from '@angular/router';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
+import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
 
 // TODO: ajustar para as interfaces reais do projeto
 export interface Movimentacao {
@@ -127,14 +128,6 @@ export class ListaMovimentacao {
     });
   }
 
-  // Remove acentos para busca por patrimônio (mesmo padrão do lista-smartlock)
-  private normalizarTexto(valor: string): string {
-    return valor
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
-
   private initFiltro(): void {
     this.dataSource.filterPredicate = (data: Movimentacao, filtro: string): boolean => {
       const { patrimonio, unidade, tipo } = JSON.parse(filtro);
@@ -142,7 +135,7 @@ export class ListaMovimentacao {
       const patrimonioConfere =
         !patrimonio ||
         data.equipamentos.some((e) =>
-          this.normalizarTexto(e.patrimonio).includes(this.normalizarTexto(patrimonio.trim())),
+          normalizarTexto(e.patrimonio).includes(normalizarTexto(patrimonio.trim())),
         );
       const unidadeConfere = !unidade || data.unidade === unidade;
       const tipoConfere = !tipo || data.tipo === tipo;

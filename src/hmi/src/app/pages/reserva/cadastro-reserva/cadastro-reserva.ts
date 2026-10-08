@@ -32,6 +32,9 @@ import { SystemNotificationService } from '../../../services/system-notification
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { IUnidade } from '../../../interfaces/unidade.interface';
 import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
+import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
+import { HORA_PATTERN, combinarDataHora, formatarHora } from '../../../shared/util/data-hora.util';
 
 @Component({
   selector: 'app-cadastro-reserva',
@@ -71,8 +74,6 @@ export class CadastroReserva implements OnInit {
   carregandoEquipamentos = signal(false);
   tentouSalvarSemEquipamento = false;
 
-  private readonly horaPattern = /^([01]?\d|2[0-3]):([0-5]\d)$/;
-
   constructor(
     private fb: FormBuilder,
     private router: Router,
@@ -89,9 +90,9 @@ export class CadastroReserva implements OnInit {
         unidade: ['', Validators.required],
         smartlock: [{ value: '', disabled: true }, Validators.required],
         data_emprestimo: ['', Validators.required],
-        hora_emprestimo: ['', [Validators.required, Validators.pattern(this.horaPattern)]],
+        hora_emprestimo: ['', [Validators.required, Validators.pattern(HORA_PATTERN)]],
         data_devolucao: ['', Validators.required],
-        hora_devolucao: ['', [Validators.required, Validators.pattern(this.horaPattern)]],
+        hora_devolucao: ['', [Validators.required, Validators.pattern(HORA_PATTERN)]],
       },
       { validators: this.periodoValidoValidator },
     );
@@ -144,21 +145,11 @@ export class CadastroReserva implements OnInit {
   private initAutocompleteFilter(): void {
     this.filteredUnidades = this.reservaForm.get('unidade')!.valueChanges.pipe(
       startWith(''),
-      map((value) => this._filterUnidade(value || '')),
+      map((value) => filtrarLista(this.unidades, value || '', 'nome')),
     );
   }
 
-  private _filterUnidade(value: any): UnidadeComRegionalDTO[] {
-    const stringValue = typeof value === 'string' ? value : value?.nome || '';
-    const filterValue = stringValue.toLowerCase();
-    return this.unidades.filter((u) => u.nome.toLowerCase().includes(filterValue));
-  }
-
-  displayUnidade = (unidade: UnidadeComRegionalDTO | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
+  displayUnidade = displayUnidadeComRegional;
 
   // Ao trocar a unidade, refiltra os smartlocks e limpa a seleção anterior
   // (smartlock + equipamentos), já que eles não pertencem mais ao contexto.
@@ -206,8 +197,8 @@ export class CadastroReserva implements OnInit {
     let { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
       this.reservaForm.value;
 
-    let dt_reserva = this.combinarDataHora(data_emprestimo, hora_emprestimo);
-    let dt_devolucao = this.combinarDataHora(data_devolucao, hora_devolucao);
+    let dt_reserva = combinarDataHora(data_emprestimo, hora_emprestimo);
+    let dt_devolucao = combinarDataHora(data_devolucao, hora_devolucao);
 
     try {
       let equipamentos = await firstValueFrom(
@@ -285,28 +276,17 @@ export class CadastroReserva implements OnInit {
       return null;
     }
 
-    if (!this.horaPattern.test(horaEmprestimo) || !this.horaPattern.test(horaDevolucao)) {
+    if (!HORA_PATTERN.test(horaEmprestimo) || !HORA_PATTERN.test(horaDevolucao)) {
       return null;
     }
 
-    const inicio = this.combinarDataHora(dataEmprestimo, horaEmprestimo);
-    const fim = this.combinarDataHora(dataDevolucao, horaDevolucao);
+    const inicio = combinarDataHora(dataEmprestimo, horaEmprestimo);
+    const fim = combinarDataHora(dataDevolucao, horaDevolucao);
 
     const agora = new Date();
 
     return fim > inicio ? null : fim < agora || inicio < agora ? null : { periodoInvalido: true };
   };
-
-  private combinarDataHora(data: Date, hora: string): Date {
-    const [h, m] = hora.split(':').map(Number);
-    const resultado = new Date(data);
-    resultado.setHours(h, m, 0, 0);
-    return resultado;
-  }
-
-  private formatarHora(data: Date): string {
-    return data.toTimeString().slice(0, 5);
-  }
 
   private async carregarDadosReserva(): Promise<void> {
     try {
@@ -328,9 +308,9 @@ export class CadastroReserva implements OnInit {
         {
           unidade,
           data_emprestimo: dataEmprestimo,
-          hora_emprestimo: this.formatarHora(dataEmprestimo),
+          hora_emprestimo: formatarHora(dataEmprestimo),
           data_devolucao: dataDevolucao,
-          hora_devolucao: this.formatarHora(dataDevolucao),
+          hora_devolucao: formatarHora(dataDevolucao),
         },
         { emitEvent: false },
       );
@@ -361,8 +341,8 @@ export class CadastroReserva implements OnInit {
       const { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
         this.reservaForm.value;
 
-      const dh_emprestimo = this.combinarDataHora(data_emprestimo, hora_emprestimo);
-      const dh_devolucao = this.combinarDataHora(data_devolucao, hora_devolucao);
+      const dh_emprestimo = combinarDataHora(data_emprestimo, hora_emprestimo);
+      const dh_devolucao = combinarDataHora(data_devolucao, hora_devolucao);
 
       const equipamentos = Array.from(this.equipamentosSelecionados);
 
