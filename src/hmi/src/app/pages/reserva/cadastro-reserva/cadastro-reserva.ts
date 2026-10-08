@@ -1,11 +1,9 @@
-import { ChangeDetectorRef, Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  AbstractControl,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
-  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,20 +16,26 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
-import { Observable, firstValueFrom, forkJoin, map, startWith } from 'rxjs';
+import { provideNgxMask } from 'ngx-mask';
+import { Observable, firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Unidade } from '../../unidade/lista-unidade/lista-unidade';
 import { UnidadeService } from '../../../services/unidade.service';
-import { Smartlock } from '../../smartlock/lista-smartlock/lista-smartlock';
 import { SmartlockService } from '../../../services/smartlock.service';
-import { Equipamento } from '../../../models/equipamento.model';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { ReservaService } from '../../../services/reserva.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
-import { IUnidade } from '../../../interfaces/unidade.interface';
 import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
+import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
+import { HORA_PATTERN, combinarDataHora, formatarHora } from '../../../shared/util/data-hora.util';
+import {
+  EquipamentoComReservas,
+  isEquipamentoReservadoPorOutro,
+  normalizarEquipamentoReservas,
+  periodoValidoValidator,
+} from './reserva.util';
 
 @Component({
   selector: 'app-cadastro-reserva',
@@ -54,6 +58,17 @@ import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
   styleUrls: ['./cadastro-reserva.scss'],
 })
 export class CadastroReserva implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly unidadeService = inject(UnidadeService);
+  private readonly smartlockService = inject(SmartlockService);
+  private readonly equipamentoService = inject(EquipamentoService);
+  private readonly reservaService = inject(ReservaService);
+  private readonly sns = inject(SystemNotificationService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
   reservaForm: FormGroup;
 
   unidades: UnidadeComRegionalDTO[] = [];
@@ -61,7 +76,7 @@ export class CadastroReserva implements OnInit {
 
   smartlocks: ISmartlock[] = [];
 
-  equipamentosDisponiveis = signal<any>([]);
+  equipamentosDisponiveis = signal<EquipamentoComReservas[]>([]);
   equipamentosSelecionados = new Set<number>();
 
   equipamentosDaReservaAtual: number[] = [];
@@ -71,29 +86,19 @@ export class CadastroReserva implements OnInit {
   carregandoEquipamentos = signal(false);
   tentouSalvarSemEquipamento = false;
 
-  private readonly horaPattern = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+  readonly displayUnidade = displayUnidadeComRegional;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private route: ActivatedRoute,
-    private unidadeService: UnidadeService,
-    private smartlockService: SmartlockService,
-    private equipamentoService: EquipamentoService,
-    private reservaService: ReservaService,
-    private sns: SystemNotificationService,
-    private cdr: ChangeDetectorRef,
-  ) {
+  constructor() {
     this.reservaForm = this.fb.group(
       {
         unidade: ['', Validators.required],
         smartlock: [{ value: '', disabled: true }, Validators.required],
         data_emprestimo: ['', Validators.required],
-        hora_emprestimo: ['', [Validators.required, Validators.pattern(this.horaPattern)]],
+        hora_emprestimo: ['', [Validators.required, Validators.pattern(HORA_PATTERN)]],
         data_devolucao: ['', Validators.required],
-        hora_devolucao: ['', [Validators.required, Validators.pattern(this.horaPattern)]],
+        hora_devolucao: ['', [Validators.required, Validators.pattern(HORA_PATTERN)]],
       },
-      { validators: this.periodoValidoValidator },
+      { validators: periodoValidoValidator },
     );
   }
 
@@ -128,70 +133,67 @@ export class CadastroReserva implements OnInit {
     this.cdr.detectChanges();
   }
 
-  private carregarUnidades() {
-    this.unidades = this.unidadeService.unidades()
+  private async carregarUnidades(): Promise<void> {
+    try {
+      this.unidades = (await firstValueFrom(
+        this.unidadeService.listAll(),
+      )) as UnidadeComRegionalDTO[];
+    } catch (err) {
+      this.sns.notificarErro(err, 'Erro ao carregar unidades.');
+    }
   }
 
   private async carregarSmartlocks(unidade_id: number): Promise<void> {
     try {
       this.smartlocks = await firstValueFrom(this.smartlockService.listByUnidade(unidade_id));
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar smartlocks da unidade.');
     }
   }
 
   private initAutocompleteFilter(): void {
-    this.filteredUnidades = this.reservaForm.get('unidade')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => this._filterUnidade(value || '')),
+    this.filteredUnidades = filtrarAutocomplete(
+      this.reservaForm.get('unidade')!,
+      this.unidadeService.listAll() as Observable<UnidadeComRegionalDTO[]>,
+      'nome',
     );
   }
-
-  private _filterUnidade(value: any): UnidadeComRegionalDTO[] {
-    const stringValue = typeof value === 'string' ? value : value?.nome || '';
-    const filterValue = stringValue.toLowerCase();
-    return this.unidades.filter((u) => u.nome.toLowerCase().includes(filterValue));
-  }
-
-  displayUnidade = (unidade: UnidadeComRegionalDTO | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
 
   // Ao trocar a unidade, refiltra os smartlocks e limpa a seleção anterior
   // (smartlock + equipamentos), já que eles não pertencem mais ao contexto.
   private initReacaoUnidade(): void {
-    this.reservaForm.get('unidade')!.valueChanges.subscribe((unidade) => {
-      const smartlockControl = this.reservaForm.get('smartlock')!;
+    this.reservaForm
+      .get('unidade')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((unidade) => {
+        const smartlockControl = this.reservaForm.get('smartlock')!;
 
-      if (unidade && typeof unidade !== 'string') {
-        this.smartlocks = [];
-        this.carregarSmartlocks(unidade.id);
-        smartlockControl.enable();
-      } else {
-        smartlockControl.disable();
-      }
+        if (unidade && typeof unidade !== 'string') {
+          this.smartlocks = [];
+          this.carregarSmartlocks(unidade.id);
+          smartlockControl.enable();
+        } else {
+          smartlockControl.disable();
+        }
 
-      smartlockControl.setValue('');
-      this.limparEquipamentos();
-    });
+        smartlockControl.setValue('');
+        this.limparEquipamentos();
+      });
   }
 
   private initReacaoEquipamentos(): void {
-    this.reservaForm.valueChanges.subscribe((val: any) => {
-      if (!this.reservaForm.valid) {
-        return;
-      }
-      this.carregarEquipamentosDisponiveis();
-    });
+    this.reservaForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.reservaForm.valid) {
+          return;
+        }
+        this.carregarEquipamentosDisponiveis();
+      });
   }
 
-  isReservadoPorOutro(equipamento: any): boolean {
-    return (
-      equipamento.reservas.length > 0 && !this.equipamentosDaReservaAtual.includes(equipamento.id)
-    );
+  isReservadoPorOutro(equipamento: EquipamentoComReservas): boolean {
+    return isEquipamentoReservadoPorOutro(equipamento, this.equipamentosDaReservaAtual);
   }
 
   private limparEquipamentos(): void {
@@ -203,41 +205,26 @@ export class CadastroReserva implements OnInit {
     this.carregandoEquipamentos.set(true);
     this.limparEquipamentos();
 
-    let { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
+    const { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
       this.reservaForm.value;
 
-    let dt_reserva = this.combinarDataHora(data_emprestimo, hora_emprestimo);
-    let dt_devolucao = this.combinarDataHora(data_devolucao, hora_devolucao);
+    const dt_reserva = combinarDataHora(data_emprestimo, hora_emprestimo);
+    const dt_devolucao = combinarDataHora(data_devolucao, hora_devolucao);
 
     try {
-      let equipamentos = await firstValueFrom(
+      const equipamentos = await firstValueFrom(
         this.equipamentoService.buscarDisponveisData(smartlock.id, dt_reserva, dt_devolucao),
       );
 
-      equipamentos = equipamentos.map((e: any) => {
-        if (e.reservas.length == 0) {
-          return e;
-        }
-        return {
-          ...e,
-          reservas: e.reservas.map((r: any) => ({
-            ...r,
-            reserva_inicio: new Date(r.reserva_inicio),
-            reserva_fim: new Date(r.reserva_fim),
-          })),
-        };
-      });
-
-      this.equipamentosDisponiveis.set(equipamentos);
+      this.equipamentosDisponiveis.set(normalizarEquipamentoReservas(equipamentos));
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar equipamentos disponíveis.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar equipamentos disponíveis.');
     } finally {
       this.carregandoEquipamentos.set(false);
     }
   }
 
-  toggleEquipamento(equipamento: any): void {
+  toggleEquipamento(equipamento: EquipamentoComReservas): void {
     if (this.isReservadoPorOutro(equipamento)) return;
     if (this.equipamentosSelecionados.has(equipamento.id)) {
       this.equipamentosSelecionados.delete(equipamento.id);
@@ -246,12 +233,12 @@ export class CadastroReserva implements OnInit {
     }
   }
 
-  isSelecionado(equipamento: any): boolean {
+  isSelecionado(equipamento: EquipamentoComReservas): boolean {
     return this.equipamentosSelecionados.has(equipamento.id);
   }
 
   selecionarTodos(): void {
-    this.equipamentosDisponiveis().forEach((e: any) => {
+    this.equipamentosDisponiveis().forEach((e) => {
       if (this.isReservadoPorOutro(e)) return;
       this.equipamentosSelecionados.add(e.id);
     });
@@ -263,7 +250,7 @@ export class CadastroReserva implements OnInit {
 
   get todosSelecionados(): boolean {
     const selecionaveis = this.equipamentosDisponiveis().filter(
-      (e: any) => !this.isReservadoPorOutro(e),
+      (e) => !this.isReservadoPorOutro(e),
     );
 
     return selecionaveis.length > 0 && this.equipamentosSelecionados.size === selecionaveis.length;
@@ -271,41 +258,6 @@ export class CadastroReserva implements OnInit {
 
   get nenhumEquipamentoSelecionado(): boolean {
     return this.equipamentosSelecionados.size === 0;
-  }
-
-  // Só valida a ordem cronológica quando os 4 campos já têm valor —
-  // evita marcar erro antes do usuário terminar de preencher o período.
-  private periodoValidoValidator = (group: AbstractControl): ValidationErrors | null => {
-    const dataEmprestimo = group.get('data_emprestimo')?.value;
-    const horaEmprestimo = group.get('hora_emprestimo')?.value;
-    const dataDevolucao = group.get('data_devolucao')?.value;
-    const horaDevolucao = group.get('hora_devolucao')?.value;
-
-    if (!dataEmprestimo || !horaEmprestimo || !dataDevolucao || !horaDevolucao) {
-      return null;
-    }
-
-    if (!this.horaPattern.test(horaEmprestimo) || !this.horaPattern.test(horaDevolucao)) {
-      return null;
-    }
-
-    const inicio = this.combinarDataHora(dataEmprestimo, horaEmprestimo);
-    const fim = this.combinarDataHora(dataDevolucao, horaDevolucao);
-
-    const agora = new Date();
-
-    return fim > inicio ? null : fim < agora || inicio < agora ? null : { periodoInvalido: true };
-  };
-
-  private combinarDataHora(data: Date, hora: string): Date {
-    const [h, m] = hora.split(':').map(Number);
-    const resultado = new Date(data);
-    resultado.setHours(h, m, 0, 0);
-    return resultado;
-  }
-
-  private formatarHora(data: Date): string {
-    return data.toTimeString().slice(0, 5);
   }
 
   private async carregarDadosReserva(): Promise<void> {
@@ -328,9 +280,9 @@ export class CadastroReserva implements OnInit {
         {
           unidade,
           data_emprestimo: dataEmprestimo,
-          hora_emprestimo: this.formatarHora(dataEmprestimo),
+          hora_emprestimo: formatarHora(dataEmprestimo),
           data_devolucao: dataDevolucao,
-          hora_devolucao: this.formatarHora(dataDevolucao),
+          hora_devolucao: formatarHora(dataDevolucao),
         },
         { emitEvent: false },
       );
@@ -349,8 +301,7 @@ export class CadastroReserva implements OnInit {
       // 4. Compara com os equipamentos da reserva e marca como selecionado
       this.equipamentosDaReservaAtual.forEach((id) => this.equipamentosSelecionados.add(id));
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar reserva. Ela pode não existir.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar reserva. Ela pode não existir.');
     }
   }
 
@@ -361,8 +312,8 @@ export class CadastroReserva implements OnInit {
       const { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
         this.reservaForm.value;
 
-      const dh_emprestimo = this.combinarDataHora(data_emprestimo, hora_emprestimo);
-      const dh_devolucao = this.combinarDataHora(data_devolucao, hora_devolucao);
+      const dh_emprestimo = combinarDataHora(data_emprestimo, hora_emprestimo);
+      const dh_devolucao = combinarDataHora(data_devolucao, hora_devolucao);
 
       const equipamentos = Array.from(this.equipamentosSelecionados);
 
@@ -373,15 +324,14 @@ export class CadastroReserva implements OnInit {
         ? this.reservaService.update(this.reserva_id, dh_emprestimo, dh_devolucao, equipamentos)
         : this.reservaService.create(smartlock.id, dh_emprestimo, dh_devolucao, equipamentos);
 
-      requisicao$.subscribe({
+      requisicao$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           const acao = this.reserva_id ? 'atualizada' : 'cadastrada';
           this.sns.notificar(`Reserva ${acao} com sucesso!`, 'sucesso');
           this.router.navigate(['/reservas/lista']);
         },
         error: (err: any) => {
-          console.log(err);
-          this.sns.notificar(err.message, 'erro');
+          this.sns.notificarErro(err);
           this.isLoading.set(false);
           this.reservaForm.enable();
         },

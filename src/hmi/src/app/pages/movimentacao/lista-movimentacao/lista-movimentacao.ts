@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -15,6 +15,8 @@ import { Router } from '@angular/router';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
+import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
+import { sincronizarFiltroTabela } from '../../../shared/util/tabela-filtro.util';
 
 // TODO: ajustar para as interfaces reais do projeto
 export interface Movimentacao {
@@ -127,36 +129,25 @@ export class ListaMovimentacao {
     });
   }
 
-  // Remove acentos para busca por patrimônio (mesmo padrão do lista-smartlock)
-  private normalizarTexto(valor: string): string {
-    return valor
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
+  private readonly destroyRef = inject(DestroyRef);
 
   private initFiltro(): void {
-    this.dataSource.filterPredicate = (data: Movimentacao, filtro: string): boolean => {
-      const { patrimonio, unidade, tipo } = JSON.parse(filtro);
+    sincronizarFiltroTabela(
+      this.dataSource,
+      this.filtros,
+      (data: Movimentacao, filtro: any) => {
+        const patrimonioConfere =
+          !filtro.patrimonio ||
+          data.equipamentos.some((e) =>
+            normalizarTexto(e.patrimonio).includes(normalizarTexto((filtro.patrimonio || '').trim())),
+          );
+        const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
+        const tipoConfere = !filtro.tipo || data.tipo === filtro.tipo;
 
-      const patrimonioConfere =
-        !patrimonio ||
-        data.equipamentos.some((e) =>
-          this.normalizarTexto(e.patrimonio).includes(this.normalizarTexto(patrimonio.trim())),
-        );
-      const unidadeConfere = !unidade || data.unidade === unidade;
-      const tipoConfere = !tipo || data.tipo === tipo;
-
-      return patrimonioConfere && unidadeConfere && tipoConfere;
-    };
-
-    this.filtros.valueChanges.subscribe((valores) => {
-      this.dataSource.filter = JSON.stringify(valores);
-
-      if (this.dataSource.paginator) {
-        this.dataSource.paginator.firstPage();
-      }
-    });
+        return patrimonioConfere && unidadeConfere && tipoConfere;
+      },
+      this.destroyRef,
+    );
   }
 
   limparFiltros(): void {

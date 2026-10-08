@@ -29,4 +29,13 @@ export class SystemNotificationService {
       panelClass: [painelClass],
     });
   }
+
+  /**
+   * Registra o erro no console e notifica o usuário. Se `mensagem` não for
+   * informada, usa `err.message`.
+   */
+  public notificarErro(err: any, mensagem?: string) {
+    console.error(err);
+    this.notificar(mensagem ?? err?.message ?? 'Erro inesperado', 'erro');
+  }
 }

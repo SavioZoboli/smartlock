@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,38 +10,24 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Observable, startWith, map } from 'rxjs';
+import { Observable } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
-import { Unidade } from '../../unidade/lista-unidade/lista-unidade';
+import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
 import { UnidadeService } from '../../../services/unidade.service';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
-import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
-import { IUnidade } from '../../../interfaces/unidade.interface';
+import { obterIconeTipoEquipamento } from '../../../shared/tipoEquipamentos.constant';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
-
-export interface SmartLock {
-  id: number;
-  numero: number;
-  apelido: string;
-  unidade_id: number;
-}
-
-export interface Equipamento {
-  id: number;
-  apelido: string;
-  patrimonio: string;
-  tipo: string;
-  status_atual: 'DISPONIVEL' | 'EM USO';
-  emprestado_por?: number | null;
-  selecionado?: boolean;
-  icone?: string;
-}
-
-type TipoMovimento = 'emprestimo_manual' | 'devolucao_manual';
+import {
+  desmarcarTodosEquipamentos,
+  EquipamentoMovimentacao,
+  filtrarEquipamentosPorMovimento,
+} from './movimentacao.util';
 
 @Component({
   selector: 'app-cadastro-movimentacao',
@@ -63,28 +49,28 @@ type TipoMovimento = 'emprestimo_manual' | 'devolucao_manual';
   styleUrls: ['./cadastro-movimentacao.scss'],
 })
 export class CadastroMovimentacao implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly unidadeService = inject(UnidadeService);
+  private readonly smartlockService = inject(SmartlockService);
+  private readonly equipamentoService = inject(EquipamentoService);
+  private readonly movimentacaoService = inject(MovimentacaoService);
+  private readonly sns = inject(SystemNotificationService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   movForm: FormGroup;
-
-  unidades!: UnidadeComRegionalDTO[];
   filteredUnidades!: Observable<UnidadeComRegionalDTO[]>;
-
   smartlocks: ISmartlock[] = [];
-  equipamentos: Equipamento[] = [];
+  equipamentos: EquipamentoMovimentacao[] = [];
 
   isLoading = false;
   isLoadingSmartlocks = false;
   isLoadingEquipamentos = false;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private unidadeService: UnidadeService,
-    private smartlockService: SmartlockService,
-    private equipamentoService: EquipamentoService,
-    private movimentacaoService: MovimentacaoService,
-    private sns: SystemNotificationService,
-    private cdr: ChangeDetectorRef,
-  ) {
+  readonly displayUnidade = displayUnidadeComRegional;
+
+  constructor() {
     this.movForm = this.fb.group({
       unidade: ['', Validators.required],
       smartlock: [{ value: '', disabled: true }, Validators.required],
@@ -100,108 +86,109 @@ export class CadastroMovimentacao implements OnInit {
   }
 
   private inicializaUnidades(): void {
-    this.unidadeService.listAll().subscribe()
-    this.initAutocompleteFilter()
-  }
-
-  private initAutocompleteFilter(): void {
-    this.filteredUnidades = this.movForm.get('unidade')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => this._filter(value || '')),
+    this.unidadeService.listAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    this.filteredUnidades = filtrarAutocomplete(
+      this.movForm.get('unidade')!,
+      this.unidadeService.listAll() as Observable<UnidadeComRegionalDTO[]>,
+      'nome',
     );
   }
 
-  private _filter(value: any): UnidadeComRegionalDTO[] {
-    if (!this.unidadeService.unidades()){
-      this.unidadeService.listAll().subscribe()
-      return []
-    }
-    const stringValue = typeof value === 'string' ? value : value?.nome || '';
-    const filterValue = stringValue.toLowerCase();
-    return this.unidadeService.unidades().filter((option) => option.nome.toLowerCase().includes(filterValue));
-  }
-
-  displayUnidade = (unidade: Unidade | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
-
   // Quando a unidade muda: reseta smartlock e equipamentos, e busca as novas smartlocks
   private observarUnidade(): void {
-    this.movForm.get('unidade')!.valueChanges.subscribe((unidade) => {
-      this.smartlocks = [];
-      this.equipamentos = [];
-      this.movForm.get('smartlock')!.reset({ value: '', disabled: true });
+    this.movForm
+      .get('unidade')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((unidade) => {
+        this.smartlocks = [];
+        this.equipamentos = [];
+        this.movForm.get('smartlock')!.reset({ value: '', disabled: true });
 
-      if (unidade && typeof unidade === 'object' && unidade.id) {
-        this.carregarSmartlocks(unidade.id);
-      }
-    });
+        if (unidade && typeof unidade === 'object' && unidade.id) {
+          this.carregarSmartlocks(unidade.id);
+        }
+      });
   }
 
   private carregarSmartlocks(unidadeId: number): void {
     this.isLoadingSmartlocks = true;
-    this.smartlockService.listByUnidade(unidadeId).subscribe((val) => {
-      this.smartlocks = val;
-      this.movForm.get('smartlock')!.enable();
-      this.isLoadingSmartlocks = false;
-      this.cdr.detectChanges();
-    });
+    this.smartlockService
+      .listByUnidade(unidadeId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (val) => {
+          this.smartlocks = val;
+          this.movForm.get('smartlock')!.enable();
+          this.isLoadingSmartlocks = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.isLoadingSmartlocks = false;
+          this.sns.notificarErro(err, 'Erro ao carregar SmartLocks da unidade.');
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   // Quando a smartlock muda: reseta equipamentos e busca os novos
   private observarSmartlock(): void {
-    this.movForm.get('smartlock')!.valueChanges.subscribe((smartlockId) => {
-      this.equipamentos = [];
-      if (smartlockId) {
-        this.carregarEquipamentos(smartlockId);
-      }
-    });
+    this.movForm
+      .get('smartlock')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((smartlockId) => {
+        this.equipamentos = [];
+        if (smartlockId) {
+          this.carregarEquipamentos(smartlockId);
+        }
+      });
   }
 
   private carregarEquipamentos(smartlockId: number): void {
     this.isLoadingEquipamentos = true;
-    this.equipamentoService.listBySmartlock(smartlockId).subscribe({
-      next: (res: Equipamento[]) => {
-        this.equipamentos = res.map((e) => ({
-          ...e,
-          selecionado: false,
-          icone: TIPO_EQUIPAMENTOS.find((t) => t.descricao == e.tipo)?.icone,
-        }));
-        this.isLoadingEquipamentos = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.isLoadingEquipamentos = false;
-        this.sns.notificar('Erro ao carregar equipamentos do SmartLock.', 'erro');
-      },
-    });
+    this.equipamentoService
+      .listBySmartlock(smartlockId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any[]) => {
+          this.equipamentos = res.map((e) => ({
+            ...e,
+            selecionado: false,
+            icone: obterIconeTipoEquipamento(e.tipo),
+          }));
+          this.isLoadingEquipamentos = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.isLoadingEquipamentos = false;
+          this.sns.notificarErro(err, 'Erro ao carregar equipamentos do SmartLock.');
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   // Ao trocar o tipo de movimento, desmarca as seleções (a lista visível muda)
   private observarTipoMovimento(): void {
-    this.movForm.get('tipo_movimento')!.valueChanges.subscribe(() => {
-      this.equipamentos.forEach((e) => (e.selecionado = false));
-    });
+    this.movForm
+      .get('tipo_movimento')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.equipamentos = desmarcarTodosEquipamentos(this.equipamentos);
+      });
   }
 
   // Lista filtrada exibida na tela, de acordo com o tipo de movimento escolhido
-  get equipamentosVisiveis(): Equipamento[] {
-    const tipo: TipoMovimento = this.movForm.get('tipo_movimento')!.value;
-    if (!tipo) return [];
-    if (tipo.includes('emprestimo')) {
-      return this.equipamentos.filter((e) => e.status_atual === 'DISPONIVEL');
-    } else {
-      return this.equipamentos.filter((e) => e.status_atual !== 'DISPONIVEL');
-    }
+  get equipamentosVisiveis(): EquipamentoMovimentacao[] {
+    return filtrarEquipamentosPorMovimento(
+      this.equipamentos,
+      this.movForm.get('tipo_movimento')?.value,
+    );
   }
 
-  get equipamentosSelecionados(): Equipamento[] {
+  get equipamentosSelecionados(): EquipamentoMovimentacao[] {
     return this.equipamentos.filter((e) => e.selecionado);
   }
 
-  toggleEquipamento(equipamento: Equipamento): void {
+  toggleEquipamento(equipamento: EquipamentoMovimentacao): void {
     equipamento.selecionado = !equipamento.selecionado;
   }
 
@@ -223,17 +210,20 @@ export class CadastroMovimentacao implements OnInit {
     this.isLoading = true;
     this.movForm.disable();
 
-    this.movimentacaoService.create(smartlock, tipo_movimento, equipamentoIds).subscribe({
-      next: () => {
-        this.sns.notificar('Movimentação registrada com sucesso!', 'sucesso');
-        this.router.navigate(['/movimentacoes/lista']);
-      },
-      error: (err: any) => {
-        this.sns.notificar(err.message, 'erro');
-        this.isLoading = false;
-        this.movForm.enable();
-      },
-    });
+    this.movimentacaoService
+      .create(smartlock, tipo_movimento, equipamentoIds)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.sns.notificar('Movimentação registrada com sucesso!', 'sucesso');
+          this.router.navigate(['/movimentacoes/lista']);
+        },
+        error: (err: any) => {
+          this.sns.notificarErro(err, 'Erro ao registrar movimentação.');
+          this.isLoading = false;
+          this.movForm.enable();
+        },
+      });
   }
 
   onCancelar(): void {

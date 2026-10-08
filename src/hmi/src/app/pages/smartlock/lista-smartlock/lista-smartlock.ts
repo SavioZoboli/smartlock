@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
+import { sincronizarFiltroTabela } from '../../../shared/util/tabela-filtro.util';
 
 export interface Smartlock {
   id: number;
@@ -63,6 +64,8 @@ export class ListaSmartlock {
   unidadesDisponiveis: string[] = [];
   regionaisDisponiveis: string[] = [];
 
+  private readonly destroyRef = inject(DestroyRef);
+
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   constructor(
@@ -93,33 +96,30 @@ export class ListaSmartlock {
   }
 
   private initFiltro(): void {
-    this.dataSource.filterPredicate = (data: Smartlock, filtro: string): boolean => {
-      const { apelido, unidade, regional, apenasOnline, apenasComEquipamentos, provisionando } =
-        JSON.parse(filtro);
+    sincronizarFiltroTabela(
+      this.dataSource,
+      this.filtros,
+      (data: Smartlock, filtro: any) => {
+        const apelidoConfere = normalizarTexto(data.apelido).includes(
+          normalizarTexto((filtro.apelido || '').trim()),
+        );
+        const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
+        const regionalConfere = !filtro.regional || data.regional === filtro.regional;
+        const onlineConfere = !filtro.apenasOnline || data.is_online;
+        const provisionandoConfere = !filtro.provisionando || data.unidade != '';
+        const equipamentosConfere = !filtro.apenasComEquipamentos || data.has_equipamentos;
 
-      const apelidoConfere = normalizarTexto(data.apelido).includes(normalizarTexto(apelido.trim()));
-      const unidadeConfere = !unidade || data.unidade === unidade;
-      const regionalConfere = !regional || data.regional === regional;
-      const onlineConfere = !apenasOnline || data.is_online;
-      const provisionandoConfere = !provisionando || data.unidade != '';
-      const equipamentosConfere = !apenasComEquipamentos || data.has_equipamentos;
-
-      return (
-        apelidoConfere &&
-        unidadeConfere &&
-        regionalConfere &&
-        onlineConfere &&
-        provisionandoConfere &&
-        equipamentosConfere
-      );
-    };
-
-    this.filtros.valueChanges.subscribe((valores) => {
-      this.dataSource.filter = JSON.stringify(valores);
-      if (this.dataSource.paginator) {
-        this.dataSource.paginator.firstPage();
-      }
-    });
+        return (
+          apelidoConfere &&
+          unidadeConfere &&
+          regionalConfere &&
+          onlineConfere &&
+          provisionandoConfere &&
+          equipamentosConfere
+        );
+      },
+      this.destroyRef,
+    );
   }
 
   limparFiltros(): void {

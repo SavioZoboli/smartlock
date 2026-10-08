@@ -6,3 +6,7 @@ export const TIPO_EQUIPAMENTOS: readonly TipoEquipamento[] = [
     {descricao:"Kit Educacional",icone:'smart_toy'},
     {descricao:"Tablet",icone:'tablet'}
 ]
+
+export function obterIconeTipoEquipamento(tipo: string): string | undefined {
+  return TIPO_EQUIPAMENTOS.find((t) => t.descricao === tipo)?.icone;
+}
