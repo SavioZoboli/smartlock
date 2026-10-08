@@ -123,8 +123,7 @@ export class CadastroUsuario implements OnInit {
       this.userForm.patchValue(dadosUsuario);
       this.userForm.enable();
     } catch (err) {
-      console.error(err);
-      this.sns.notificar('Erro ao carregar usuário. Ele pode não existir.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar usuário. Ele pode não existir.');
     }
   }
 

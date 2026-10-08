@@ -105,8 +105,7 @@ export class ConcluirCadastro implements OnInit {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        console.error(err);
-        this.sns.notificar('Erro ao finalizar cadastro', 'erro');
+        this.sns.notificarErro(err, 'Erro ao finalizar cadastro');
       },
     });
   }

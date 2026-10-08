@@ -126,8 +126,7 @@ export class UpdateEquipamento implements OnInit {
         .get('smartlock')
         ?.setValue(this.smartlocks.find((s) => s.id === dados.smartlock_id));
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar Equipamento. Ele pode não existir.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar Equipamento. Ele pode não existir.');
       this.router.navigate(['/equipamentos/lista']);
     }
   }
@@ -147,8 +146,7 @@ export class UpdateEquipamento implements OnInit {
             this.router.navigate(['/equipamentos/lista']);
           },
           error: (err: any) => {
-            console.log(err);
-            this.sns.notificar(err.message, 'erro');
+            this.sns.notificarErro(err);
             this.isLoading = false;
             this.eqForm.enable();
           },

@@ -126,8 +126,7 @@ export class RedirectEquipamento {
         this.equipamentoService.listBySmartlock(smartlockId)
       );
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar equipamentos do smartlock de origem.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar equipamentos do smartlock de origem.');
       this.equipamentosDisponiveis = [];
     } finally {
       this.isLoadingEquipamentos = false;
@@ -181,8 +180,7 @@ export class RedirectEquipamento {
         this.router.navigate(['/equipamentos/lista']);
       },
       error: (err: any) => {
-        console.log(err);
-        this.sns.notificar(err.message, 'erro');
+        this.sns.notificarErro(err);
         this.isLoading = false;
       },
     });

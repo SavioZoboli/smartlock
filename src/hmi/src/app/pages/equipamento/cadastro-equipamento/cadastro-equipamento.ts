@@ -247,8 +247,7 @@ export class CadastroEquipamento implements OnInit {
           this.sns.notificar(err.error.message, 'erro');
           return;
         }
-        console.error(err);
-        this.sns.notificar(`Erro: ${err.error?.message ?? err.message}`, 'erro');
+        this.sns.notificarErro(err, `Erro: ${err.error?.message ?? err.message}`);
       },
     });
   }

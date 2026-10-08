@@ -117,8 +117,7 @@ export class CadastroSmartlock implements OnInit {
       this.slForm.get('mac_address')?.setValue(dados.mac_address);
       this.slForm.get('unidade')?.setValue(this.unidades.find((u) => u.id == dados.unidade_id));
     } catch (err) {
-      console.error(err);
-      this.sns.notificar('Erro ao carregar SmartLock. Ele pode não existir.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar SmartLock. Ele pode não existir.');
     }
   }
 
@@ -140,8 +139,7 @@ export class CadastroSmartlock implements OnInit {
           this.router.navigate(['/smartlocks/lista']);
         },
         error: (err: any) => {
-          console.error(err);
-          this.sns.notificar(err.message, 'erro');
+          this.sns.notificarErro(err);
           this.isLoading = false;
           this.slForm.enable();
         },

@@ -129,9 +129,8 @@ export class SmartlockReport implements OnInit {
         this.filteredUnidades.set(res);
       },
       error: (e) => {
-        this.sns.notificar('Erro ao buscar unidades', 'erro');
+        this.sns.notificarErro(e, 'Erro ao buscar unidades');
         this.carregando.set(false);
-        console.error(e);
       },
     });
 
@@ -170,8 +169,7 @@ export class SmartlockReport implements OnInit {
         this.filteredSmartlocks.set(res);
       },
       error: (e) => {
-        this.sns.notificar('Erro ao buscar Smartlocks da Unidade', 'erro');
-        console.error(e);
+        this.sns.notificarErro(e, 'Erro ao buscar Smartlocks da Unidade');
       },
     });
   }
@@ -189,9 +187,8 @@ export class SmartlockReport implements OnInit {
         this.carregando.set(false);
       },
       error: (e) => {
-        this.sns.notificar('Erro ao buscar equipamentos', 'erro');
+        this.sns.notificarErro(e, 'Erro ao buscar equipamentos');
         this.carregando.set(false);
-        console.error(e);
       },
     });
   }

@@ -113,8 +113,7 @@ export class LoginComponent {
           }
         },
         error: (err) => {
-          console.log(err);
-          this.sns.notificar('Erro ao validar a autenticação', 'erro');
+          this.sns.notificarErro(err, 'Erro ao validar a autenticação');
         },
       });
     });

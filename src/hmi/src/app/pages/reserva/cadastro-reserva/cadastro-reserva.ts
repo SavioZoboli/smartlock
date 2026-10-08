@@ -137,8 +137,7 @@ export class CadastroReserva implements OnInit {
     try {
       this.smartlocks = await firstValueFrom(this.smartlockService.listByUnidade(unidade_id));
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar unidades/smartlocks.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar unidades/smartlocks.');
     }
   }
 
@@ -221,8 +220,7 @@ export class CadastroReserva implements OnInit {
 
       this.equipamentosDisponiveis.set(equipamentos);
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar equipamentos disponíveis.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar equipamentos disponíveis.');
     } finally {
       this.carregandoEquipamentos.set(false);
     }
@@ -329,8 +327,7 @@ export class CadastroReserva implements OnInit {
       // 4. Compara com os equipamentos da reserva e marca como selecionado
       this.equipamentosDaReservaAtual.forEach((id) => this.equipamentosSelecionados.add(id));
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar reserva. Ela pode não existir.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar reserva. Ela pode não existir.');
     }
   }
 
@@ -360,8 +357,7 @@ export class CadastroReserva implements OnInit {
           this.router.navigate(['/reservas/lista']);
         },
         error: (err: any) => {
-          console.log(err);
-          this.sns.notificar(err.message, 'erro');
+          this.sns.notificarErro(err);
           this.isLoading.set(false);
           this.reservaForm.enable();
         },
