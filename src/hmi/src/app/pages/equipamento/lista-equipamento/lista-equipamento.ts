@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
+import { sincronizarFiltroTabela } from '../../../shared/util/tabela-filtro.util';
 
 export type StatusEquipamento = 'emprestado' | 'disponivel' | 'manutencao';
 
@@ -111,31 +112,28 @@ export class ListaEquipamento {
     });
   }
 
+  private readonly destroyRef = inject(DestroyRef);
+
   private initFiltro(): void {
-    this.dataSource.filterPredicate = (data: Equipamento, filtro: string): boolean => {
-      const { geral, unidade, smartlock, status } = JSON.parse(filtro);
+    sincronizarFiltroTabela(
+      this.dataSource,
+      this.filtros,
+      (data: Equipamento, filtro: any) => {
+        const geralNormalizado = normalizarTexto((filtro.geral || '').trim());
+        const geralConfere =
+          !geralNormalizado ||
+          normalizarTexto(data.usuario_atual ?? '').includes(geralNormalizado) ||
+          normalizarTexto(data.patrimonio).includes(geralNormalizado) ||
+          normalizarTexto(data.tipo).includes(geralNormalizado);
 
-      const geralNormalizado = normalizarTexto(geral.trim());
-      const geralConfere =
-        !geralNormalizado ||
-        normalizarTexto(data.usuario_atual ?? '').includes(geralNormalizado) ||
-        normalizarTexto(data.patrimonio).includes(geralNormalizado) ||
-        normalizarTexto(data.tipo).includes(geralNormalizado);
+        const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
+        const smartlockConfere = !filtro.smartlock || data.smartlock === filtro.smartlock;
+        const statusConfere = !filtro.status || data.status === filtro.status;
 
-      const unidadeConfere = !unidade || data.unidade === unidade;
-      const smartlockConfere = !smartlock || data.smartlock === smartlock;
-      const statusConfere = !status || data.status === status;
-
-      return geralConfere && unidadeConfere && smartlockConfere && statusConfere;
-    };
-
-    this.filtros.valueChanges.subscribe((valores) => {
-      this.dataSource.filter = JSON.stringify(valores);
-
-      if (this.dataSource.paginator) {
-        this.dataSource.paginator.firstPage();
-      }
-    });
+        return geralConfere && unidadeConfere && smartlockConfere && statusConfere;
+      },
+      this.destroyRef,
+    );
   }
 
   limparFiltros(): void {

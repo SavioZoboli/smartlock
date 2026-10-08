@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 import { UsuarioService } from '../../../services/usuario.service';
 import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
+import { sincronizarFiltroTabela } from '../../../shared/util/tabela-filtro.util';
 
 export interface Usuario {
   id: number;
@@ -82,23 +83,23 @@ export class ListaUsuario {
     });
   }
 
+  private readonly destroyRef = inject(DestroyRef);
+
   private initFiltro(): void {
-    this.dataSource.filterPredicate = (data: Usuario, filtro: string): boolean => {
-      const { nome, unidade, regional } = JSON.parse(filtro);
+    sincronizarFiltroTabela(
+      this.dataSource,
+      this.filtros,
+      (data: Usuario, filtro: any) => {
+        const nomeConfere = normalizarTexto(data.nome).includes(
+          normalizarTexto((filtro.nome || '').trim()),
+        );
+        const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
+        const regionalConfere = !filtro.regional || data.regional === filtro.regional;
 
-      const nomeConfere = normalizarTexto(data.nome).includes(normalizarTexto(nome.trim()));
-      const unidadeConfere = !unidade || data.unidade === unidade;
-      const regionalConfere = !regional || data.regional === regional;
-
-      return nomeConfere && unidadeConfere && regionalConfere;
-    };
-
-    this.filtros.valueChanges.subscribe((valores) => {
-      this.dataSource.filter = JSON.stringify(valores);
-      if (this.dataSource.paginator) {
-        this.dataSource.paginator.firstPage();
-      }
-    });
+        return nomeConfere && unidadeConfere && regionalConfere;
+      },
+      this.destroyRef,
+    );
   }
 
   limparFiltros(): void {

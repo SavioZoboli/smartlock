@@ -1,23 +1,27 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { SystemNotificationService } from '../../services/system-notification.service';
-import { Unidade } from '../unidade/lista-unidade/lista-unidade';
-import { firstValueFrom, map, Observable, startWith } from 'rxjs';
+import { Observable } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UnidadeService } from '../../services/unidade.service';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
+import { objetoSelecionadoValidator } from '../../shared/validators/objeto-selecionado.validator';
+import { filtrarAutocomplete } from '../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../shared/util/autocomplete-display.util';
+import { UnidadeComRegionalDTO } from '../../dto/UnidadeComRegional.dto';
 
 @Component({
   selector: 'app-concluir-cadastro',
   templateUrl: './concluir-cadastro.html',
   styleUrls: ['./concluir-cadastro.scss'],
+  standalone: true,
   imports: [
     MatFormFieldModule,
     MatInputModule,
@@ -25,25 +29,27 @@ import { AsyncPipe } from '@angular/common';
     MatIconModule,
     ReactiveFormsModule,
     MatAutocompleteModule,
-    AsyncPipe
+    AsyncPipe,
+    RouterLink,
   ],
 })
 export class ConcluirCadastro implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly sns = inject(SystemNotificationService);
+  private readonly unidadeService = inject(UnidadeService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
   userForm: FormGroup;
   dadosGoogle: any;
+  filteredUnidades!: Observable<UnidadeComRegionalDTO[]>;
 
-  unidades!: Unidade[];
-  filteredUnidades!: Observable<Unidade[]>;
+  readonly displayUnidade = displayUnidadeComRegional;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private authService: AuthService,
-    private sns: SystemNotificationService,
-    private unidadeService:UnidadeService,
-    private cdr:ChangeDetectorRef
-  ) {
-    // Captura os dados invisíveis vindos da rota de Login
+  constructor() {
+    // Captura os dados vindos da rota de Login
     const navigation = this.router.currentNavigation();
     this.dadosGoogle = navigation?.extras?.state;
 
@@ -54,27 +60,26 @@ export class ConcluirCadastro implements OnInit {
       email: [{ value: '', disabled: true }], // Desabilitado por segurança
       uuid: [''],
       matricula: ['', [Validators.required, Validators.pattern('^[0-9]{5}$')]],
-      unidade: ['', Validators.required],
+      unidade: ['', [Validators.required, objetoSelecionadoValidator]],
     });
   }
 
   ngOnInit(): void {
-    // Se não há token temporário, expulsa para o login
+    // Se não há token temporário, redireciona para o login
     if (!this.dadosGoogle || !this.dadosGoogle.signupToken) {
       this.router.navigate(['/login']);
       return;
     }
 
-    this.inicializaUnidades()
+    this.inicializaUnidades();
 
-    let nomeQuebrado = this.dadosGoogle.nome.split(' ');
-    let sobrenome = nomeQuebrado[nomeQuebrado.length - 1];
-
-    let nomeSemSobrenome = this.dadosGoogle.nome.replace(sobrenome, '');
+    const nomeQuebrado = (this.dadosGoogle.nome || '').trim().split(' ');
+    const sobrenome = nomeQuebrado.length > 1 ? nomeQuebrado[nomeQuebrado.length - 1] : '';
+    const nomeSemSobrenome = (this.dadosGoogle.nome || '').replace(new RegExp(`\\s*${sobrenome}$`), '');
 
     // Pré-preenche os dados recebidos do Google
     this.userForm.patchValue({
-      nome: nomeSemSobrenome,
+      nome: nomeSemSobrenome || this.dadosGoogle.nome,
       sobrenome: sobrenome,
       email: this.dadosGoogle.email,
     });
@@ -84,8 +89,8 @@ export class ConcluirCadastro implements OnInit {
     if (this.userForm.invalid) return;
 
     // getRawValue pega também os campos 'disabled' (como o email)
-    const {nome,sobrenome,uuid,matricula,email} = this.userForm.getRawValue();
-    const unidade_id = this.userForm.value.unidade.id
+    const { nome, sobrenome, uuid, matricula, email } = this.userForm.getRawValue();
+    const unidade_id = this.userForm.value.unidade.id;
 
     // Anexa o token de segurança para o backend validar
     const payload = {
@@ -96,57 +101,37 @@ export class ConcluirCadastro implements OnInit {
       unidade_id,
       email,
       signupToken: this.dadosGoogle.signupToken,
-      avatar:this.dadosGoogle.avatar
+      avatar: this.dadosGoogle.avatar,
     };
 
-    this.authService.finalizarCadastro(payload).subscribe({
-      next: (res) => {
-        this.sns.notificar('Cadastro concluído com sucesso!', 'sucesso');
-        this.router.navigate(['/dashboard']);
-      },
-      error: (err) => {
-        this.sns.notificarErro(err, 'Erro ao finalizar cadastro');
-      },
-    });
+    this.authService
+      .finalizarCadastro(payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.sns.notificar('Cadastro concluído com sucesso!', 'sucesso');
+          this.router.navigate(['/dashboard']);
+        },
+        error: (err) => {
+          this.sns.notificarErro(err, 'Erro ao finalizar cadastro');
+        },
+      });
   }
 
-  private async inicializaUnidades(){
-    const unidadesCarregadas = this.unidadeService.unidades()
-    if (!unidadesCarregadas) {
-      return;
-    }
+  private inicializaUnidades(): void {
+    this.unidadeService.listAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
 
-    this.initAutocompleteFilter();
+    this.filteredUnidades = filtrarAutocomplete(
+      this.userForm.get('unidade')!,
+      this.unidadeService.listAll() as Observable<UnidadeComRegionalDTO[]>,
+      'nome',
+    );
 
     this.cdr.detectChanges();
   }
 
-  private initAutocompleteFilter() {
-    this.filteredUnidades = this.userForm.get('unidade')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => this._filter(value || '')),
-    );
-  }
-
-  private _filter(value: any): Unidade[] {
-    if (!this.unidades) return [];
-
-    const stringValue = typeof value === 'string' ? value : value?.nome || '';
-    const filterValue = stringValue.toLowerCase();
-
-    return this.unidades.filter((option) => option.nome.toLowerCase().includes(filterValue));
-  }
-
-  // Usado pelo [displayWith] do mat-autocomplete: define o texto exibido
-  // no input quando uma Unidade é selecionada (ou carregada via patchValue).
-  displayUnidade = (unidade: Unidade | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
-
-  cancelar(){
-    this.authService.logout()
-    this.router.navigate(['/login'])
+  cancelar(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }
