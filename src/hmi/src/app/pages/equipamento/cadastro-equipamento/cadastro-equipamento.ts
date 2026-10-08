@@ -15,7 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { map, Observable, shareReplay } from 'rxjs';
+import { BehaviorSubject, map, Observable, shareReplay } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 
@@ -70,8 +70,10 @@ export class CadastroEquipamento implements OnInit {
 
   tiposEquipamento = TIPO_EQUIPAMENTOS;
 
+  private smartlocksSubject = new BehaviorSubject<SmartlockOption[]>([]);
+
   filteredUnidades!: Observable<IUnidade[]>;
-  filteredSmartlocks: Observable<SmartlockOption[]> = new Observable();
+  filteredSmartlocks!: Observable<SmartlockOption[]>;
 
   nomeArquivoSelecionado = '';
 
@@ -104,6 +106,12 @@ export class CadastroEquipamento implements OnInit {
       this.unidadeService.listAll(),
       'nome',
     );
+
+    this.filteredSmartlocks = filtrarAutocomplete(
+      this.importForm.get('smartlock')!,
+      this.smartlocksSubject,
+      'apelido',
+    );
   }
 
   get equipamentosArray(): FormArray {
@@ -115,21 +123,23 @@ export class CadastroEquipamento implements OnInit {
     smartlockControl.reset(null);
     smartlockControl.disable();
 
-    const smartlocks$ = this.smartlockService.listByUnidade(unidade.id).pipe(
-      map((smartlocks) =>
-        smartlocks.map((s) => ({
-          id: s.id,
-          apelido: s.apelido ?? '',
-        })),
-      ),
-      shareReplay(1),
-    );
-
-    smartlocks$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => smartlockControl.enable(),
-    });
-
-    this.filteredSmartlocks = filtrarAutocomplete(smartlockControl, smartlocks$, 'apelido');
+    this.smartlockService
+      .listByUnidade(unidade.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (smartlocks) => {
+          this.smartlocksSubject.next(
+            smartlocks.map((s) => ({
+              id: s.id,
+              apelido: s.apelido ?? '',
+            })),
+          );
+          smartlockControl.enable();
+        },
+        error: (err) => {
+          this.sns.notificarErro(err, 'Erro ao carregar smartlocks da unidade');
+        },
+      });
   }
 
   // --- ITENS: adição manual ---

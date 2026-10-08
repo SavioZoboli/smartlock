@@ -94,8 +94,12 @@ export class UpdateEquipamento implements OnInit {
   }
 
   private async inicializaSmartlocks(): Promise<void> {
-    this.smartlocks = this.smartlockService.smartlocks()
-    this.initAutocompleteFilter();
+    try {
+      this.smartlocks = await firstValueFrom(this.smartlockService.listAll());
+      this.initAutocompleteFilter();
+    } catch (err) {
+      this.sns.notificarErro(err, 'Erro ao carregar lista de smartlocks');
+    }
   }
 
   private initAutocompleteFilter(): void {

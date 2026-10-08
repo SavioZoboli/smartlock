@@ -1,6 +1,7 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -13,36 +14,54 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, startWith, map, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
+
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
 import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
-
-
-interface Equipamento {
-  id: number;
-  patrimonio: string;
-  tag: string;
-  tipo: string;
-  selecionado?: boolean;
-}
+import {
+  EquipamentoTransferivel,
+  transferirItemParaDestino,
+  transferirSelecionadosParaDestino,
+  devolverItemParaOrigem,
+} from './redirect-equipamento.util';
 
 @Component({
   selector: 'app-redirect-equipamentos',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, FormsModule, MatFormFieldModule,
-    MatInputModule, MatAutocompleteModule, MatButtonModule,
-    MatIconModule, MatProgressSpinnerModule, MatCheckboxModule,
-    MatListModule, MatDividerModule, MatTooltipModule
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatCheckboxModule,
+    MatListModule,
+    MatDividerModule,
+    MatTooltipModule,
   ],
   templateUrl: './redirect-equipamento.html',
-  styleUrls: ['./redirect-equipamento.scss']
+  styleUrls: ['./redirect-equipamento.scss'],
 })
-export class RedirectEquipamento {
-  form: FormGroup;
+export class RedirectEquipamento implements OnInit {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private equipamentoService = inject(EquipamentoService);
+  private smartlockService = inject(SmartlockService);
+  private sns = inject(SystemNotificationService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroyRef = inject(DestroyRef);
+
+  form: FormGroup = this.fb.group({
+    origem: ['', Validators.required],
+    destino: [{ value: '', disabled: true }, Validators.required],
+  });
 
   smartlocks: ISmartlock[] = [];
   filteredOrigem!: Observable<ISmartlock[]>;
@@ -51,37 +70,39 @@ export class RedirectEquipamento {
   origemSelecionada: ISmartlock | null = null;
   destinoSelecionado: ISmartlock | null = null;
 
-  equipamentosDisponiveis: Equipamento[] = [];
-  equipamentosParaTransferir: Equipamento[] = [];
+  equipamentosDisponiveis: EquipamentoTransferivel[] = [];
+  equipamentosParaTransferir: EquipamentoTransferivel[] = [];
 
   isLoading = false;
   isLoadingEquipamentos = false;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private equipamentoService: EquipamentoService,
-    private smartlockService: SmartlockService,
-    private sns: SystemNotificationService,
-    private cdr: ChangeDetectorRef,
-  ) {
-    this.form = this.fb.group({
-      origem: ['', Validators.required],
-      destino: [{ value: '', disabled: true }, Validators.required],
-    });
+  displaySmartlock = displayPorCampo<ISmartlock>('apelido');
 
-    this.init();
+  ngOnInit(): void {
+    this.inicializarDados();
   }
 
-  private async init(): Promise<void> {
+  private inicializarDados(): void {
     this.isLoading = true;
-    this.smartlocks = this.smartlockService.smartlocks();
-    this.initFiltros();
-    this.isLoading = false;
-    this.cdr.detectChanges();
+    this.smartlockService
+      .listAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (smartlocks) => {
+          this.smartlocks = smartlocks;
+          this.iniciarFiltros();
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.sns.notificarErro(err, 'Erro ao carregar smartlocks');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
   }
 
-  private initFiltros(): void {
+  private iniciarFiltros(): void {
     this.filteredOrigem = this.form.get('origem')!.valueChanges.pipe(
       startWith(''),
       map((value) => filtrarLista(this.smartlocks, value || '', 'apelido')),
@@ -90,13 +111,11 @@ export class RedirectEquipamento {
     this.filteredDestino = this.form.get('destino')!.valueChanges.pipe(
       startWith(''),
       map((value) => {
-        const disponiveis = this.smartlocks.filter(s => s.id !== this.origemSelecionada?.id);
+        const disponiveis = this.smartlocks.filter((s) => s.id !== this.origemSelecionada?.id);
         return filtrarLista(disponiveis, value || '', 'apelido');
       }),
     );
   }
-
-  displaySmartlock = displayPorCampo<ISmartlock>('apelido');
 
   async onOrigemSelecionada(): Promise<void> {
     const origem = this.form.get('origem')!.value as ISmartlock;
@@ -104,7 +123,7 @@ export class RedirectEquipamento {
 
     this.origemSelecionada = origem;
 
-    // reseta destino e listas
+    // Reseta o destino e as listas ao alterar a origem
     this.form.get('destino')!.enable();
     this.form.get('destino')!.setValue('');
     this.destinoSelecionado = null;
@@ -123,37 +142,48 @@ export class RedirectEquipamento {
     this.isLoadingEquipamentos = true;
     try {
       this.equipamentosDisponiveis = await firstValueFrom(
-        this.equipamentoService.listBySmartlock(smartlockId)
+        this.equipamentoService.listBySmartlock(smartlockId),
       );
     } catch (err) {
       this.sns.notificarErro(err, 'Erro ao carregar equipamentos do smartlock de origem.');
       this.equipamentosDisponiveis = [];
     } finally {
       this.isLoadingEquipamentos = false;
+      this.cdr.detectChanges();
     }
   }
 
   get temSelecionados(): boolean {
-    return this.equipamentosDisponiveis.some(e => e.selecionado);
+    return this.equipamentosDisponiveis.some((e) => e.selecionado);
   }
 
-  enviarParaDestino(equipamento: Equipamento): void {
-    this.equipamentosDisponiveis = this.equipamentosDisponiveis.filter(e => e.id !== equipamento.id);
-    equipamento.selecionado = false;
-    this.equipamentosParaTransferir.push(equipamento);
+  enviarParaDestino(equipamento: EquipamentoTransferivel): void {
+    const res = transferirItemParaDestino(
+      this.equipamentosDisponiveis,
+      this.equipamentosParaTransferir,
+      equipamento,
+    );
+    this.equipamentosDisponiveis = res.disponiveis;
+    this.equipamentosParaTransferir = res.paraTransferir;
   }
 
   enviarSelecionadosParaDestino(): void {
-    const selecionados = this.equipamentosDisponiveis.filter(e => e.selecionado);
-
-    this.equipamentosDisponiveis = this.equipamentosDisponiveis.filter(e => !e.selecionado);
-    selecionados.forEach(e => e.selecionado = false);
-    this.equipamentosParaTransferir.push(...selecionados);
+    const res = transferirSelecionadosParaDestino(
+      this.equipamentosDisponiveis,
+      this.equipamentosParaTransferir,
+    );
+    this.equipamentosDisponiveis = res.disponiveis;
+    this.equipamentosParaTransferir = res.paraTransferir;
   }
 
-  removerDoDestino(equipamento: Equipamento): void {
-    this.equipamentosParaTransferir = this.equipamentosParaTransferir.filter(e => e.id !== equipamento.id);
-    this.equipamentosDisponiveis.push(equipamento);
+  removerDoDestino(equipamento: EquipamentoTransferivel): void {
+    const res = devolverItemParaOrigem(
+      this.equipamentosDisponiveis,
+      this.equipamentosParaTransferir,
+      equipamento,
+    );
+    this.equipamentosDisponiveis = res.disponiveis;
+    this.equipamentosParaTransferir = res.paraTransferir;
   }
 
   onCancelar(): void {
@@ -172,17 +202,21 @@ export class RedirectEquipamento {
     }
 
     this.isLoading = true;
-    const equipamentoIds = this.equipamentosParaTransferir.map(e => e.id);
+    const equipamentoIds = this.equipamentosParaTransferir.map((e) => e.id);
 
-    this.equipamentoService.redirect(this.destinoSelecionado.id, equipamentoIds).subscribe({
-      next: () => {
-        this.sns.notificar('Equipamentos redirecionados com sucesso!', 'sucesso');
-        this.router.navigate(['/equipamentos/lista']);
-      },
-      error: (err: any) => {
-        this.sns.notificarErro(err);
-        this.isLoading = false;
-      },
-    });
+    this.equipamentoService
+      .redirect(this.destinoSelecionado.id, equipamentoIds)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.sns.notificar('Equipamentos redirecionados com sucesso!', 'sucesso');
+          this.router.navigate(['/equipamentos/lista']);
+        },
+        error: (err: any) => {
+          this.sns.notificarErro(err);
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
   }
 }
