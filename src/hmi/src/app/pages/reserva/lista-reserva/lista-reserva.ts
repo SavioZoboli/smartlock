@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -11,12 +10,9 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Reserva } from '../../../models/reserva.model';
 import { ReportReservaLista } from '../../../reports/report-reserva-lista/report-reserva-lista';
-import { ReportReservaCalendario } from '../../../reports/report-reserva-calendario/report-reserva-calendario';
 import { ReservaService } from '../../../services/reserva.service';
 import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
-
-type ModoVisualizacao = 'lista' | 'calendario';
 
 @Component({
   selector: 'app-lista-reserva',
@@ -25,20 +21,16 @@ type ModoVisualizacao = 'lista' | 'calendario';
     ReactiveFormsModule,
     FormsModule,
     MatButtonModule,
-    MatButtonToggleModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     ReportReservaLista,
-    ReportReservaCalendario,
   ],
   templateUrl: './lista-reserva.html',
   styleUrl: './lista-reserva.scss',
 })
 export class ListaReserva implements OnInit {
-  modoVisualizacao: ModoVisualizacao = 'lista';
-
   private reservas = signal<any[]>([]);
   reservasFiltradas = signal<any[]>([]);
 
@@ -104,6 +96,10 @@ export class ListaReserva implements OnInit {
 
   limparFiltros(): void {
     this.filtros.reset({ smartlock: '', unidade: '', situacao: '' });
+  }
+
+  onVerRelatorio(): void {
+    this.router.navigate(['/relatorios/reservas']);
   }
 
   onNovaReserva(): void {

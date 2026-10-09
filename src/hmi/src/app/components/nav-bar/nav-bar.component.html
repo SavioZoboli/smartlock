@@ -53,6 +53,9 @@
     <a mat-menu-item routerLink="/relatorios/extrato">
       <mat-icon>history</mat-icon> <span>Extrato</span>
     </a>
+    <a mat-menu-item routerLink="/relatorios/reservas">
+      <mat-icon>calendar_month</mat-icon> <span>Reservas</span>
+    </a>
   </mat-menu>
 
   <div class="navbar-right">
@@ -125,6 +128,9 @@
     </a>
     <a mat-menu-item routerLink="/relatorios/extrato">
       <mat-icon>history</mat-icon> <span>Relatório: Extrato</span>
+    </a>
+    <a mat-menu-item routerLink="/relatorios/reservas">
+      <mat-icon>calendar_month</mat-icon> <span>Relatório: Reservas</span>
     </a>
 
     @if (usuario$ | async; as usuario) {

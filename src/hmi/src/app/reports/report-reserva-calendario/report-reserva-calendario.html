@@ -1,44 +1,150 @@
-<div class="calendario-container">
-  <div class="calendario-header">
-    <button mat-icon-button (click)="mesAnterior()" matTooltip="Mês anterior">
-      <mat-icon>chevron_left</mat-icon>
-    </button>
+<div class="report-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Relatórios / Reservas</div>
+      <h2>Relatório de Reservas</h2>
+    </div>
 
-    <span class="mes-label">{{ labelMes }}</span>
-
-    <button mat-icon-button (click)="mesSeguinte()" matTooltip="Próximo mês">
-      <mat-icon>chevron_right</mat-icon>
-    </button>
-
-    <button mat-stroked-button class="btn-hoje" (click)="mesAtual()">Hoje</button>
-  </div>
-
-  <div class="grade-semana">
-    @for (nome of nomesDiasSemana; track nome) {
-      <div class="dia-semana-label">{{ nome }}</div>
-    }
-  </div>
-
-  <div class="grade-dias">
-    @for (dia of dias; track dia.data) {
-      <div class="dia-celula" [class.fora-do-mes]="dia.foraDoMes" [class.hoje]="dia.hoje">
-        <span class="dia-numero">{{ dia.numero }}</span>
-
-        <div class="reservas-do-dia">
-          @for (reserva of dia.reservas; track reserva.id) {
-            <div
-              class="reserva-item"
-              [matTooltip]="reserva.unidade+'/'+reserva.regional"
-              (click)="onClickReserva(reserva, $event)">
-              <span class="reserva-hora">{{ reserva.reserva_inicio | date: 'HH:mm' }} - {{ reserva.reserva_fim | date: 'HH:mm' }}</span>
-              <span class="reserva-nome">{{ reserva.smartlock }}</span>
-              @if (reserva.equipamentos.length > 0) {
-                <span class="reserva-equip-badge">{{ reserva.equipamentos.length }}</span>
-              }
-            </div>
+    <div class="header-controls">
+      <!-- Filtro Unidade -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-filter-field">
+        <mat-label>Unidade</mat-label>
+        <input type="text" matInput [formControl]="unidadeCtrl" [matAutocomplete]="autoUnidade" placeholder="Buscar unidade" />
+        <mat-icon matPrefix class="filter-icon">business</mat-icon>
+        @if (unidadeCtrl.value) {
+          <button mat-icon-button matSuffix type="button" (click)="limparUnidade()" aria-label="Limpar unidade">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+        <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="_displayWithUnidade">
+          @for (unidade of filteredUnidades(); track unidade.id) {
+            <mat-option [value]="unidade">{{ _displayWithUnidade(unidade) }}</mat-option>
           }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <!-- Filtro Smartlock -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-filter-field">
+        <mat-label>SmartLock</mat-label>
+        <input
+          type="text"
+          matInput
+          [formControl]="smartlockCtrl"
+          [matAutocomplete]="autoSmartlock"
+          [placeholder]="smartlockCtrl.disabled ? 'Selecione uma unidade' : 'Todos da unidade'"
+        />
+        <mat-icon matPrefix class="filter-icon">dns</mat-icon>
+        @if (smartlockCtrl.value && !smartlockCtrl.disabled) {
+          <button mat-icon-button matSuffix type="button" (click)="limparSmartlock()" aria-label="Limpar smartlock">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+        <mat-autocomplete #autoSmartlock="matAutocomplete" [displayWith]="_displayWithSmartlock">
+          @for (sl of filteredSmartlocks(); track sl.id) {
+            <mat-option [value]="sl">{{ sl.apelido }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <!-- Filtro Usuário -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-filter-field">
+        <mat-label>Usuário</mat-label>
+        <input type="text" matInput [formControl]="usuarioCtrl" [matAutocomplete]="autoUsuario" placeholder="Buscar usuário" />
+        <mat-icon matPrefix class="filter-icon">person</mat-icon>
+        @if (usuarioCtrl.value) {
+          <button mat-icon-button matSuffix type="button" (click)="limparUsuario()" aria-label="Limpar usuário">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+        <mat-autocomplete #autoUsuario="matAutocomplete" [displayWith]="_displayWithUsuario">
+          @for (usr of filteredUsuarios(); track usr.id) {
+            <mat-option [value]="usr">{{ _displayWithUsuario(usr) }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <button mat-stroked-button type="button" class="btn-limpar" (click)="limparFiltros()">
+        <mat-icon>filter_alt_off</mat-icon> Limpar
+      </button>
+    </div>
+  </div>
+
+  @if (!temFiltroObrigatorio) {
+    <div class="state-message">
+      <mat-icon>filter_alt</mat-icon>
+      <span>Selecione pelo menos uma <strong>Unidade</strong> ou um <strong>Usuário</strong> para carregar o calendário de reservas.</span>
+    </div>
+  } @else if (carregando()) {
+    <div class="state-message">
+      <mat-spinner diameter="36"></mat-spinner>
+      <span>Carregando reservas do período...</span>
+    </div>
+  } @else {
+    <div class="calendario-container">
+      <div class="calendario-header">
+        <div class="navegacao-mes">
+          <button mat-icon-button (click)="mesAnterior()" matTooltip="Mês anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+
+          <span class="mes-label">{{ labelMes }}</span>
+
+          <button mat-icon-button (click)="mesSeguinte()" matTooltip="Próximo mês">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+
+        <div class="calendario-acoes">
+          <span class="total-reservas">
+            <strong>{{ reservas().length }}</strong> reserva(s) no período
+          </span>
+          <button mat-stroked-button class="btn-hoje" (click)="mesAtual()">Hoje</button>
         </div>
       </div>
-    }
-  </div>
+
+      <div class="grade-semana">
+        @for (nome of nomesDiasSemana; track nome) {
+          <div class="dia-semana-label">{{ nome }}</div>
+        }
+      </div>
+
+      <div class="grade-dias">
+        @for (dia of dias(); track dia.data) {
+          <div class="dia-celula" [class.fora-do-mes]="dia.foraDoMes" [class.hoje]="dia.hoje">
+            <span class="dia-numero">{{ dia.numero }}</span>
+
+            <div class="reservas-do-dia">
+              @for (reserva of dia.reservas; track reserva.id) {
+                <div
+                  class="reserva-card"
+                  [matTooltip]="reserva.responsavel + ' - ' + reserva.smartlock + ' (' + reserva.unidade + ')'"
+                  (click)="onClickReserva(reserva, $event)">
+                  <div class="reserva-card-top">
+                    <span class="reserva-hora">
+                      {{ reserva.reserva_inicio | date: 'HH:mm' }} - {{ reserva.reserva_fim | date: 'HH:mm' }}
+                    </span>
+                    @if (reserva.equipamentos?.length > 0) {
+                      <span class="reserva-equip-badge" matTooltip="{{ reserva.equipamentos.length }} equipamento(s)">
+                        {{ reserva.equipamentos.length }}
+                      </span>
+                    }
+                  </div>
+
+                  <div class="reserva-card-sl">
+                    <mat-icon class="card-icon">dns</mat-icon>
+                    <span class="sl-nome">{{ reserva.smartlock }}</span>
+                  </div>
+
+                  <div class="reserva-card-user">
+                    <mat-icon class="card-icon">person</mat-icon>
+                    <span class="user-nome">{{ reserva.responsavel }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </div>
