@@ -12,14 +12,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, startWith, map, firstValueFrom } from 'rxjs';
+import { Observable, startWith, map, firstValueFrom, combineLatest } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
-import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
+import { filtrarAutocomplete, filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
 import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
 import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import {
@@ -77,7 +77,7 @@ export class RedirectEquipamento implements OnInit {
   isLoading = false;
   isLoadingEquipamentos = false;
 
-  displaySmartlock = displayPorCampo<ISmartlock>('apelido');
+  readonly displaySmartlock = displayPorCampo<ISmartlock>('apelido');
 
   ngOnInit(): void {
     this.inicializarDados();
@@ -104,16 +104,21 @@ export class RedirectEquipamento implements OnInit {
   }
 
   private iniciarFiltros(): void {
-    this.filteredOrigem = this.form.get('origem')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => filtrarLista(this.smartlocks, value || '', 'apelido')),
+    this.filteredOrigem = filtrarAutocomplete(
+      this.form.get('origem')!,
+      this.smartlockService.listAll(),
+      'apelido',
     );
 
-    this.filteredDestino = this.form.get('destino')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => {
-        const disponiveis = this.smartlocks.filter((s) => s.id !== this.origemSelecionada?.id);
-        return filtrarLista(disponiveis, value || '', 'apelido');
+    this.filteredDestino = combineLatest([
+      this.form.get('destino')!.valueChanges.pipe(startWith('')),
+      this.smartlockService.listAll(),
+      this.form.get('origem')!.valueChanges.pipe(startWith(this.form.get('origem')!.value)),
+    ]).pipe(
+      map(([valorDestino, smartlocks, origem]) => {
+        const origemId = origem && typeof origem === 'object' ? origem.id : null;
+        const disponiveis = origemId ? smartlocks.filter((s) => s.id !== origemId) : smartlocks;
+        return filtrarLista(disponiveis, valorDestino, 'apelido');
       }),
     );
   }

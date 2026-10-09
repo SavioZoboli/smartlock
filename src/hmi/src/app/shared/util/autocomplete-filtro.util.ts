@@ -1,5 +1,6 @@
 import { AbstractControl } from '@angular/forms';
 import { Observable, combineLatest, map, startWith } from 'rxjs';
+import { normalizarTexto } from './normalizar-texto.util';
 
 /**
  * Observable filtrado pra um mat-autocomplete: reage tanto à digitação
@@ -30,6 +31,8 @@ export function filtrarLista<T extends Record<string, any>>(
   campo: keyof T,
 ): T[] {
   const texto = typeof valor === 'string' ? valor : ((valor?.[campo] as string) ?? '');
-  const filtro = texto.toLowerCase();
-  return (lista ?? []).filter((item) => String(item[campo] ?? '').toLowerCase().includes(filtro));
+  const filtro = normalizarTexto(String(texto || '').trim());
+  return (lista ?? []).filter((item) =>
+    normalizarTexto(String(item[campo] ?? '')).includes(filtro),
+  );
 }

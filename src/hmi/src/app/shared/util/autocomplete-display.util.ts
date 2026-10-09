@@ -17,6 +17,6 @@ export function displayUnidadeComRegional(
 ): string {
   if (!unidade) return '';
   if (typeof unidade === 'string') return unidade;
-  return `${unidade.nome} / ${unidade.regional}`;
+  return unidade.regional ? `${unidade.nome} / ${unidade.regional}` : String(unidade.nome ?? '');
 }
 

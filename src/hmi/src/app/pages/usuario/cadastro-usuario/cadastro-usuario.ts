@@ -18,6 +18,7 @@ import { UsuarioService } from '../../../services/usuario.service';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
 
 @Component({
   selector: 'app-cadastro-usuario',
@@ -127,13 +128,7 @@ export class CadastroUsuario implements OnInit {
     }
   }
 
-  // Usado pelo [displayWith] do mat-autocomplete: define o texto exibido
-  // no input quando uma Unidade é selecionada (ou carregada via patchValue).
-  displayUnidade = (unidade: Unidade | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
+  readonly displayUnidade = displayUnidadeComRegional;
 
   salvar(): void {
     if (this.userForm.valid) {
