@@ -93,15 +93,31 @@
   }
 }
 
-.chip-situacao{
+.chip-situacao {
   @extend %status-chip;
-  &.pendente{
+
+  &.pendente {
     background-color: var(--app-warning-soft-bg);
-    color:var(--app-warning-soft-on);
+    color: var(--app-warning-soft-on);
   }
-  &.agendado{
+
+  &.agendado,
+  &.em-uso,
+  &.em.uso,
+  &.uso {
     background-color: var(--app-info-soft-bg);
-    color:var(--app-info-soft-on);
+    color: var(--app-info-soft-on);
+  }
+
+  &.finalizado {
+    background-color: var(--app-success-soft-bg);
+    color: var(--app-success-soft-on);
+  }
+
+  &.cancelada,
+  &.cancelado {
+    background-color: var(--app-danger-soft-bg);
+    color: var(--app-danger-soft-on);
   }
 }
 
