@@ -24,8 +24,8 @@ import { ExtratoEmprestimosComponent } from './reports/extrato-emprestimos/extra
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
-  { path: 'login', component: LoginComponent },
-  { path: 'concluir-cadastro', component: ConcluirCadastro },
+  { path: 'login', component: LoginComponent, title: 'SmartLock | Login' },
+  { path: 'concluir-cadastro', component: ConcluirCadastro, title: 'SmartLock | Concluir Cadastro' },
 
   // 2. Rotas Privadas (Padrão de Layout)
   {
@@ -37,17 +37,17 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
       // Tela de Dashboard
-      { path: 'dashboard', component: Dashboard },
+      { path: 'dashboard', component: Dashboard, title: 'SmartLock | Dashboard' },
 
       //Telas de relatório
-      { path: 'relatorios/disponibilidade', component: SmartlockReport },
-      {path:'relatorios/extrato',component:ExtratoEmprestimosComponent},
+      { path: 'relatorios/disponibilidade', component: SmartlockReport, title: 'SmartLock | Relatório de Disponibilidade' },
+      { path: 'relatorios/extrato', component: ExtratoEmprestimosComponent, title: 'SmartLock | Extrato de Empréstimos' },
 
-      {path:'movimentacoes/lista',component:ListaMovimentacao},
-      {path:'movimentacoes/cadastro',component:CadastroMovimentacao},
-      {path:'reservas/lista',component:ListaReserva},
-      {path:'reservas/cadastro',component:CadastroReserva},
-      {path:'reservas/editar/:id',component:CadastroReserva}
+      { path: 'movimentacoes/lista', component: ListaMovimentacao, title: 'SmartLock | Histórico de Movimentações' },
+      { path: 'movimentacoes/cadastro', component: CadastroMovimentacao, title: 'SmartLock | Nova Movimentação' },
+      { path: 'reservas/lista', component: ListaReserva, title: 'SmartLock | Reservas' },
+      { path: 'reservas/cadastro', component: CadastroReserva, title: 'SmartLock | Nova Reserva' },
+      { path: 'reservas/editar/:id', component: CadastroReserva, title: 'SmartLock | Editar Reserva' },
       
     ],
   },
@@ -58,30 +58,31 @@ export const routes: Routes = [
         component:MainLayoutComponent,
         children: [
           // Telas de listagem
-          { path: 'unidades/lista', component: ListaUnidade },
-          { path: 'usuarios/lista', component: ListaUsuario },
-          { path: 'smartlocks/lista', component: ListaSmartlock },
-          { path: 'equipamentos/lista', component: ListaEquipamento },
+          { path: 'unidades/lista', component: ListaUnidade, title: 'SmartLock | Unidades' },
+          { path: 'usuarios/lista', component: ListaUsuario, title: 'SmartLock | Usuários' },
+          { path: 'smartlocks/lista', component: ListaSmartlock, title: 'SmartLock | Smartlocks' },
+          { path: 'equipamentos/lista', component: ListaEquipamento, title: 'SmartLock | Equipamentos' },
 
           // Telas de Cadastros
-          { path: 'usuarios/cadastro', component: CadastroUsuario },
-          { path: 'usuarios/editar/:id', component: CadastroUsuario },
+          { path: 'usuarios/cadastro', component: CadastroUsuario, title: 'SmartLock | Novo Usuário' },
+          { path: 'usuarios/editar/:id', component: CadastroUsuario, title: 'SmartLock | Editar Usuário' },
 
-          { path: 'equipamentos/cadastro', component: CadastroEquipamento },
-          { path: 'equipamentos/editar/:id', component: UpdateEquipamento },
-          { path: 'equipamentos/transferir', component: RedirectEquipamento },
+          { path: 'equipamentos/cadastro', component: CadastroEquipamento, title: 'SmartLock | Novo Equipamento' },
+          { path: 'equipamentos/editar/:id', component: UpdateEquipamento, title: 'SmartLock | Editar Equipamento' },
+          { path: 'equipamentos/transferir', component: RedirectEquipamento, title: 'SmartLock | Transferir Equipamento' },
 
-          { path: 'smartlocks/cadastro', component: CadastroSmartlock },
-          { path: 'smartlocks/editar/:id', component: CadastroSmartlock },
+          { path: 'smartlocks/cadastro', component: CadastroSmartlock, title: 'SmartLock | Novo Smartlock' },
+          { path: 'smartlocks/editar/:id', component: CadastroSmartlock, title: 'SmartLock | Editar Smartlock' },
 
-          { path: 'unidades/cadastro', component: CadastroUnidade },
-          { path: 'unidades/editar/:id', component: CadastroUnidade },
+          { path: 'unidades/cadastro', component: CadastroUnidade, title: 'SmartLock | Nova Unidade' },
+          { path: 'unidades/editar/:id', component: CadastroUnidade, title: 'SmartLock | Editar Unidade' },
         ],
       },
 
   {
     path: 'not-allowed', // captura qualquer rota não mapeada
     component: ErrorPageComponent,
+    title: 'SmartLock | Acesso Não Autorizado',
     data: {
       codigo: 401,
       titulo: 'Não autorizado',
@@ -92,6 +93,7 @@ export const routes: Routes = [
   {
     path: '**', // captura qualquer rota não mapeada
     component: ErrorPageComponent,
+    title: 'SmartLock | Página Não Encontrada',
     data: {
       codigo: 404,
       titulo: 'Página não encontrada',
