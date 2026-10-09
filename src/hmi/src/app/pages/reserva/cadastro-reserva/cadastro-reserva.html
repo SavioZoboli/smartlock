@@ -168,7 +168,7 @@
                             -
                             {{ reserva.reserva_fim.getTime() | date: 'HH:mm' }}
                             :
-                            {{ reserva.usuario.nome }} {{ reserva.usuario.sobrenome }}
+                            {{ reserva.usuario?.nome }} {{ reserva.usuario?.sobrenome }}
                           </span>
                         }
                       }
