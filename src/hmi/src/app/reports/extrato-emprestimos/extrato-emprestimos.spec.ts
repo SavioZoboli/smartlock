@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ExtratoEmprestimos } from './extrato-emprestimos';
+import { ExtratoEmprestimosComponent } from './extrato-emprestimos';
 
-describe('ExtratoEmprestimos', () => {
-  let component: ExtratoEmprestimos;
-  let fixture: ComponentFixture<ExtratoEmprestimos>;
+describe('ExtratoEmprestimosComponent', () => {
+  let component: ExtratoEmprestimosComponent;
+  let fixture: ComponentFixture<ExtratoEmprestimosComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ExtratoEmprestimos]
+      imports: [ExtratoEmprestimosComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(ExtratoEmprestimos);
+    fixture = TestBed.createComponent(ExtratoEmprestimosComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

@@ -71,9 +71,9 @@ export class ListaEquipamento {
   unidadesDisponiveis: string[] = [];
   smartlocksDisponiveis: string[] = [];
 
-  statusOpcoes: { value: StatusEquipamento; label: string }[] = [
+  statusOpcoes: { value: string; label: string }[] = [
     { value: 'disponivel', label: 'Disponível' },
-    { value: 'emprestado', label: 'Emprestado' },
+    { value: 'emprestado', label: 'Em Uso' },
     { value: 'manutencao', label: 'Manutenção' },
   ];
 
@@ -99,10 +99,10 @@ export class ListaEquipamento {
       next: (res) => {
         this.dataSource.data = res;
         this.unidadesDisponiveis = [
-          ...new Set(res.map((e: any) => e.unidade)),
+          ...new Set(res.map((e: any) => e.unidade).filter(Boolean)),
         ].sort() as string[];
         this.smartlocksDisponiveis = [
-          ...new Set(res.map((e: any) => e.smartlock)),
+          ...new Set(res.map((e: any) => e.smartlock).filter(Boolean)),
         ].sort() as string[];
       },
       error: (err) => {
@@ -115,6 +115,14 @@ export class ListaEquipamento {
   private readonly destroyRef = inject(DestroyRef);
 
   private initFiltro(): void {
+    const normalizarStatus = (s: string) => {
+      const val = (s || '').toLowerCase().replace(/[\s_]+/g, '');
+      if (val === 'emuso' || val === 'emprestado') return 'emprestado';
+      if (val === 'disponivel') return 'disponivel';
+      if (val === 'manutencao') return 'manutencao';
+      return val;
+    };
+
     sincronizarFiltroTabela(
       this.dataSource,
       this.filtros,
@@ -128,7 +136,8 @@ export class ListaEquipamento {
 
         const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
         const smartlockConfere = !filtro.smartlock || data.smartlock === filtro.smartlock;
-        const statusConfere = !filtro.status || data.status === filtro.status;
+        const statusConfere =
+          !filtro.status || normalizarStatus(data.status) === normalizarStatus(filtro.status);
 
         return geralConfere && unidadeConfere && smartlockConfere && statusConfere;
       },
@@ -145,8 +154,20 @@ export class ListaEquipamento {
     });
   }
 
-  statusLabel(status: StatusEquipamento): string {
-    return this.statusOpcoes.find((s) => s.value === status)?.label ?? status;
+  statusLabel(status: string): string {
+    const s = (status || '').toLowerCase().replace(/[\s_]+/g, '');
+    if (s === 'disponivel') return 'Disponível';
+    if (s === 'emuso' || s === 'emprestado') return 'Em Uso';
+    if (s === 'manutencao') return 'Manutenção';
+    return status || '—';
+  }
+
+  statusClass(status: string): string {
+    const s = (status || '').toLowerCase().replace(/[\s_]+/g, '');
+    if (s === 'disponivel') return 'disponivel';
+    if (s === 'emuso' || s === 'emprestado') return 'emprestado';
+    if (s === 'manutencao') return 'manutencao';
+    return '';
   }
 
   // --- AÇÕES DA TELA ---
