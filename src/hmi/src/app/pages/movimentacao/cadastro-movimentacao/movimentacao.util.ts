@@ -9,6 +9,8 @@ export interface EquipamentoMovimentacao {
   emprestado_por?: number | null;
   selecionado?: boolean;
   icone?: string;
+  pertenceReserva?: boolean;
+  reservadoOutro?: boolean;
 }
 
 /**

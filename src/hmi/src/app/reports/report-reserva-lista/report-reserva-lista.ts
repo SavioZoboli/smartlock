@@ -46,4 +46,9 @@ export class ReportReservaLista {
     event.stopPropagation();
     this.excluir.emit(reserva);
   }
+
+  obterClasseSituacao(situacao: string | undefined): string {
+    if (!situacao) return '';
+    return situacao.toLowerCase().replace(/\s+/g, '-');
+  }
 }

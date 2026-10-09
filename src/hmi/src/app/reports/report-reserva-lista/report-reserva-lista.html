@@ -40,7 +40,7 @@
     <ng-container matColumnDef="situacao">
       <th mat-header-cell *matHeaderCellDef>Situação</th>
       <td mat-cell *matCellDef="let element">
-        <span class="chip-situacao" [class]="element.situacao.toLowerCase()">
+        <span class="chip-situacao" [class]="obterClasseSituacao(element.situacao)">
           {{ element.situacao }}
         </span>
       </td>
@@ -49,14 +49,16 @@
     <ng-container matColumnDef="acoes">
       <th mat-header-cell *matHeaderCellDef class="align-right">Ações</th>
       <td mat-cell *matCellDef="let element" class="align-right">
-        <button
-          mat-icon-button
-          class="action-btn edit-btn"
-          matTooltip="Editar"
-          (click)="onEditar(element, $event)"
-        >
-          <mat-icon>edit</mat-icon>
-        </button>
+        @if (element.situacao === 'AGENDADO') {
+          <button
+            mat-icon-button
+            class="action-btn edit-btn"
+            matTooltip="Editar"
+            (click)="onEditar(element, $event)"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+        }
         @if (element.situacao == 'PENDENTE' || element.situacao == 'AGENDADO') {
           <button
             mat-icon-button

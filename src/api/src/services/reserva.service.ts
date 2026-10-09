@@ -1,4 +1,4 @@
-import { Sequelize } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import sequelize from "../config/database";
 import {
   Equipamento,
@@ -200,6 +200,67 @@ class ReservaService {
       await transaction.rollback();
       throw e;
     }
+  }
+
+  async getReservaVigenteSmartlock(
+    usuario_id: number,
+    smartlock_id: number,
+    dataReferencia: Date = new Date(),
+  ) {
+    const margemMinutos = 30;
+    const margemMs = margemMinutos * 60 * 1000;
+    const inicioMin = new Date(dataReferencia.getTime() - margemMs);
+    const fimMax = new Date(dataReferencia.getTime() + margemMs);
+
+    const reservaUsuario = await Reserva.findOne({
+      where: {
+        usuario_id,
+        smartlock_id,
+        situacao: { [Op.in]: ["AGENDADO", "PENDENTE", "EM USO"] },
+        reserva_inicio: { [Op.lte]: fimMax },
+        reserva_fim: { [Op.gte]: inicioMin },
+      },
+      include: [
+        {
+          model: Equipamento,
+          as: "equipamentos",
+          through: { attributes: [] },
+          attributes: ["id", "apelido", "patrimonio", "tipo", "status_atual"],
+        },
+      ],
+      order: [["reserva_inicio", "ASC"]],
+    });
+
+    const reservasOutros = await Reserva.findAll({
+      where: {
+        smartlock_id,
+        usuario_id: { [Op.ne]: usuario_id },
+        situacao: { [Op.in]: ["AGENDADO", "PENDENTE", "EM USO"] },
+        reserva_inicio: { [Op.lte]: fimMax },
+        reserva_fim: { [Op.gte]: inicioMin },
+      },
+      include: [
+        {
+          model: Equipamento,
+          as: "equipamentos",
+          through: { attributes: [] },
+          attributes: ["id"],
+        },
+      ],
+    });
+
+    const equipamentosReservadosOutros: number[] = Array.from(
+      new Set(
+        reservasOutros.flatMap((r: any) =>
+          r.equipamentos ? r.equipamentos.map((e: any) => e.id) : [],
+        ),
+      ),
+    );
+
+    return {
+      reservaUsuario,
+      equipamentosReservadosOutros,
+    };
   }
 }
 

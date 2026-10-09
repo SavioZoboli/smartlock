@@ -13,6 +13,7 @@ export interface ConfirmDialogData {
   mensagem: string;
   textoConfirmar?: string;
   textoCancelar?: string;
+  corConfirmar?: string;
 }
 
 @Component({
@@ -26,7 +27,7 @@ export interface ConfirmDialogData {
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button (click)="onCancelar()">{{ data.textoCancelar || 'Cancelar' }}</button>
-      <button mat-flat-button color="warn" (click)="onConfirmar()">{{ data.textoConfirmar || 'Confirmar' }}</button>
+      <button mat-flat-button [color]="data.corConfirmar || 'warn'" (click)="onConfirmar()">{{ data.textoConfirmar || 'Confirmar' }}</button>
     </mat-dialog-actions>
   `
 })
