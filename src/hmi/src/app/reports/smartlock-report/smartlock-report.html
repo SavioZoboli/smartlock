@@ -10,9 +10,14 @@
         <mat-label>Unidade Operacional</mat-label>
         <input type="text" matInput [formControl]="unidadeCtrl" [matAutocomplete]="autoUnidade" />
         <mat-icon matPrefix class="filter-icon">business</mat-icon>
+        @if (unidadeCtrl.value) {
+          <button mat-icon-button matSuffix type="button" (click)="limparUnidade()" aria-label="Limpar unidade">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
         <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="_displayWithUnidade">
           @for (unidade of filteredUnidades(); track unidade.id) {
-            <mat-option [value]="unidade">{{ unidade.nome }}</mat-option>
+            <mat-option [value]="unidade">{{ _displayWithUnidade(unidade) }}</mat-option>
           }
         </mat-autocomplete>
       </mat-form-field>
@@ -24,8 +29,14 @@
           matInput
           [formControl]="smartlockCtrl"
           [matAutocomplete]="autoSmartlock"
+          [placeholder]="smartlockCtrl.disabled ? 'Selecione uma unidade' : ''"
         />
         <mat-icon matPrefix class="filter-icon">dns</mat-icon>
+        @if (smartlockCtrl.value && !smartlockCtrl.disabled) {
+          <button mat-icon-button matSuffix type="button" (click)="limparSmartlock()" aria-label="Limpar smartlock">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
         <mat-autocomplete #autoSmartlock="matAutocomplete" [displayWith]="_displayWithSmartlock">
           @for (sl of filteredSmartlocks(); track sl.id) {
             <mat-option [value]="sl">{{ sl.apelido }}</mat-option>

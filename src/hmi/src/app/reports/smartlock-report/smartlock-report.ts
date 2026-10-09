@@ -11,6 +11,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatButtonToggleGroup, MatButtonToggle } from '@angular/material/button-toggle';
+import { MatButtonModule } from '@angular/material/button';
 import { MatTooltip } from '@angular/material/tooltip';
 
 import { EquipamentoService } from '../../services/equipamento.service';
@@ -20,7 +21,7 @@ import { SystemNotificationService } from '../../services/system-notification.se
 import { IUnidade } from '../../interfaces/unidade.interface';
 import { ISmartlock } from '../../interfaces/smartlock.interface';
 import { filtrarLista } from '../../shared/util/autocomplete-filtro.util';
-import { displayPorCampo } from '../../shared/util/autocomplete-display.util';
+import { displayPorCampo, displayUnidadeComRegional } from '../../shared/util/autocomplete-display.util';
 import { obterIconeTipoEquipamento } from '../../shared/tipoEquipamentos.constant';
 
 import {
@@ -46,6 +47,7 @@ import { agruparEquipamentosPorSmartlock } from './smartlock-report.util';
     MatExpansionModule,
     MatButtonToggleGroup,
     MatButtonToggle,
+    MatButtonModule,
     MatTooltip,
   ],
   templateUrl: './smartlock-report.html',
@@ -83,10 +85,11 @@ export class SmartlockReport implements OnInit {
     ),
   );
 
-  _displayWithUnidade = displayPorCampo<IUnidade>('nome');
-  _displayWithSmartlock = displayPorCampo<ISmartlock>('apelido');
+  readonly _displayWithUnidade = displayUnidadeComRegional;
+  readonly _displayWithSmartlock = displayPorCampo<ISmartlock>('apelido');
 
   ngOnInit(): void {
+    this.smartlockCtrl.disable({ emitEvent: false });
     this.carregarUnidades();
     this.iniciarObservadoresFiltros();
   }
@@ -115,15 +118,21 @@ export class SmartlockReport implements OnInit {
       .subscribe((val) => {
         this.filteredUnidades.set(filtrarLista(this.unidades, val, 'nome'));
 
-        if (val && typeof val !== 'string') {
+        if (val && typeof val !== 'string' && val.id) {
           this.smartlocks = [];
           this.filteredSmartlocks.set([]);
-          this.smartlockCtrl.reset();
+          this.smartlockCtrl.reset('', { emitEvent: false });
+          this.smartlockCtrl.enable({ emitEvent: false });
           this.smartlockFiltro.set(null);
 
           this.buscarSmartlocksPorUnidade(val.id);
           this.buscarRelatorio(val.id);
         } else {
+          this.smartlocks = [];
+          this.filteredSmartlocks.set([]);
+          this.smartlockCtrl.reset('', { emitEvent: false });
+          this.smartlockCtrl.disable({ emitEvent: false });
+          this.smartlockFiltro.set(null);
           this.equipamentos.set([]);
         }
       });
@@ -132,7 +141,7 @@ export class SmartlockReport implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((val) => {
         this.filteredSmartlocks.set(filtrarLista(this.smartlocks, val, 'apelido'));
-        this.smartlockFiltro.set(val && typeof val !== 'string' ? val : null);
+        this.smartlockFiltro.set(val && typeof val !== 'string' && val.id ? val : null);
       });
 
     this.statusCtrl.valueChanges
@@ -141,6 +150,14 @@ export class SmartlockReport implements OnInit {
         if (!val) return;
         this.status.set(val);
       });
+  }
+
+  limparUnidade(): void {
+    this.unidadeCtrl.setValue('');
+  }
+
+  limparSmartlock(): void {
+    this.smartlockCtrl.setValue('');
   }
 
   private buscarSmartlocksPorUnidade(unidadeId: number): void {
