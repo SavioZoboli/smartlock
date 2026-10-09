@@ -16,7 +16,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { provideNgxMask } from 'ngx-mask';
+import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { Observable, firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -53,6 +53,7 @@ import {
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    NgxMaskDirective,
   ],
   providers: [provideNgxMask(), provideNativeDateAdapter()],
   templateUrl: './cadastro-reserva.html',

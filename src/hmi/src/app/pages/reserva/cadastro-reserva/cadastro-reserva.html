@@ -84,7 +84,13 @@
 
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
                 <mat-label>Hora</mat-label>
-                <input matInput formControlName="hora_emprestimo" placeholder="HH:mm" />
+                <input
+                  matInput
+                  formControlName="hora_emprestimo"
+                  mask="00:00"
+                  [dropSpecialCharacters]="false"
+                  placeholder="HH:mm"
+                />
                 <mat-icon matPrefix>schedule</mat-icon>
                 @if (reservaForm.get('hora_emprestimo')?.hasError('required')) {
                   <mat-error>A hora é obrigatória.</mat-error>
@@ -117,7 +123,13 @@
 
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="hora-field">
                 <mat-label>Hora</mat-label>
-                <input matInput formControlName="hora_devolucao" placeholder="HH:mm" />
+                <input
+                  matInput
+                  formControlName="hora_devolucao"
+                  mask="00:00"
+                  [dropSpecialCharacters]="false"
+                  placeholder="HH:mm"
+                />
                 <mat-icon matPrefix>schedule</mat-icon>
                 @if (reservaForm.get('hora_devolucao')?.hasError('required')) {
                   <mat-error>A hora é obrigatória.</mat-error>
