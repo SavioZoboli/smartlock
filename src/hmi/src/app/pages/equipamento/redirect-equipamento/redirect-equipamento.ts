@@ -21,6 +21,7 @@ import { SystemNotificationService } from '../../../services/system-notification
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
 import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import {
   EquipamentoTransferivel,
   transferirItemParaDestino,
@@ -59,8 +60,8 @@ export class RedirectEquipamento implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   form: FormGroup = this.fb.group({
-    origem: ['', Validators.required],
-    destino: [{ value: '', disabled: true }, Validators.required],
+    origem: ['', [Validators.required, objetoSelecionadoValidator]],
+    destino: [{ value: '', disabled: true }, [Validators.required, objetoSelecionadoValidator]],
   });
 
   smartlocks: ISmartlock[] = [];
@@ -191,6 +192,12 @@ export class RedirectEquipamento implements OnInit {
   }
 
   salvar(): void {
+    if (this.form.invalid || !this.origemSelecionada) {
+      this.form.markAllAsTouched();
+      this.sns.notificar('Por favor, selecione smartlocks válidos de origem e destino.', 'erro');
+      return;
+    }
+
     if (!this.destinoSelecionado) {
       this.sns.notificar('Selecione o smartlock de destino.', 'erro');
       return;

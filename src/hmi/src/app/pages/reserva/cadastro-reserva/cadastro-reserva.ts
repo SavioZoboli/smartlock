@@ -29,6 +29,7 @@ import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
 import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import { HORA_PATTERN, combinarDataHora, formatarHora } from '../../../shared/util/data-hora.util';
 import {
   EquipamentoComReservas,
@@ -91,8 +92,11 @@ export class CadastroReserva implements OnInit {
   constructor() {
     this.reservaForm = this.fb.group(
       {
-        unidade: ['', Validators.required],
-        smartlock: [{ value: '', disabled: true }, Validators.required],
+        unidade: ['', [Validators.required, objetoSelecionadoValidator]],
+        smartlock: [
+          { value: '', disabled: true },
+          [Validators.required, objetoSelecionadoValidator],
+        ],
         data_emprestimo: ['', Validators.required],
         hora_emprestimo: ['', [Validators.required, Validators.pattern(HORA_PATTERN)]],
         data_devolucao: ['', Validators.required],

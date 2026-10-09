@@ -19,6 +19,7 @@ import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
 import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 
 
 @Component({
@@ -60,7 +61,7 @@ export class UpdateEquipamento implements OnInit {
     private confirmDelete: ConfirmDeleteService,
   ) {
     this.eqForm = this.fb.group({
-      smartlock: ['', Validators.required],
+      smartlock: ['', [Validators.required, objetoSelecionadoValidator]],
       patrimonio: ['', Validators.required],
       tag: ['', Validators.required],
       tipo: ['', Validators.required],
