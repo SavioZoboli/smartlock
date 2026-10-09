@@ -5,6 +5,11 @@ import { Reserva } from '../models/reserva.model';
 import { Observable } from 'rxjs';
 
 
+export interface ReservaVigenteResponse {
+  reservaUsuario: any | null;
+  equipamentosReservadosOutros: number[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -12,6 +17,13 @@ export class ReservaService {
   private readonly baseUrl = `${environment.api_url}/api/reserva`;
 
   constructor(private http: HttpClient) {}
+
+  getReservaVigente(smartlockId: number): Observable<ReservaVigenteResponse> {
+    return this.http.get<ReservaVigenteResponse>(
+      `${this.baseUrl}/vigente?smartlock_id=${smartlockId}`,
+      { withCredentials: true },
+    );
+  }
 
   listAll(): Observable<any> {
     return this.http.get<any>(this.baseUrl);

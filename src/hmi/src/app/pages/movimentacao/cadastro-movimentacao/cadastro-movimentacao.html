@@ -69,22 +69,53 @@
         <div class="form-row">
           <span class="section-label">Equipamentos</span>
 
-          @if (isLoadingEquipamentos) {
+          @if (reservaVigente && movForm.get('tipo_movimento')?.value === 'emprestimo_manual') {
+            <div class="reserva-banner">
+              <div class="reserva-banner-info">
+                <mat-icon>event_available</mat-icon>
+                <div>
+                  <strong>Reserva Ativa Encontrada</strong>
+                  <span>
+                    Horário: {{ reservaVigente.reserva_inicio | date:'HH:mm' }} às {{ reservaVigente.reserva_fim | date:'HH:mm' }}
+                    · {{ reservaVigente.equipamentos?.length || 0 }} equipamento(s) reservado(s)
+                  </span>
+                </div>
+              </div>
+              <button mat-stroked-button color="primary" type="button" (click)="selecionarEquipamentosDaReserva()">
+                <mat-icon>done_all</mat-icon>
+                Selecionar Itens da Reserva
+              </button>
+            </div>
+          }
+
+          @if (isLoadingEquipamentos || isLoadingReserva) {
             <mat-spinner diameter="30"></mat-spinner>
           } @else if (equipamentosVisiveis.length === 0) {
             <p class="empty-hint">Nenhum equipamento disponível para este tipo de movimentação.</p>
           } @else {
             <div class="equipamento-list">
               @for (equipamento of equipamentosVisiveis; track equipamento.id) {
-                <div class="equipamento-item" (click)="toggleEquipamento(equipamento)">
+                <div
+                  class="equipamento-item"
+                  [class.item-reservado]="equipamento.pertenceReserva && movForm.get('tipo_movimento')?.value === 'emprestimo_manual'"
+                  [class.item-bloqueado]="isEquipamentoBloqueado(equipamento)"
+                  (click)="toggleEquipamento(equipamento)">
                   <mat-checkbox
                     [checked]="equipamento.selecionado"
+                    [disabled]="isEquipamentoBloqueado(equipamento)"
                     (click)="$event.stopPropagation()"
                     (change)="toggleEquipamento(equipamento)">
                   </mat-checkbox>
-                  <mat-icon class="equipamento-icone">{{ equipamento.icone}}</mat-icon>
+                  <mat-icon class="equipamento-icone">{{ equipamento.icone }}</mat-icon>
                   <div class="equipamento-info">
-                    <span class="equipamento-apelido">{{ equipamento.apelido }}</span>
+                    <div class="equipamento-header-row">
+                      <span class="equipamento-apelido">{{ equipamento.apelido }}</span>
+                      @if (equipamento.pertenceReserva && movForm.get('tipo_movimento')?.value === 'emprestimo_manual') {
+                        <span class="badge-reserva">Sua Reserva</span>
+                      } @else if (isEquipamentoBloqueado(equipamento)) {
+                        <span class="badge-bloqueado">Reservado por outro</span>
+                      }
+                    </div>
                     <span class="equipamento-detalhe">
                       Patrimônio: {{ equipamento.patrimonio }} · {{ equipamento.tipo }}
                     </span>

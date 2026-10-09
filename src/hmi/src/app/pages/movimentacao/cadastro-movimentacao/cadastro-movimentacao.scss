@@ -31,6 +31,49 @@
   font-style: italic;
 }
 
+.reserva-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--app-space-sm);
+  background-color: var(--app-info-soft-bg);
+  border: 1px solid var(--app-info-soft-on);
+  border-radius: var(--app-radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: var(--app-space-sm);
+
+  .reserva-banner-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    mat-icon {
+      color: var(--app-brand-primary);
+    }
+
+    > div {
+      display: flex;
+      flex-direction: column;
+
+      strong {
+        font-size: 0.9rem;
+        color:var(--app-info-soft-on);
+      }
+
+      span {
+        font-size: 0.8rem;
+        color:var(--app-info-soft-on);
+      }
+    }
+  }
+
+  button {
+    color: var(--app-info-soft-on) !important;
+    border-color: var(--app-info-soft-on) !important;
+  }
+}
+
 .equipamento-list {
   width: 100%;
   display: flex;
@@ -49,10 +92,46 @@
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
   border-radius: var(--app-radius-md);
+  border: 1.5px solid transparent;
   cursor: pointer;
+  transition: all 0.2s ease-in-out;
 
   &:hover {
     background-color: var(--mat-sys-surface-container);
+  }
+
+  &.item-reservado {
+    border-color: var(--mat-sys-on-primary);
+    background-color: var(--app-info-soft-bg);
+
+    &:hover {
+      filter:brightness(0.8);
+    }
+
+    .equipamento-icone {
+      color: var(--app-info-soft-on);
+    }
+
+    .equipamento-info {
+      .equipamento-apelido {
+        color: var(--app-info-soft-on);
+      }
+
+      .equipamento-detalhe {
+        color: var(--app-info-soft-on);
+      }
+    }
+
+  }
+
+  &.item-bloqueado {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--mat-sys-surface-container-low);
+
+    &:hover {
+      background-color: var(--mat-sys-surface-container-low);
+    }
   }
 
   .equipamento-icone {
@@ -63,10 +142,34 @@
     display: flex;
     flex-direction: column;
 
+    .equipamento-header-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .equipamento-apelido {
       font-weight: 600;
       color: var(--mat-sys-on-surface);
       font-size: 0.9rem;
+    }
+
+    .badge-reserva {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background-color: var(--app-success-soft-bg);
+      color: var(--app-success-soft-on);
+    }
+
+    .badge-bloqueado {
+      font-size: 0.68rem;
+      font-weight: 500;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background-color: var(--app-warning-soft-bg, #fff3e0);
+      color: var(--app-warning-soft-on, #e65100);
     }
 
     .equipamento-detalhe {

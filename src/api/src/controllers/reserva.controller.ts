@@ -147,6 +147,31 @@ class ReservaController {
       return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
+
+  async getReservaVigente(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
+    const rawSmartlockId = req.query.smartlock_id;
+    if (!rawSmartlockId) {
+      return res.status(400).json({ message: "smartlock_id é obrigatório" });
+    }
+    const smartlock_id = Number(rawSmartlockId);
+    if (isNaN(smartlock_id)) {
+      return res.status(400).json({ message: "smartlock_id inválido" });
+    }
+
+    try {
+      const data = await reservaService.getReservaVigenteSmartlock(
+        req.user.id,
+        smartlock_id,
+      );
+      return res.status(200).json(data);
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
 }
 
 export default new ReservaController();

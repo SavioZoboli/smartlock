@@ -10,7 +10,13 @@ class MovimentacaoController {
       return res.status(401).json({ message: "Não autorizado" });
     }
     let usuario_id = req.user.id;
-    let { equipamentos, movimento, smartlock_id } = req.body;
+    let {
+      equipamentos,
+      movimento,
+      smartlock_id,
+      reserva_id,
+      remover_nao_retirados,
+    } = req.body;
     if (!equipamentos || !movimento || !smartlock_id) {
       return res.status(400).json({ message: "Dados incompletos" });
     }
@@ -20,10 +26,16 @@ class MovimentacaoController {
         smartlock_id,
         movimento,
         equipamentos,
+        { reserva_id, remover_nao_retirados },
       );
       return res.status(201).json({ id_movimento });
-    } catch (e) {
+    } catch (e: any) {
       console.log(e);
+      if (e.codigo) {
+        return res
+          .status(400)
+          .json({ message: e.message, codigo: e.codigo, detalhes: e.detalhes });
+      }
       return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

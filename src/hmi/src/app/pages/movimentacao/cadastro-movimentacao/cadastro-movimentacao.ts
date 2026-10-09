@@ -10,12 +10,15 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
+import { ReservaService, ReservaVigenteResponse } from '../../../services/reserva.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
 import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
 import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
@@ -45,6 +48,7 @@ import {
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatDialogModule,
   ],
   templateUrl: './cadastro-movimentacao.html',
   styleUrls: ['./cadastro-movimentacao.scss'],
@@ -57,6 +61,8 @@ export class CadastroMovimentacao implements OnInit {
   private readonly smartlockService = inject(SmartlockService);
   private readonly equipamentoService = inject(EquipamentoService);
   private readonly movimentacaoService = inject(MovimentacaoService);
+  private readonly reservaService = inject(ReservaService);
+  private readonly dialog = inject(MatDialog);
   private readonly sns = inject(SystemNotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -64,10 +70,13 @@ export class CadastroMovimentacao implements OnInit {
   filteredUnidades!: Observable<UnidadeComRegionalDTO[]>;
   smartlocks: ISmartlock[] = [];
   equipamentos: EquipamentoMovimentacao[] = [];
+  reservaVigente: any = null;
+  equipamentosReservadosOutros: number[] = [];
 
   isLoading = false;
   isLoadingSmartlocks = false;
   isLoadingEquipamentos = false;
+  isLoadingReserva = false;
 
   readonly displayUnidade = displayUnidadeComRegional;
 
@@ -95,7 +104,7 @@ export class CadastroMovimentacao implements OnInit {
     );
   }
 
-  // Quando a unidade muda: reseta smartlock e equipamentos, e busca as novas smartlocks
+  // Quando a unidade muda: reseta smartlock, reserva e equipamentos, e busca as novas smartlocks
   private observarUnidade(): void {
     this.movForm
       .get('unidade')!
@@ -103,6 +112,8 @@ export class CadastroMovimentacao implements OnInit {
       .subscribe((unidade) => {
         this.smartlocks = [];
         this.equipamentos = [];
+        this.reservaVigente = null;
+        this.equipamentosReservadosOutros = [];
         this.movForm.get('smartlock')!.reset({ value: '', disabled: true });
 
         if (unidade && typeof unidade === 'object' && unidade.id) {
@@ -131,15 +142,18 @@ export class CadastroMovimentacao implements OnInit {
       });
   }
 
-  // Quando a smartlock muda: reseta equipamentos e busca os novos
+  // Quando a smartlock muda: reseta equipamentos e busca os novos + reserva vigente
   private observarSmartlock(): void {
     this.movForm
       .get('smartlock')!
       .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((smartlockId) => {
         this.equipamentos = [];
+        this.reservaVigente = null;
+        this.equipamentosReservadosOutros = [];
         if (smartlockId) {
           this.carregarEquipamentos(smartlockId);
+          this.carregarReservaVigente(smartlockId);
         }
       });
   }
@@ -156,6 +170,7 @@ export class CadastroMovimentacao implements OnInit {
             selecionado: false,
             icone: obterIconeTipoEquipamento(e.tipo),
           }));
+          this.aplicarTagsDeReserva();
           this.isLoadingEquipamentos = false;
           this.cdr.detectChanges();
         },
@@ -165,6 +180,57 @@ export class CadastroMovimentacao implements OnInit {
           this.cdr.detectChanges();
         },
       });
+  }
+
+  private carregarReservaVigente(smartlockId: number): void {
+    this.isLoadingReserva = true;
+    this.reservaService
+      .getReservaVigente(smartlockId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: ReservaVigenteResponse) => {
+          this.reservaVigente = res.reservaUsuario;
+          this.equipamentosReservadosOutros = res.equipamentosReservadosOutros || [];
+          this.aplicarTagsDeReserva();
+          this.isLoadingReserva = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.isLoadingReserva = false;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  private aplicarTagsDeReserva(): void {
+    const idsReserva = new Set(
+      this.reservaVigente?.equipamentos?.map((e: any) => e.id) || [],
+    );
+    const idsOutros = new Set(this.equipamentosReservadosOutros || []);
+
+    this.equipamentos = this.equipamentos.map((e) => ({
+      ...e,
+      pertenceReserva: idsReserva.has(e.id),
+      reservadoOutro: idsOutros.has(e.id),
+    }));
+  }
+
+  selecionarEquipamentosDaReserva(): void {
+    const idsReserva = new Set(
+      this.reservaVigente?.equipamentos?.map((e: any) => e.id) || [],
+    );
+    this.equipamentos = this.equipamentos.map((e) => {
+      if (idsReserva.has(e.id) && e.status_atual === 'DISPONIVEL') {
+        return { ...e, selecionado: true };
+      }
+      return e;
+    });
+    this.cdr.detectChanges();
+  }
+
+  isEquipamentoBloqueado(equipamento: EquipamentoMovimentacao): boolean {
+    const tipo = this.movForm.get('tipo_movimento')?.value;
+    return !!(equipamento.reservadoOutro && tipo?.includes('emprestimo'));
   }
 
   // Ao trocar o tipo de movimento, desmarca as seleções (a lista visível muda)
@@ -190,6 +256,13 @@ export class CadastroMovimentacao implements OnInit {
   }
 
   toggleEquipamento(equipamento: EquipamentoMovimentacao): void {
+    if (this.isEquipamentoBloqueado(equipamento)) {
+      this.sns.notificar(
+        'Este equipamento está reservado por outro usuário.',
+        'info',
+      );
+      return;
+    }
     equipamento.selecionado = !equipamento.selecionado;
   }
 
@@ -208,11 +281,65 @@ export class CadastroMovimentacao implements OnInit {
     const { smartlock, tipo_movimento } = this.movForm.value;
     const equipamentoIds = this.equipamentosSelecionados.map((e) => e.id);
 
+    // Se for empréstimo e houver reserva vigente do usuário para esse SmartLock
+    if (tipo_movimento === 'emprestimo_manual' && this.reservaVigente) {
+      const idsSelecionados = new Set(equipamentoIds);
+      const equipamentosReserva = this.reservaVigente.equipamentos || [];
+      const naoRetirados = equipamentosReserva.filter(
+        (e: any) => !idsSelecionados.has(e.id),
+      );
+
+      if (naoRetirados.length > 0) {
+        const nomes = naoRetirados
+          .map((e: any) => e.apelido || e.patrimonio)
+          .join(', ');
+
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+          data: {
+            titulo: 'Itens não selecionados da reserva',
+            mensagem: `Você reservou os equipamentos ${nomes} mas não os retirou, deseja removê-los da reserva?`,
+            textoConfirmar: 'Sim',
+            textoCancelar: 'Não',
+            corConfirmar: 'primary',
+          },
+        });
+
+        dialogRef.afterClosed().subscribe((result) => {
+          if (result === undefined) {
+            return; // Diálogo fechado sem clicar em Sim ou Não
+          }
+          const removerNaoRetirados = result === true;
+          this.executarSalvar(smartlock, tipo_movimento, equipamentoIds, {
+            reserva_id: this.reservaVigente.id,
+            remover_nao_retirados: removerNaoRetirados,
+          });
+        });
+        return;
+      }
+
+      // Se selecionou todos os equipamentos da reserva
+      this.executarSalvar(smartlock, tipo_movimento, equipamentoIds, {
+        reserva_id: this.reservaVigente.id,
+        remover_nao_retirados: false,
+      });
+      return;
+    }
+
+    // Fluxo padrão (devolução manual ou empréstimo sem reserva)
+    this.executarSalvar(smartlock, tipo_movimento, equipamentoIds);
+  }
+
+  private executarSalvar(
+    smartlock: number,
+    tipo_movimento: string,
+    equipamentoIds: number[],
+    reservaOptions?: { reserva_id?: number; remover_nao_retirados?: boolean },
+  ): void {
     this.isLoading = true;
     this.movForm.disable();
 
     this.movimentacaoService
-      .create(smartlock, tipo_movimento, equipamentoIds)
+      .create(smartlock, tipo_movimento, equipamentoIds, reservaOptions)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
