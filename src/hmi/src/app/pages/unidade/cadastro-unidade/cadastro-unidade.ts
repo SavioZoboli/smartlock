@@ -105,10 +105,12 @@ export class CadastroUnidade implements OnInit {
       this.isLoading = true;
       this.unidadeForm.disable(); // Trava para evitar duplo clique no botão salvar
 
+      const nomeTrimmed = typeof formObj.nome === 'string' ? formObj.nome.trim() : formObj.nome;
+
       // Define se vai chamar a rota de criação ou atualização baseando-se na existência do ID
       const requisicao$ = this.unidadeId
-        ? this.unidadeService.update(this.unidadeId, formObj.nome, formObj.regional.id, formObj.entidade)
-        : this.unidadeService.create(formObj.nome, formObj.regional.id, formObj.entidade);
+        ? this.unidadeService.update(this.unidadeId, nomeTrimmed, formObj.regional.id, formObj.entidade)
+        : this.unidadeService.create(nomeTrimmed, formObj.regional.id, formObj.entidade);
 
       requisicao$.subscribe({
         next: () => {

@@ -140,12 +140,15 @@ export class UpdateEquipamento implements OnInit {
   salvar(): void {
     if (this.eqForm.valid) {
       const { smartlock, patrimonio, tag, tipo, apelido } = this.eqForm.value;
+      const patrimonioTrimmed = typeof patrimonio === 'string' ? patrimonio.trim() : patrimonio;
+      const tagTrimmed = typeof tag === 'string' ? tag.trim() : tag;
+      const apelidoTrimmed = typeof apelido === 'string' ? apelido.trim() : apelido;
 
       this.isLoading = true;
       this.eqForm.disable();
 
       this.equipamentoService
-        .update(this.equipamento_id, patrimonio, tag, tipo, smartlock.id, apelido)
+        .update(this.equipamento_id, patrimonioTrimmed, tagTrimmed, tipo, smartlock.id, apelidoTrimmed)
         .subscribe({
           next: () => {
             this.sns.notificar('Equipamento atualizado com sucesso!', 'sucesso');

@@ -316,8 +316,11 @@ export class CadastroReserva implements OnInit {
       const { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
         this.reservaForm.value;
 
-      const dh_emprestimo = combinarDataHora(data_emprestimo, hora_emprestimo);
-      const dh_devolucao = combinarDataHora(data_devolucao, hora_devolucao);
+      const horaEmpTrim = typeof hora_emprestimo === 'string' ? hora_emprestimo.trim() : hora_emprestimo;
+      const horaDevTrim = typeof hora_devolucao === 'string' ? hora_devolucao.trim() : hora_devolucao;
+
+      const dh_emprestimo = combinarDataHora(data_emprestimo, horaEmpTrim);
+      const dh_devolucao = combinarDataHora(data_devolucao, horaDevTrim);
 
       const equipamentos = Array.from(this.equipamentosSelecionados);
 

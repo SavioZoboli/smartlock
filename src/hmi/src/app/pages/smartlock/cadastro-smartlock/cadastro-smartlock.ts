@@ -121,13 +121,15 @@ export class CadastroSmartlock implements OnInit {
   salvar(): void {
     if (this.slForm.valid) {
       const { unidade, apelido, mac_address, has_equipamentos } = this.slForm.value;
+      const apelidoFormatado = typeof apelido === 'string' ? apelido.trim() : apelido;
+      const macFormatado = typeof mac_address === 'string' ? mac_address.trim() : mac_address;
 
       this.isLoading = true;
       this.slForm.disable();
 
       const requisicao$ = this.smartlock_id
-        ? this.smartlockService.update(this.smartlock_id, apelido, mac_address, has_equipamentos, unidade.id)
-        : this.smartlockService.create(apelido, mac_address, unidade.id, has_equipamentos);
+        ? this.smartlockService.update(this.smartlock_id, apelidoFormatado, macFormatado, has_equipamentos, unidade.id)
+        : this.smartlockService.create(apelidoFormatado, macFormatado, unidade.id, has_equipamentos);
 
       requisicao$.subscribe({
         next: () => {

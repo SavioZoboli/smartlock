@@ -85,7 +85,11 @@ export class ConcluirCadastro implements OnInit {
   }
 
   salvar(): void {
-    if (this.userForm.invalid) return;
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      this.sns.notificar('Por favor, verifique os campos.', 'erro');
+      return;
+    }
 
     // getRawValue pega também os campos 'disabled' (como o email)
     const { nome, sobrenome, uuid, matricula, email } = this.userForm.getRawValue();
@@ -93,12 +97,12 @@ export class ConcluirCadastro implements OnInit {
 
     // Anexa o token de segurança para o backend validar
     const payload = {
-      nome,
-      sobrenome,
-      uuid,
-      matricula,
+      nome: typeof nome === 'string' ? nome.trim() : nome,
+      sobrenome: typeof sobrenome === 'string' ? sobrenome.trim() : sobrenome,
+      uuid: typeof uuid === 'string' ? uuid.trim() : uuid,
+      matricula: typeof matricula === 'string' ? matricula.trim() : matricula,
       unidade_id,
-      email,
+      email: typeof email === 'string' ? email.trim() : email,
       signupToken: this.dadosGoogle.signupToken,
       avatar: this.dadosGoogle.avatar,
     };

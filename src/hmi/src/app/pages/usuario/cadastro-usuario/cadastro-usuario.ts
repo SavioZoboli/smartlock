@@ -133,14 +133,19 @@ export class CadastroUsuario implements OnInit {
   salvar(): void {
     if (this.userForm.valid) {
       let { nome, sobrenome, email, uuid, matricula, unidade } = this.userForm.value;
+      const nomeTrimmed = typeof nome === 'string' ? nome.trim() : nome;
+      const sobrenomeTrimmed = typeof sobrenome === 'string' ? sobrenome.trim() : sobrenome;
+      const emailTrimmed = typeof email === 'string' ? email.trim() : email;
+      const uuidTrimmed = typeof uuid === 'string' ? uuid.trim() : uuid;
+      const matriculaTrimmed = typeof matricula === 'string' ? matricula.trim() : matricula;
       let unidade_id = unidade.id;
 
       this.isLoading = true;
       this.userForm.disable();
 
       const requisicao$ = this.usuario_id
-        ? this.usuarioService.update(this.usuario_id, nome, sobrenome, email, uuid, matricula, unidade_id)
-        : this.usuarioService.create(nome, sobrenome, email, uuid, matricula, unidade_id);
+        ? this.usuarioService.update(this.usuario_id, nomeTrimmed, sobrenomeTrimmed, emailTrimmed, uuidTrimmed, matriculaTrimmed, unidade_id)
+        : this.usuarioService.create(nomeTrimmed, sobrenomeTrimmed, emailTrimmed, uuidTrimmed, matriculaTrimmed, unidade_id);
 
       requisicao$.subscribe({
         next: () => {

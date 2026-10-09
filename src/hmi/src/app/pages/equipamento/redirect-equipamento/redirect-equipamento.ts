@@ -138,10 +138,25 @@ export class RedirectEquipamento implements OnInit {
     await this.carregarEquipamentosDaOrigem(origem.id);
   }
 
+  limparOrigem(): void {
+    this.form.get('origem')?.setValue('');
+    this.origemSelecionada = null;
+    this.form.get('destino')?.setValue('');
+    this.form.get('destino')?.disable();
+    this.destinoSelecionado = null;
+    this.equipamentosDisponiveis = [];
+    this.equipamentosParaTransferir = [];
+  }
+
   onDestinoSelecionada(): void {
     const destino = this.form.get('destino')!.value as ISmartlock;
     if (!destino || typeof destino === 'string') return;
     this.destinoSelecionado = destino;
+  }
+
+  limparDestino(): void {
+    this.form.get('destino')?.setValue('');
+    this.destinoSelecionado = null;
   }
 
   private async carregarEquipamentosDaOrigem(smartlockId: number): Promise<void> {
