@@ -21,11 +21,21 @@
           <mat-label>Unidade</mat-label>
           <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
           <mat-icon matPrefix>business</mat-icon>
+          @if (movForm.get('unidade')?.value) {
+            <button mat-icon-button matSuffix type="button" (click)="movForm.get('unidade')?.setValue('')" aria-label="Limpar unidade">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUnidade">
             @for (unidade of filteredUnidades | async; track unidade) {
-              <mat-option [value]="unidade">{{ unidade.nome }} / {{ unidade.regional }}</mat-option>
+              <mat-option [value]="unidade">{{ displayUnidade(unidade) }}</mat-option>
             }
           </mat-autocomplete>
+          @if (movForm.get('unidade')?.hasError('required')) {
+            <mat-error>A unidade é obrigatória.</mat-error>
+          } @else if (movForm.get('unidade')?.hasError('objetoInvalido')) {
+            <mat-error>Selecione uma opção válida da lista.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -38,6 +48,9 @@
             }
           </mat-select>
           <mat-icon matPrefix>lock</mat-icon>
+          @if (movForm.get('smartlock')?.hasError('required')) {
+            <mat-error>O SmartLock é obrigatório.</mat-error>
+          }
           @if (isLoadingSmartlocks) {
             <mat-hint>Carregando SmartLocks...</mat-hint>
           }

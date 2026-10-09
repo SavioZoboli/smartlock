@@ -12,15 +12,16 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, startWith, map, firstValueFrom } from 'rxjs';
+import { Observable, startWith, map, firstValueFrom, combineLatest } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
-import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
+import { filtrarAutocomplete, filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
 import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import {
   EquipamentoTransferivel,
   transferirItemParaDestino,
@@ -59,8 +60,8 @@ export class RedirectEquipamento implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   form: FormGroup = this.fb.group({
-    origem: ['', Validators.required],
-    destino: [{ value: '', disabled: true }, Validators.required],
+    origem: ['', [Validators.required, objetoSelecionadoValidator]],
+    destino: [{ value: '', disabled: true }, [Validators.required, objetoSelecionadoValidator]],
   });
 
   smartlocks: ISmartlock[] = [];
@@ -76,7 +77,7 @@ export class RedirectEquipamento implements OnInit {
   isLoading = false;
   isLoadingEquipamentos = false;
 
-  displaySmartlock = displayPorCampo<ISmartlock>('apelido');
+  readonly displaySmartlock = displayPorCampo<ISmartlock>('apelido');
 
   ngOnInit(): void {
     this.inicializarDados();
@@ -103,16 +104,21 @@ export class RedirectEquipamento implements OnInit {
   }
 
   private iniciarFiltros(): void {
-    this.filteredOrigem = this.form.get('origem')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => filtrarLista(this.smartlocks, value || '', 'apelido')),
+    this.filteredOrigem = filtrarAutocomplete(
+      this.form.get('origem')!,
+      this.smartlockService.listAll(),
+      'apelido',
     );
 
-    this.filteredDestino = this.form.get('destino')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => {
-        const disponiveis = this.smartlocks.filter((s) => s.id !== this.origemSelecionada?.id);
-        return filtrarLista(disponiveis, value || '', 'apelido');
+    this.filteredDestino = combineLatest([
+      this.form.get('destino')!.valueChanges.pipe(startWith('')),
+      this.smartlockService.listAll(),
+      this.form.get('origem')!.valueChanges.pipe(startWith(this.form.get('origem')!.value)),
+    ]).pipe(
+      map(([valorDestino, smartlocks, origem]) => {
+        const origemId = origem && typeof origem === 'object' ? origem.id : null;
+        const disponiveis = origemId ? smartlocks.filter((s) => s.id !== origemId) : smartlocks;
+        return filtrarLista(disponiveis, valorDestino, 'apelido');
       }),
     );
   }
@@ -132,10 +138,25 @@ export class RedirectEquipamento implements OnInit {
     await this.carregarEquipamentosDaOrigem(origem.id);
   }
 
+  limparOrigem(): void {
+    this.form.get('origem')?.setValue('');
+    this.origemSelecionada = null;
+    this.form.get('destino')?.setValue('');
+    this.form.get('destino')?.disable();
+    this.destinoSelecionado = null;
+    this.equipamentosDisponiveis = [];
+    this.equipamentosParaTransferir = [];
+  }
+
   onDestinoSelecionada(): void {
     const destino = this.form.get('destino')!.value as ISmartlock;
     if (!destino || typeof destino === 'string') return;
     this.destinoSelecionado = destino;
+  }
+
+  limparDestino(): void {
+    this.form.get('destino')?.setValue('');
+    this.destinoSelecionado = null;
   }
 
   private async carregarEquipamentosDaOrigem(smartlockId: number): Promise<void> {
@@ -191,6 +212,12 @@ export class RedirectEquipamento implements OnInit {
   }
 
   salvar(): void {
+    if (this.form.invalid || !this.origemSelecionada) {
+      this.form.markAllAsTouched();
+      this.sns.notificar('Por favor, selecione smartlocks válidos de origem e destino.', 'erro');
+      return;
+    }
+
     if (!this.destinoSelecionado) {
       this.sns.notificar('Selecione o smartlock de destino.', 'erro');
       return;

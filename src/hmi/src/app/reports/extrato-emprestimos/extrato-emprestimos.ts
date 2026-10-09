@@ -1,6 +1,7 @@
-import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -13,6 +14,11 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { EquipamentoService } from '../../services/equipamento.service';
+import { UnidadeService } from '../../services/unidade.service';
+import { UnidadeComRegionalDTO } from '../../dto/UnidadeComRegional.dto';
+import { displayPorCampo, displayUnidadeComRegional } from '../../shared/util/autocomplete-display.util';
+import { filtrarLista } from '../../shared/util/autocomplete-filtro.util';
+import { normalizarTexto } from '../../shared/util/normalizar-texto.util';
 import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
 
 export interface UsuarioComEquipamento {
@@ -21,6 +27,8 @@ export interface UsuarioComEquipamento {
   email: string;
   avatar: string;
   qtd_equipamentos: number;
+  unidade?: string;
+  unidade_id?: number;
 }
 
 export interface EquipamentoResumo {
@@ -78,13 +86,50 @@ export interface PaginatedResponse<T> {
 export class ExtratoEmprestimosComponent implements OnInit {
   @ViewChild('drawer') drawer!: MatDrawer;
 
-  unidadeCtrl = new FormControl();
-  usuarioCtrl = new FormControl();
+  private readonly equipamentoService = inject(EquipamentoService);
+  private readonly unidadeService = inject(UnidadeService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  usuariosAtivos = signal<UsuarioComEquipamento[]>([]);
+  unidadeCtrl = new FormControl<string | UnidadeComRegionalDTO | null>('');
+  usuarioCtrl = new FormControl<string | UsuarioComEquipamento | null>('');
+
+  private todosUsuarios = signal<UsuarioComEquipamento[]>([]);
+  unidades = signal<UnidadeComRegionalDTO[]>([]);
+
+  filteredUnidades = signal<UnidadeComRegionalDTO[]>([]);
+  filteredUsuarios = signal<UsuarioComEquipamento[]>([]);
+
+  private termoUsuario = signal<string>('');
+  private unidadeFiltro = signal<UnidadeComRegionalDTO | string | null>(null);
+
+  usuariosAtivos = computed<UsuarioComEquipamento[]>(() => {
+    const lista = this.todosUsuarios();
+    const termo = normalizarTexto((this.termoUsuario() || '').trim());
+    const unid = this.unidadeFiltro();
+
+    return lista.filter((user) => {
+      const nomeMatch =
+        !termo ||
+        normalizarTexto(user.nome).includes(termo) ||
+        normalizarTexto(user.email).includes(termo);
+
+      let unidadeMatch = true;
+      if (unid) {
+        if (typeof unid === 'object' && unid && unid.id) {
+          unidadeMatch =
+            user.unidade_id === unid.id ||
+            (!!user.unidade && normalizarTexto(user.unidade) === normalizarTexto(unid.nome));
+        } else if (typeof unid === 'string' && unid.trim() !== '') {
+          unidadeMatch =
+            !!user.unidade && normalizarTexto(user.unidade).includes(normalizarTexto(unid.trim()));
+        }
+      }
+
+      return nomeMatch && unidadeMatch;
+    });
+  });
+
   usuarioSelecionado = signal<UsuarioComEquipamento | null>(null);
-
-  equipamentoService = inject(EquipamentoService);
 
   carregando = signal<boolean>(false);
 
@@ -97,8 +142,51 @@ export class ExtratoEmprestimosComponent implements OnInit {
   carregandoHistorico = signal<boolean>(false);
   historicoPageSize = 10;
 
+  readonly _displayWithUnidade = displayUnidadeComRegional;
+  readonly _displayWithUsuario = displayPorCampo<UsuarioComEquipamento>('nome');
+
   ngOnInit(): void {
     this.carregarDados();
+    this.carregarUnidades();
+    this.iniciarObservadoresFiltros();
+  }
+
+  private carregarUnidades(): void {
+    this.unidadeService
+      .listAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (unidades) => {
+          const lista = unidades as unknown as UnidadeComRegionalDTO[];
+          this.unidades.set(lista);
+          this.filteredUnidades.set(lista);
+        },
+      });
+  }
+
+  private iniciarObservadoresFiltros(): void {
+    this.unidadeCtrl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((val) => {
+        this.unidadeFiltro.set(val);
+        this.filteredUnidades.set(filtrarLista(this.unidades(), val, 'nome'));
+      });
+
+    this.usuarioCtrl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((val) => {
+        const texto = typeof val === 'string' ? val : (val?.nome ?? '');
+        this.termoUsuario.set(texto);
+        this.filteredUsuarios.set(filtrarLista(this.todosUsuarios(), val, 'nome'));
+      });
+  }
+
+  limparUnidade(): void {
+    this.unidadeCtrl.setValue('');
+  }
+
+  limparUsuario(): void {
+    this.usuarioCtrl.setValue('');
   }
 
   abrirDetalhesUsuario(usuario: UsuarioComEquipamento) {
@@ -119,11 +207,21 @@ export class ExtratoEmprestimosComponent implements OnInit {
   }
 
   private carregarDados() {
-    this.equipamentoService.buscarQtdEmUsoPorUsuario().subscribe({
-      next: (res) => {
-        this.usuariosAtivos.set(res);
-      },
-    });
+    this.carregando.set(true);
+    this.equipamentoService
+      .buscarQtdEmUsoPorUsuario()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const lista = Array.isArray(res) ? res : [];
+          this.todosUsuarios.set(lista);
+          this.filteredUsuarios.set(lista);
+          this.carregando.set(false);
+        },
+        error: () => {
+          this.carregando.set(false);
+        },
+      });
   }
 
   private carregarEquipamentosEmUso(usuarioId: number) {
@@ -167,14 +265,6 @@ export class ExtratoEmprestimosComponent implements OnInit {
     this.historicoPage.update((p) => p + 1);
     const usuario = this.usuarioSelecionado();
     if (usuario) this.carregarHistorico(usuario.id);
-  }
-
-  public _displayWithUnidade(valor: any): string {
-    return valor ? valor.nome : '';
-  }
-
-  public _displayWithUsuario(valor: any): string {
-    return valor ? valor.nome : '';
   }
 
   isRetirada(tipo: string): boolean {

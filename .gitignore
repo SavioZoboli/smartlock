@@ -17,6 +17,7 @@ src/firmware/include/certs.h
 src/hmi/.angular
 src/hmi/src/environments/environment.development.ts
 src/hmi/src/environments/environment.ts
+src/hmi/dist
 
 # Worker MQTT
 src/worker-mqtt/ca.crt

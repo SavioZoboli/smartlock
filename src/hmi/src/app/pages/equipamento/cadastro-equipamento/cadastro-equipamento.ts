@@ -142,6 +142,17 @@ export class CadastroEquipamento implements OnInit {
       });
   }
 
+  limparUnidade(): void {
+    this.importForm.get('unidade')?.setValue(null);
+    this.limparSmartlock();
+    this.importForm.get('smartlock')?.disable();
+    this.smartlocksSubject.next([]);
+  }
+
+  limparSmartlock(): void {
+    this.importForm.get('smartlock')?.reset(null);
+  }
+
   // --- ITENS: adição manual ---
 
   adicionarItem(): void {
@@ -151,7 +162,11 @@ export class CadastroEquipamento implements OnInit {
     }
 
     const { tag, patrimonio, tipo, apelido } = this.novoItemForm.value;
-    this.equipamentosArray.push(this.criarItemGroup(tag, patrimonio, tipo, apelido));
+    const tagTrimmed = typeof tag === 'string' ? tag.trim() : tag;
+    const patrimonioTrimmed = typeof patrimonio === 'string' ? patrimonio.trim() : patrimonio;
+    const apelidoTrimmed = typeof apelido === 'string' ? apelido.trim() : apelido;
+
+    this.equipamentosArray.push(this.criarItemGroup(tagTrimmed, patrimonioTrimmed, tipo, apelidoTrimmed));
 
     // Mantém o tipo selecionado para agilizar o cadastro de vários itens do mesmo tipo em sequência
     this.novoItemForm.reset({ tag: '', patrimonio: '', tipo, apelido: '' });
@@ -219,9 +234,15 @@ export class CadastroEquipamento implements OnInit {
     }
 
     const { smartlock, equipamentos } = this.importForm.getRawValue();
+    const equipamentosSanitizados = (equipamentos as any[]).map((e) => ({
+      ...e,
+      tag: typeof e.tag === 'string' ? e.tag.trim() : e.tag,
+      patrimonio: typeof e.patrimonio === 'string' ? e.patrimonio.trim() : e.patrimonio,
+      apelido: typeof e.apelido === 'string' ? e.apelido.trim() : e.apelido,
+    }));
 
     this.equipamentoService
-      .bulkCreate(smartlock.id, equipamentos)
+      .bulkCreate(smartlock.id, equipamentosSanitizados)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {

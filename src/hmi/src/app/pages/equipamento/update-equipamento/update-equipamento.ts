@@ -9,7 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialogModule } from '@angular/material/dialog';
-import { Observable, startWith, map, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
@@ -17,8 +17,9 @@ import { SystemNotificationService } from '../../../services/system-notification
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
 import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
-import { filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
+import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
 import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 
 
 @Component({
@@ -60,7 +61,7 @@ export class UpdateEquipamento implements OnInit {
     private confirmDelete: ConfirmDeleteService,
   ) {
     this.eqForm = this.fb.group({
-      smartlock: ['', Validators.required],
+      smartlock: ['', [Validators.required, objetoSelecionadoValidator]],
       patrimonio: ['', Validators.required],
       tag: ['', Validators.required],
       tipo: ['', Validators.required],
@@ -103,13 +104,14 @@ export class UpdateEquipamento implements OnInit {
   }
 
   private initAutocompleteFilter(): void {
-    this.filteredSmartlocks = this.eqForm.get('smartlock')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => filtrarLista(this.smartlocks, value || '', 'apelido')),
+    this.filteredSmartlocks = filtrarAutocomplete(
+      this.eqForm.get('smartlock')!,
+      this.smartlockService.listAll(),
+      'apelido',
     );
   }
 
-  displaySmartlock = displayPorCampo<ISmartlock>('apelido');
+  readonly displaySmartlock = displayPorCampo<ISmartlock>('apelido');
 
   private async carregarDadosEquipamento(): Promise<void> {
     try {
@@ -138,12 +140,15 @@ export class UpdateEquipamento implements OnInit {
   salvar(): void {
     if (this.eqForm.valid) {
       const { smartlock, patrimonio, tag, tipo, apelido } = this.eqForm.value;
+      const patrimonioTrimmed = typeof patrimonio === 'string' ? patrimonio.trim() : patrimonio;
+      const tagTrimmed = typeof tag === 'string' ? tag.trim() : tag;
+      const apelidoTrimmed = typeof apelido === 'string' ? apelido.trim() : apelido;
 
       this.isLoading = true;
       this.eqForm.disable();
 
       this.equipamentoService
-        .update(this.equipamento_id, patrimonio, tag, tipo, smartlock.id, apelido)
+        .update(this.equipamento_id, patrimonioTrimmed, tagTrimmed, tipo, smartlock.id, apelidoTrimmed)
         .subscribe({
           next: () => {
             this.sns.notificar('Equipamento atualizado com sucesso!', 'sucesso');

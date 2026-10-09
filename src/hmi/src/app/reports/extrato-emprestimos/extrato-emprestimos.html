@@ -123,7 +123,15 @@
               [matAutocomplete]="autoUnidade"
             />
             <mat-icon matPrefix class="filter-icon">business</mat-icon>
+            @if (unidadeCtrl.value) {
+              <button mat-icon-button matSuffix type="button" (click)="limparUnidade()" aria-label="Limpar unidade">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
             <mat-autocomplete #autoUnidade="matAutocomplete" [displayWith]="_displayWithUnidade">
+              @for (unidade of filteredUnidades(); track unidade.id) {
+                <mat-option [value]="unidade">{{ _displayWithUnidade(unidade) }}</mat-option>
+              }
             </mat-autocomplete>
           </mat-form-field>
 
@@ -140,9 +148,15 @@
               [matAutocomplete]="autoUsuario"
             />
             <mat-icon matPrefix class="filter-icon">person_search</mat-icon>
+            @if (usuarioCtrl.value) {
+              <button mat-icon-button matSuffix type="button" (click)="limparUsuario()" aria-label="Limpar usuário">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
             <mat-autocomplete #autoUsuario="matAutocomplete" [displayWith]="_displayWithUsuario">
-              <!-- Loop mockado pro skeleton -->
-              <mat-option value="João">João Silva</mat-option>
+              @for (user of filteredUsuarios(); track user.id) {
+                <mat-option [value]="user">{{ user.nome }}</mat-option>
+              }
             </mat-autocomplete>
           </mat-form-field>
         </div>

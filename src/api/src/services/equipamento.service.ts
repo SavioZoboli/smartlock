@@ -514,6 +514,8 @@ class EquipamentoService {
           ],
           "avatar",
           "email",
+          [col("unidadeLotacao.nome"), "unidade"],
+          [col("unidadeLotacao.id"), "unidade_id"],
           [fn("count", col("equipamentosEmUso.id")), "qtd_equipamentos"],
         ],
         include: [
@@ -523,8 +525,20 @@ class EquipamentoService {
             attributes: [],
             required: true, // inner join
           },
+          {
+            model: Unidade,
+            as: "unidadeLotacao",
+            attributes: [],
+            required: false,
+          },
         ],
-        group: ["Usuario.id", "Usuario.avatar", "Usuario.email"],
+        group: [
+          "Usuario.id",
+          "Usuario.avatar",
+          "Usuario.email",
+          "unidadeLotacao.nome",
+          "unidadeLotacao.id",
+        ],
         raw: true,
       });
       return resultado;

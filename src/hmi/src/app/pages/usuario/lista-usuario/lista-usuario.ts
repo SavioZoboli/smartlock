@@ -77,8 +77,8 @@ export class ListaUsuario {
     this.usuarioService.listAll().subscribe({
       next: (res: any) => {
         this.dataSource.data = res;
-        this.unidadesDisponiveis = [...new Set(res.map((u: any) => u.unidade))].sort() as string[];
-        this.regionaisDisponiveis = [...new Set(res.map((u: any) => u.regional))].sort() as string[];
+        this.unidadesDisponiveis = [...new Set(res.map((u: any) => u.unidade).filter(Boolean))].sort() as string[];
+        this.regionaisDisponiveis = [...new Set(res.map((u: any) => u.regional).filter(Boolean))].sort() as string[];
       },
     });
   }
@@ -90,9 +90,9 @@ export class ListaUsuario {
       this.dataSource,
       this.filtros,
       (data: Usuario, filtro: any) => {
-        const nomeConfere = normalizarTexto(data.nome).includes(
-          normalizarTexto((filtro.nome || '').trim()),
-        );
+        const termoNome = normalizarTexto((filtro.nome || '').trim());
+        const nomeCompleto = normalizarTexto(`${data.nome || ''} ${data.sobrenome || ''}`);
+        const nomeConfere = !termoNome || nomeCompleto.includes(termoNome);
         const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
         const regionalConfere = !filtro.regional || data.regional === filtro.regional;
 

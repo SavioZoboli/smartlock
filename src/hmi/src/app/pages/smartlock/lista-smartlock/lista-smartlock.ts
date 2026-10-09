@@ -89,8 +89,8 @@ export class ListaSmartlock {
     this.smartlockService.listAll().subscribe({
       next: (res: any) => {
         this.dataSource.data = res;
-        this.unidadesDisponiveis = [...new Set(res.map((s: any) => s.unidade))].sort() as string[];
-        this.regionaisDisponiveis = [...new Set(res.map((s: any) => s.regional))].sort() as string[];
+        this.unidadesDisponiveis = [...new Set(res.map((s: any) => s.unidade).filter(Boolean))].sort() as string[];
+        this.regionaisDisponiveis = [...new Set(res.map((s: any) => s.regional).filter(Boolean))].sort() as string[];
       },
     });
   }
@@ -100,14 +100,18 @@ export class ListaSmartlock {
       this.dataSource,
       this.filtros,
       (data: Smartlock, filtro: any) => {
-        const apelidoConfere = normalizarTexto(data.apelido).includes(
+        const apelidoConfere = normalizarTexto(data.apelido || '').includes(
           normalizarTexto((filtro.apelido || '').trim()),
         );
         const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
         const regionalConfere = !filtro.regional || data.regional === filtro.regional;
-        const onlineConfere = !filtro.apenasOnline || data.is_online;
-        const provisionandoConfere = !filtro.provisionando || data.unidade != '';
-        const equipamentosConfere = !filtro.apenasComEquipamentos || data.has_equipamentos;
+        const onlineConfere = !filtro.apenasOnline || Boolean(data.is_online);
+        const provisionandoConfere =
+          !filtro.provisionando ||
+          !data.unidade ||
+          data.unidade.trim() === '' ||
+          data.unidade.toLowerCase().includes('provision');
+        const equipamentosConfere = !filtro.apenasComEquipamentos || Boolean(data.has_equipamentos);
 
         return (
           apelidoConfere &&
@@ -128,6 +132,7 @@ export class ListaSmartlock {
       unidade: '',
       regional: '',
       apenasOnline: false,
+      provisionando: false,
       apenasComEquipamentos: false,
     });
   }

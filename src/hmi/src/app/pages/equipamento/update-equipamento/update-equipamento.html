@@ -21,11 +21,21 @@
           <mat-label>SmartLock</mat-label>
           <input type="text" matInput formControlName="smartlock" [matAutocomplete]="auto">
           <mat-icon matPrefix>lock</mat-icon>
+          @if (eqForm.get('smartlock')?.value) {
+            <button mat-icon-button matSuffix type="button" (click)="eqForm.get('smartlock')?.setValue('')" aria-label="Limpar smartlock">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <mat-autocomplete #auto="matAutocomplete" [displayWith]="displaySmartlock">
             @for (smartlock of filteredSmartlocks | async; track smartlock) {
               <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
             }
           </mat-autocomplete>
+          @if (eqForm.get('smartlock')?.hasError('required')) {
+            <mat-error>O SmartLock é obrigatório.</mat-error>
+          } @else if (eqForm.get('smartlock')?.hasError('objetoInvalido')) {
+            <mat-error>Selecione uma opção válida da lista.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -34,6 +44,9 @@
           <mat-label>Patrimônio</mat-label>
           <input matInput formControlName="patrimonio">
           <mat-icon matPrefix>inventory_2</mat-icon>
+          @if (eqForm.get('patrimonio')?.hasError('required')) {
+            <mat-error>O patrimônio é obrigatório.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -42,6 +55,9 @@
           <mat-label>Tag RFID</mat-label>
           <input matInput formControlName="tag">
           <mat-icon matPrefix>nfc</mat-icon>
+          @if (eqForm.get('tag')?.hasError('required')) {
+            <mat-error>A tag RFID é obrigatória.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -54,6 +70,9 @@
             }
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
+          @if (eqForm.get('tipo')?.hasError('required')) {
+            <mat-error>O tipo é obrigatório.</mat-error>
+          }
         </mat-form-field>
       </div>
       <div class="form-row">

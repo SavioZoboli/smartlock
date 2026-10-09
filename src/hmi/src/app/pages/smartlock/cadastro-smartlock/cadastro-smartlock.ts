@@ -17,6 +17,7 @@ import { Unidade } from '../../unidade/lista-unidade/lista-unidade';
 import { UnidadeService } from '../../../services/unidade.service';
 import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
 
 @Component({
   selector: 'app-cadastro-smartlocks',
@@ -103,11 +104,7 @@ export class CadastroSmartlock implements OnInit {
     this.cdr.detectChanges();
   }
 
-  displayUnidade = (unidade: Unidade | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
+  readonly displayUnidade = displayUnidadeComRegional;
 
   private async carregarDadosSmartlock(): Promise<void> {
     try {
@@ -124,13 +121,15 @@ export class CadastroSmartlock implements OnInit {
   salvar(): void {
     if (this.slForm.valid) {
       const { unidade, apelido, mac_address, has_equipamentos } = this.slForm.value;
+      const apelidoFormatado = typeof apelido === 'string' ? apelido.trim() : apelido;
+      const macFormatado = typeof mac_address === 'string' ? mac_address.trim() : mac_address;
 
       this.isLoading = true;
       this.slForm.disable();
 
       const requisicao$ = this.smartlock_id
-        ? this.smartlockService.update(this.smartlock_id, apelido, mac_address, has_equipamentos, unidade.id)
-        : this.smartlockService.create(apelido, mac_address, unidade.id, has_equipamentos);
+        ? this.smartlockService.update(this.smartlock_id, apelidoFormatado, macFormatado, has_equipamentos, unidade.id)
+        : this.smartlockService.create(apelidoFormatado, macFormatado, unidade.id, has_equipamentos);
 
       requisicao$.subscribe({
         next: () => {

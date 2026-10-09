@@ -32,6 +32,7 @@ describe('smartlock-report.util', () => {
         disponivel: true,
         smartlockId: 10,
         smartlockApelido: 'Armário B',
+        reservas: [],
       },
       {
         id: 2,
@@ -40,6 +41,7 @@ describe('smartlock-report.util', () => {
         disponivel: false,
         smartlockId: 10,
         smartlockApelido: 'Armário B',
+        reservas: [],
       },
       {
         id: 3,
@@ -48,6 +50,7 @@ describe('smartlock-report.util', () => {
         disponivel: true,
         smartlockId: 5,
         smartlockApelido: 'Armário A',
+        reservas: [],
       },
     ];
 

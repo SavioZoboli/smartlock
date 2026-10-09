@@ -120,7 +120,9 @@ export class ListaMovimentacao {
     this.movimentacaoService.listaMovimentacaoUltimosDias(7).subscribe({
       next: (res: Movimentacao[]) => {
         this.dataSource.data = res;
-        this.unidadesDisponiveis = [...new Set(res.map((m) => m.unidade))].sort();
+        this.unidadesDisponiveis = [
+          ...new Set(res.map((m) => m.unidade).filter(Boolean)),
+        ].sort();
       },
       error: (err) => {
         console.log(err);
@@ -139,10 +141,14 @@ export class ListaMovimentacao {
         const patrimonioConfere =
           !filtro.patrimonio ||
           data.equipamentos.some((e) =>
-            normalizarTexto(e.patrimonio).includes(normalizarTexto((filtro.patrimonio || '').trim())),
+            normalizarTexto(e.patrimonio).includes(
+              normalizarTexto((filtro.patrimonio || '').trim()),
+            ),
           );
         const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
-        const tipoConfere = !filtro.tipo || data.tipo === filtro.tipo;
+        const tipoConfere =
+          !filtro.tipo ||
+          (data.tipo || '').toLowerCase().includes((filtro.tipo || '').toLowerCase());
 
         return patrimonioConfere && unidadeConfere && tipoConfere;
       },

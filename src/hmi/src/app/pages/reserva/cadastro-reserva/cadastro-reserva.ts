@@ -16,7 +16,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { provideNgxMask } from 'ngx-mask';
+import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { Observable, firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -29,6 +29,7 @@ import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { UnidadeComRegionalDTO } from '../../../dto/UnidadeComRegional.dto';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
 import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import { HORA_PATTERN, combinarDataHora, formatarHora } from '../../../shared/util/data-hora.util';
 import {
   EquipamentoComReservas,
@@ -52,6 +53,7 @@ import {
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    NgxMaskDirective,
   ],
   providers: [provideNgxMask(), provideNativeDateAdapter()],
   templateUrl: './cadastro-reserva.html',
@@ -91,8 +93,11 @@ export class CadastroReserva implements OnInit {
   constructor() {
     this.reservaForm = this.fb.group(
       {
-        unidade: ['', Validators.required],
-        smartlock: [{ value: '', disabled: true }, Validators.required],
+        unidade: ['', [Validators.required, objetoSelecionadoValidator]],
+        smartlock: [
+          { value: '', disabled: true },
+          [Validators.required, objetoSelecionadoValidator],
+        ],
         data_emprestimo: ['', Validators.required],
         hora_emprestimo: ['', [Validators.required, Validators.pattern(HORA_PATTERN)]],
         data_devolucao: ['', Validators.required],
@@ -312,8 +317,11 @@ export class CadastroReserva implements OnInit {
       const { smartlock, data_emprestimo, hora_emprestimo, data_devolucao, hora_devolucao } =
         this.reservaForm.value;
 
-      const dh_emprestimo = combinarDataHora(data_emprestimo, hora_emprestimo);
-      const dh_devolucao = combinarDataHora(data_devolucao, hora_devolucao);
+      const horaEmpTrim = typeof hora_emprestimo === 'string' ? hora_emprestimo.trim() : hora_emprestimo;
+      const horaDevTrim = typeof hora_devolucao === 'string' ? hora_devolucao.trim() : hora_devolucao;
+
+      const dh_emprestimo = combinarDataHora(data_emprestimo, horaEmpTrim);
+      const dh_devolucao = combinarDataHora(data_devolucao, horaDevTrim);
 
       const equipamentos = Array.from(this.equipamentosSelecionados);
 

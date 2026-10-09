@@ -18,6 +18,7 @@ import { EquipamentoService } from '../../../services/equipamento.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
 import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import { UnidadeService } from '../../../services/unidade.service';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
 import { obterIconeTipoEquipamento } from '../../../shared/tipoEquipamentos.constant';
@@ -72,7 +73,7 @@ export class CadastroMovimentacao implements OnInit {
 
   constructor() {
     this.movForm = this.fb.group({
-      unidade: ['', Validators.required],
+      unidade: ['', [Validators.required, objetoSelecionadoValidator]],
       smartlock: [{ value: '', disabled: true }, Validators.required],
       tipo_movimento: ['', Validators.required],
     });
