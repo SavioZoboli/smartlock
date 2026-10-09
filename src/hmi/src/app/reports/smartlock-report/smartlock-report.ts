@@ -167,6 +167,7 @@ export class SmartlockReport implements OnInit {
         next: (res: ItemRelatorioSmartlock[]) => {
           const itensFormatados: ItemRelatorioSmartlock[] = res.map((linha) => ({
             ...linha,
+            reservas: linha.reservas ?? [],
             icone: obterIconeTipoEquipamento(linha.tipo),
           }));
           this.equipamentos.set(itensFormatados);

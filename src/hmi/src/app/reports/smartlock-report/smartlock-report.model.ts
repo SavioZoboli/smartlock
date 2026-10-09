@@ -17,7 +17,7 @@ export interface ItemRelatorioSmartlock {
   avatar?: string | null;
   responsavel?: string | null;
   icone?: string;
-  reservas?: ReservaRelatorioItem[];
+  reservas: ReservaRelatorioItem[];
 }
 
 export interface GrupoSmartlock {
