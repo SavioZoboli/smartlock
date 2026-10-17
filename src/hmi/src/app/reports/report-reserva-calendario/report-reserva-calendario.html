@@ -117,27 +117,38 @@
               @for (reserva of dia.reservas; track reserva.id) {
                 <div
                   class="reserva-card"
-                  [matTooltip]="reserva.responsavel + ' - ' + reserva.smartlock + ' (' + reserva.unidade + ')'"
-                  (click)="onClickReserva(reserva, $event)">
-                  <div class="reserva-card-top">
-                    <span class="reserva-hora">
-                      {{ reserva.reserva_inicio | date: 'HH:mm' }} - {{ reserva.reserva_fim | date: 'HH:mm' }}
-                    </span>
-                    @if (reserva.equipamentos?.length > 0) {
-                      <span class="reserva-equip-badge" matTooltip="{{ reserva.equipamentos.length }} equipamento(s)">
-                        {{ reserva.equipamentos.length }}
-                      </span>
-                    }
-                  </div>
-
-                  <div class="reserva-card-sl">
-                    <mat-icon class="card-icon">dns</mat-icon>
-                    <span class="sl-nome">{{ reserva.smartlock }}</span>
-                  </div>
-
+                  [matTooltip]="reserva.responsavel + ' • ' + (reserva.equipamentos?.length || 0) + ' equipamento(s) • ' + reserva.smartlock + ' (' + reserva.unidade + ')'">
                   <div class="reserva-card-user">
-                    <mat-icon class="card-icon">person</mat-icon>
-                    <span class="user-nome">{{ reserva.responsavel }}</span>
+                    @if (reserva.usuario_avatar && !reserva._avatarErro) {
+                      <img
+                        [src]="reserva.usuario_avatar"
+                        [alt]="reserva.responsavel"
+                        class="user-avatar"
+                        referrerpolicy="no-referrer"
+                        (error)="reserva._avatarErro = true"
+                      />
+                    } @else {
+                      <div class="user-avatar avatar-fallback">
+                        {{ obterIniciais(reserva.responsavel) }}
+                      </div>
+                    }
+                    <div class="user-meta">
+                      <span class="user-nome">{{ reserva.responsavel }}</span>
+                      <span class="reserva-hora">
+                        {{ reserva.reserva_inicio | date: 'HH:mm' }} - {{ reserva.reserva_fim | date: 'HH:mm' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="reserva-card-details">
+                    <span class="equip-badge">
+                      <mat-icon class="detail-icon">devices</mat-icon>
+                      {{ reserva.equipamentos?.length || 0 }} equip.
+                    </span>
+                    <span class="sl-info">
+                      <mat-icon class="detail-icon">dns</mat-icon>
+                      <span class="sl-nome">{{ reserva.smartlock }}</span>
+                    </span>
                   </div>
                 </div>
               }

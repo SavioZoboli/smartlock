@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, combineLatest, debounceTime, switchMap, of, catchError, finalize } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -50,7 +49,6 @@ interface DiaCalendario {
 })
 export class ReportReservaCalendario implements OnInit {
   private destroyRef = inject(DestroyRef);
-  private router = inject(Router);
   private authService = inject(AuthService);
   private reservaService = inject(ReservaService);
   private unidadeService = inject(UnidadeService);
@@ -140,11 +138,12 @@ export class ReportReservaCalendario implements OnInit {
     this.usuarioCtrl.setValue(null);
   }
 
-  onClickReserva(reserva: any, event: Event): void {
-    event.stopPropagation();
-    if (reserva?.id) {
-      this.router.navigate(['/reservas/editar', reserva.id]);
-    }
+  obterIniciais(nome: string | undefined): string {
+    if (!nome) return '?';
+    const partes = nome.trim().split(/\s+/);
+    const primeira = partes[0]?.[0] ?? '';
+    const ultima = partes.length > 1 ? partes[partes.length - 1][0] : '';
+    return (primeira + ultima).toUpperCase();
   }
 
   private dispararBusca(): void {
