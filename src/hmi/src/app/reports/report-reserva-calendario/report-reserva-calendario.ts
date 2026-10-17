@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, combineLatest, debounceTime, switchMap, of, catchError, finalize } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -21,6 +22,8 @@ import { ISmartlock } from '../../interfaces/smartlock.interface';
 import { displayPorCampo, displayUnidadeComRegional } from '../../shared/util/autocomplete-display.util';
 import { filtrarLista } from '../../shared/util/autocomplete-filtro.util';
 import { normalizarTexto } from '../../shared/util/normalizar-texto.util';
+
+export type ModoCalendario = 'mes' | 'semana';
 
 interface DiaCalendario {
   data: Date;
@@ -41,6 +44,7 @@ interface DiaCalendario {
     MatAutocompleteModule,
     MatIconModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
   ],
@@ -70,6 +74,7 @@ export class ReportReservaCalendario implements OnInit {
   reservas = signal<any[]>([]);
   carregando = signal<boolean>(false);
 
+  modoCalendario = signal<ModoCalendario>('mes');
   mesReferencia = new Date();
   dias = signal<DiaCalendario[]>([]);
 
@@ -93,7 +98,13 @@ export class ReportReservaCalendario implements OnInit {
     this.gerarGradeVazia();
   }
 
-  get labelMes(): string {
+  get labelPeriodo(): string {
+    if (this.modoCalendario() === 'semana') {
+      const { inicioGrade, fimGrade } = this.obterDatasGrade();
+      const fmtInicio = inicioGrade.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      const fmtFim = fimGrade.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+      return `${fmtInicio} – ${fmtFim}`;
+    }
     return this.mesReferencia.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   }
 
@@ -105,17 +116,54 @@ export class ReportReservaCalendario implements OnInit {
     return temUnidade || temUsuario;
   }
 
-  mesAnterior(): void {
-    this.mesReferencia = new Date(this.mesReferencia.getFullYear(), this.mesReferencia.getMonth() - 1, 1);
+  alterarModoCalendario(modo: ModoCalendario): void {
+    this.modoCalendario.set(modo);
+    const hoje = new Date();
+    if (
+      modo === 'semana' &&
+      this.mesReferencia.getFullYear() === hoje.getFullYear() &&
+      this.mesReferencia.getMonth() === hoje.getMonth()
+    ) {
+      this.mesReferencia = hoje;
+    }
     this.dispararBusca();
   }
 
-  mesSeguinte(): void {
-    this.mesReferencia = new Date(this.mesReferencia.getFullYear(), this.mesReferencia.getMonth() + 1, 1);
+  periodoAnterior(): void {
+    if (this.modoCalendario() === 'semana') {
+      this.mesReferencia = new Date(
+        this.mesReferencia.getFullYear(),
+        this.mesReferencia.getMonth(),
+        this.mesReferencia.getDate() - 7,
+      );
+    } else {
+      this.mesReferencia = new Date(
+        this.mesReferencia.getFullYear(),
+        this.mesReferencia.getMonth() - 1,
+        1,
+      );
+    }
     this.dispararBusca();
   }
 
-  mesAtual(): void {
+  periodoSeguinte(): void {
+    if (this.modoCalendario() === 'semana') {
+      this.mesReferencia = new Date(
+        this.mesReferencia.getFullYear(),
+        this.mesReferencia.getMonth(),
+        this.mesReferencia.getDate() + 7,
+      );
+    } else {
+      this.mesReferencia = new Date(
+        this.mesReferencia.getFullYear(),
+        this.mesReferencia.getMonth() + 1,
+        1,
+      );
+    }
+    this.dispararBusca();
+  }
+
+  irParaHoje(): void {
     this.mesReferencia = new Date();
     this.dispararBusca();
   }
@@ -305,6 +353,18 @@ export class ReportReservaCalendario implements OnInit {
   }
 
   private obterDatasGrade(): { inicioGrade: Date; fimGrade: Date } {
+    if (this.modoCalendario() === 'semana') {
+      const inicioGrade = new Date(this.mesReferencia);
+      inicioGrade.setDate(inicioGrade.getDate() - inicioGrade.getDay());
+      inicioGrade.setHours(0, 0, 0, 0);
+
+      const fimGrade = new Date(inicioGrade);
+      fimGrade.setDate(fimGrade.getDate() + 6);
+      fimGrade.setHours(23, 59, 59, 999);
+
+      return { inicioGrade, fimGrade };
+    }
+
     const ano = this.mesReferencia.getFullYear();
     const mes = this.mesReferencia.getMonth();
 
@@ -323,8 +383,8 @@ export class ReportReservaCalendario implements OnInit {
   }
 
   private gerarGradeVazia(): void {
-    const ano = this.mesReferencia.getFullYear();
     const mes = this.mesReferencia.getMonth();
+    const isSemana = this.modoCalendario() === 'semana';
     const { inicioGrade, fimGrade } = this.obterDatasGrade();
     const hoje = new Date();
     const listaDias: DiaCalendario[] = [];
@@ -334,7 +394,7 @@ export class ReportReservaCalendario implements OnInit {
       listaDias.push({
         data: diaAtual,
         numero: diaAtual.getDate(),
-        foraDoMes: diaAtual.getMonth() !== mes,
+        foraDoMes: !isSemana && diaAtual.getMonth() !== mes,
         hoje: this.mesmoDia(diaAtual, hoje),
         reservas: [],
       });
@@ -344,8 +404,8 @@ export class ReportReservaCalendario implements OnInit {
   }
 
   private gerarDias(): void {
-    const ano = this.mesReferencia.getFullYear();
     const mes = this.mesReferencia.getMonth();
+    const isSemana = this.modoCalendario() === 'semana';
     const { inicioGrade, fimGrade } = this.obterDatasGrade();
     const hoje = new Date();
     const listaDias: DiaCalendario[] = [];
@@ -355,7 +415,7 @@ export class ReportReservaCalendario implements OnInit {
       listaDias.push({
         data: diaAtual,
         numero: diaAtual.getDate(),
-        foraDoMes: diaAtual.getMonth() !== mes,
+        foraDoMes: !isSemana && diaAtual.getMonth() !== mes,
         hoje: this.mesmoDia(diaAtual, hoje),
         reservas: this.reservasDoDia(diaAtual),
       });

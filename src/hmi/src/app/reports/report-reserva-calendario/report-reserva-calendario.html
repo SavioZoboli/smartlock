@@ -83,13 +83,19 @@
     <div class="calendario-container">
       <div class="calendario-header">
         <div class="navegacao-mes">
-          <button mat-icon-button (click)="mesAnterior()" matTooltip="Mês anterior">
+          <button
+            mat-icon-button
+            (click)="periodoAnterior()"
+            [matTooltip]="modoCalendario() === 'semana' ? 'Semana anterior' : 'Mês anterior'">
             <mat-icon>chevron_left</mat-icon>
           </button>
 
-          <span class="mes-label">{{ labelMes }}</span>
+          <span class="mes-label">{{ labelPeriodo }}</span>
 
-          <button mat-icon-button (click)="mesSeguinte()" matTooltip="Próximo mês">
+          <button
+            mat-icon-button
+            (click)="periodoSeguinte()"
+            [matTooltip]="modoCalendario() === 'semana' ? 'Próxima semana' : 'Próximo mês'">
             <mat-icon>chevron_right</mat-icon>
           </button>
         </div>
@@ -98,7 +104,17 @@
           <span class="total-reservas">
             <strong>{{ reservas().length }}</strong> reserva(s) no período
           </span>
-          <button mat-stroked-button class="btn-hoje" (click)="mesAtual()">Hoje</button>
+
+          <mat-button-toggle-group
+            class="toggle-visao"
+            [value]="modoCalendario()"
+            (change)="alterarModoCalendario($event.value)"
+            hideSingleSelectionIndicator="true">
+            <mat-button-toggle value="mes">Mês</mat-button-toggle>
+            <mat-button-toggle value="semana">Semana</mat-button-toggle>
+          </mat-button-toggle-group>
+
+          <button mat-stroked-button class="btn-hoje" (click)="irParaHoje()">Hoje</button>
         </div>
       </div>
 
@@ -108,7 +124,7 @@
         }
       </div>
 
-      <div class="grade-dias">
+      <div class="grade-dias" [class.visao-semana]="modoCalendario() === 'semana'">
         @for (dia of dias(); track dia.data) {
           <div class="dia-celula" [class.fora-do-mes]="dia.foraDoMes" [class.hoje]="dia.hoje">
             <span class="dia-numero">{{ dia.numero }}</span>
@@ -151,6 +167,10 @@
                     </span>
                   </div>
                 </div>
+              } @empty {
+                @if (modoCalendario() === 'semana') {
+                  <span class="sem-reservas-dia">Sem reservas</span>
+                }
               }
             </div>
           </div>
