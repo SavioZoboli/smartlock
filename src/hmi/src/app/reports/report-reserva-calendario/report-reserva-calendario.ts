@@ -194,6 +194,43 @@ export class ReportReservaCalendario implements OnInit {
     return (primeira + ultima).toUpperCase();
   }
 
+  private calcularStatusReserva(
+    reserva: any,
+    agoraMs: number = Date.now(),
+  ): 'finalizado' | 'atrasado' | 'em-uso' | 'agendado' {
+    const sit = (reserva?.situacao || '').toUpperCase().trim();
+    if (sit === 'FINALIZADO' || sit === 'CONCLUIDO' || sit === 'CONCLUÍDO') {
+      return 'finalizado';
+    }
+    if (sit === 'ATRASADO' || sit === 'ATRASADA') {
+      return 'atrasado';
+    }
+    if (
+      (sit === 'AGENDADO' || sit === 'PENDENTE' || !sit) &&
+      reserva?.reserva_fim &&
+      new Date(reserva.reserva_fim).getTime() < agoraMs
+    ) {
+      return 'atrasado';
+    }
+    if (sit === 'EM USO') {
+      return 'em-uso';
+    }
+    return 'agendado';
+  }
+
+  private obterLabelStatus(status: 'finalizado' | 'atrasado' | 'em-uso' | 'agendado'): string {
+    switch (status) {
+      case 'finalizado':
+        return 'Concluída';
+      case 'atrasado':
+        return 'Atrasada';
+      case 'em-uso':
+        return 'Em uso';
+      default:
+        return 'Agendada';
+    }
+  }
+
   private dispararBusca(): void {
     this.buscaTrigger$.next();
   }
@@ -242,7 +279,16 @@ export class ReportReservaCalendario implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((dados) => {
-        this.reservas.set(Array.isArray(dados) ? dados : []);
+        const agoraMs = Date.now();
+        const processadas = (Array.isArray(dados) ? dados : []).map((r: any) => {
+          const status = this.calcularStatusReserva(r, agoraMs);
+          return {
+            ...r,
+            _status: status,
+            _statusLabel: this.obterLabelStatus(status),
+          };
+        });
+        this.reservas.set(processadas);
         this.gerarDias();
       });
   }

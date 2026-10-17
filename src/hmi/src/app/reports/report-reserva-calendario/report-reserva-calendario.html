@@ -101,6 +101,12 @@
         </div>
 
         <div class="calendario-acoes">
+          <div class="legenda-status">
+            <span class="legenda-item agendado"><i class="dot"></i> Agendada</span>
+            <span class="legenda-item finalizado"><i class="dot"></i> Concluída</span>
+            <span class="legenda-item atrasado"><i class="dot"></i> Atrasada</span>
+          </div>
+
           <span class="total-reservas">
             <strong>{{ reservas().length }}</strong> reserva(s) no período
           </span>
@@ -133,7 +139,8 @@
               @for (reserva of dia.reservas; track reserva.id) {
                 <div
                   class="reserva-card"
-                  [matTooltip]="reserva.responsavel + ' • ' + (reserva.equipamentos?.length || 0) + ' equipamento(s) • ' + reserva.smartlock + ' (' + reserva.unidade + ')'">
+                  [ngClass]="'status-' + (reserva._status || 'agendado')"
+                  [matTooltip]="reserva.responsavel + ' • ' + (reserva.equipamentos?.length || 0) + ' equipamento(s) • ' + reserva.smartlock + ' (' + (reserva._statusLabel || reserva.situacao) + ')'">
                   <div class="reserva-card-user">
                     @if (reserva.usuario_avatar && !reserva._avatarErro) {
                       <img
@@ -150,9 +157,22 @@
                     }
                     <div class="user-meta">
                       <span class="user-nome">{{ reserva.responsavel }}</span>
-                      <span class="reserva-hora">
-                        {{ reserva.reserva_inicio | date: 'HH:mm' }} - {{ reserva.reserva_fim | date: 'HH:mm' }}
-                      </span>
+                      <div class="reserva-hora-row">
+                        <span class="reserva-hora">
+                          {{ reserva.reserva_inicio | date: 'HH:mm' }} - {{ reserva.reserva_fim | date: 'HH:mm' }}
+                        </span>
+                        @if (reserva._status === 'finalizado') {
+                          <span class="status-tag finalizado">
+                            <mat-icon class="status-icon">check_circle</mat-icon> Concluída
+                          </span>
+                        } @else if (reserva._status === 'atrasado') {
+                          <span class="status-tag atrasado">
+                            <mat-icon class="status-icon">error_outline</mat-icon> Atrasada
+                          </span>
+                        } @else if (reserva._status === 'em-uso') {
+                          <span class="status-tag em-uso">Em uso</span>
+                        }
+                      </div>
                     </div>
                   </div>
 

@@ -42,8 +42,21 @@ class ReservaService {
     }
   }
 
+  private async atualizarReservasAtrasadas(): Promise<void> {
+    await Reserva.update(
+      { situacao: "ATRASADO" },
+      {
+        where: {
+          situacao: { [Op.in]: ["AGENDADO", "PENDENTE"] },
+          reserva_fim: { [Op.lt]: new Date() },
+        },
+      },
+    );
+  }
+
   async listDoUsario(usuario_id: number) {
     try {
+      await this.atualizarReservasAtrasadas();
       let reservas = await Reserva.findAll({
         attributes: [
           "id",
@@ -109,6 +122,8 @@ class ReservaService {
     if (!unidade_id && !usuario_id) {
       throw new Error("ERR_FILTRO_OBRIGATORIO");
     }
+
+    await this.atualizarReservasAtrasadas();
 
     const whereReserva: any = {};
     if (usuario_id) {
