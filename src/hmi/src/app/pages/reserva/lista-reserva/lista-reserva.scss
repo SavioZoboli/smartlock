@@ -11,15 +11,16 @@
     align-items: center;
   }
 
-  .toggle-modo {
+  .btn-calendario {
     height: 44px;
+    border-radius: var(--app-radius-pill);
+    font-weight: 500;
+    gap: var(--app-space-xs);
 
     mat-icon {
-      margin-right: var(--app-space-xs);
-      font-size: 1.1rem;
-      width: 1.1rem;
-      height: 1.1rem;
-      vertical-align: middle;
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
     }
   }
 

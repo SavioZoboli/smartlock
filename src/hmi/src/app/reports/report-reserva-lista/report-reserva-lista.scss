@@ -115,7 +115,9 @@
   }
 
   &.cancelada,
-  &.cancelado {
+  &.cancelado,
+  &.atrasado,
+  &.atrasada {
     background-color: var(--app-danger-soft-bg);
     color: var(--app-danger-soft-on);
   }

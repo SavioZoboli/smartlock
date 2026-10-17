@@ -9,6 +9,8 @@ router.get('/',authMiddleware,reservaController.reservasDoUsuario)
 
 router.get('/vigente',authMiddleware,reservaController.getReservaVigente)
 
+router.get('/relatorio',authMiddleware,reservaController.relatorio)
+
 router.get('/:id',authMiddleware,reservaController.getById)
 
 router.put('/',authMiddleware,reservaController.update)

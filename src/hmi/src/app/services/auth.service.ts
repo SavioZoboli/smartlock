@@ -4,10 +4,13 @@ import { BehaviorSubject, catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface UsuarioLogado {
+  id?: number;
   nome: string;
   email: string;
   avatar: string;
-  is_admin:boolean;
+  is_admin: boolean;
+  regiao_id?: number;
+  unidade_id?: number;
 }
 
 @Injectable({
@@ -43,6 +46,16 @@ export class AuthService {
         this.usuarioSubject.next(null);
         return of(false);
       }),
+    );
+  }
+
+  obterUsuarioAtual(): Observable<UsuarioLogado | null> {
+    if (this.usuarioSubject.value && this.usuarioSubject.value.unidade_id !== undefined) {
+      return of(this.usuarioSubject.value);
+    }
+    return this.http.get<UsuarioLogado>(`${this.auth_url}/api/auth/me`, { withCredentials: true }).pipe(
+      tap((usuario) => this.usuarioSubject.next(usuario)),
+      catchError(() => of(this.usuarioSubject.value)),
     );
   }
 

@@ -42,8 +42,21 @@ class ReservaService {
     }
   }
 
+  private async atualizarReservasAtrasadas(): Promise<void> {
+    await Reserva.update(
+      { situacao: "ATRASADO" },
+      {
+        where: {
+          situacao: { [Op.in]: ["AGENDADO", "PENDENTE"] },
+          reserva_fim: { [Op.lt]: new Date() },
+        },
+      },
+    );
+  }
+
   async listDoUsario(usuario_id: number) {
     try {
+      await this.atualizarReservasAtrasadas();
       let reservas = await Reserva.findAll({
         attributes: [
           "id",
@@ -90,6 +103,121 @@ class ReservaService {
             attributes: ["id", "apelido", "patrimonio"],
           },
         ],
+      });
+      return reservas;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async relatorioReservas(filtros: {
+    unidade_id?: number;
+    smartlock_id?: number;
+    usuario_id?: number;
+    inicio?: Date;
+    fim?: Date;
+  }) {
+    const { unidade_id, smartlock_id, usuario_id, inicio, fim } = filtros;
+
+    if (!unidade_id && !usuario_id) {
+      throw new Error("ERR_FILTRO_OBRIGATORIO");
+    }
+
+    await this.atualizarReservasAtrasadas();
+
+    const whereReserva: any = {};
+    if (usuario_id) {
+      whereReserva.usuario_id = usuario_id;
+    }
+    if (smartlock_id) {
+      whereReserva.smartlock_id = smartlock_id;
+    }
+    if (inicio && fim) {
+      whereReserva[Op.and] = [
+        { reserva_inicio: { [Op.lte]: fim } },
+        {
+          [Op.or]: [
+            { reserva_fim: { [Op.gte]: inicio } },
+            { reserva_fim: null },
+          ],
+        },
+      ];
+    } else if (inicio) {
+      whereReserva[Op.or] = [
+        { reserva_fim: { [Op.gte]: inicio } },
+        { reserva_fim: null },
+      ];
+    } else if (fim) {
+      whereReserva.reserva_inicio = { [Op.lte]: fim };
+    }
+
+    const whereSmartlock: any = {};
+    if (unidade_id) {
+      whereSmartlock.unidade_id = unidade_id;
+    }
+    if (smartlock_id) {
+      whereSmartlock.id = smartlock_id;
+    }
+
+    const temFiltroSmartlock = Object.keys(whereSmartlock).length > 0;
+
+    try {
+      const reservas = await Reserva.findAll({
+        where: whereReserva,
+        attributes: [
+          "id",
+          "reserva_inicio",
+          "reserva_fim",
+          "situacao",
+          "motivo",
+          "usuario_id",
+          "smartlock_id",
+          [Sequelize.col("usuario.nome"), "responsavel"],
+          [Sequelize.col("usuario.email"), "usuario_email"],
+          [Sequelize.col("usuario.avatar"), "usuario_avatar"],
+          [Sequelize.col("smartlock_origem.apelido"), "smartlock"],
+          [Sequelize.col("smartlock_origem.unidade_id"), "unidade_id"],
+          [Sequelize.col("smartlock_origem->unidade.nome"), "unidade"],
+          [Sequelize.col("smartlock_origem->unidade->regional.nome"), "regional"],
+        ],
+        include: [
+          {
+            model: Usuario,
+            as: "usuario",
+            required: !!usuario_id,
+            attributes: [],
+          },
+          {
+            model: SmartLock,
+            as: "smartlock_origem",
+            attributes: [],
+            required: temFiltroSmartlock,
+            where: temFiltroSmartlock ? whereSmartlock : undefined,
+            include: [
+              {
+                model: Unidade,
+                as: "unidade",
+                attributes: [],
+                required: false,
+                include: [
+                  {
+                    model: Regiao,
+                    as: "regional",
+                    attributes: [],
+                    required: false,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Equipamento,
+            as: "equipamentos",
+            through: { attributes: [] },
+            attributes: ["id", "apelido", "patrimonio", "tipo"],
+          },
+        ],
+        order: [["reserva_inicio", "ASC"]],
       });
       return reservas;
     } catch (e) {
