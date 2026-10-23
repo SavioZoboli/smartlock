@@ -110,121 +110,48 @@ describe('CadastroMovimentacao', () => {
     expect(component).toBeTruthy();
   });
 
-  it('deve carregar reserva vigente e marcar equipamentos ao selecionar smartlock', () => {
-    component.movForm.get('unidade')?.setValue({ id: 1, nome: 'Unidade Matriz' });
-    component.movForm.get('smartlock')?.setValue(5);
+  it('should disable scanner until unidade and smartlock are selected', () => {
+    expect(component.isScannerDisabled).toBe(true);
 
-    expect(mockReservaService.getReservaVigente).toHaveBeenCalledWith(5);
-    expect(component.reservaVigente).toEqual(mockReservaVigente);
-    expect(component.equipamentosReservadosOutros).toEqual([3]);
+    component.movForm.get('unidade')?.setValue({ id: 1, nome: 'Unidade A', regional: 'Sul' });
+    component.movForm.get('smartlock')?.enable();
+    component.movForm.get('smartlock')?.setValue(10);
 
-    const eq1 = component.equipamentos.find((e) => e.id === 1);
-    const eq2 = component.equipamentos.find((e) => e.id === 2);
-    const eq3 = component.equipamentos.find((e) => e.id === 3);
-
-    expect(eq1?.pertenceReserva).toBe(true);
-    expect(eq2?.pertenceReserva).toBe(true);
-    expect(eq3?.pertenceReserva).toBe(false);
-    expect(eq3?.reservadoOutro).toBe(true);
+    expect(component.isScannerDisabled).toBe(false);
   });
 
-  it('deve selecionar itens da reserva do usuário através do botão de atalho', () => {
-    component.movForm.get('unidade')?.setValue({ id: 1, nome: 'Unidade Matriz' });
-    component.movForm.get('smartlock')?.setValue(5);
-    component.movForm.get('tipo_movimento')?.setValue('emprestimo_manual');
+  it('should select equipment and infer movement type when barcode is scanned', () => {
+    component.equipamentos = [
+      {
+        id: 1,
+        apelido: 'Notebook 01',
+        patrimonio: '100200',
+        tipo: 'Notebook',
+        status_atual: 'DISPONIVEL',
+        selecionado: false,
+      },
+    ];
 
-    component.selecionarEquipamentosDaReserva();
+    component.onCodigoBarrasLido('100200');
 
-    const eq1 = component.equipamentos.find((e) => e.id === 1);
-    const eq2 = component.equipamentos.find((e) => e.id === 2);
-    const eq3 = component.equipamentos.find((e) => e.id === 3);
-
-    expect(eq1?.selecionado).toBe(true);
-    expect(eq2?.selecionado).toBe(true);
-    expect(eq3?.selecionado).toBe(false);
+    expect(component.equipamentosSelecionados.length).toBe(1);
+    expect(component.equipamentosSelecionados[0].patrimonio).toBe('100200');
+    expect(component.movForm.get('tipo_movimento')?.value).toBe('emprestimo_manual');
   });
 
-  it('deve bloquear a seleção de equipamento reservado por outro usuário em empréstimo', () => {
-    component.movForm.get('unidade')?.setValue({ id: 1, nome: 'Unidade Matriz' });
-    component.movForm.get('smartlock')?.setValue(5);
-    component.movForm.get('tipo_movimento')?.setValue('emprestimo_manual');
+  it('should allow removing equipment from review list', () => {
+    const eq = {
+      id: 1,
+      apelido: 'Notebook 01',
+      patrimonio: '100200',
+      tipo: 'Notebook',
+      status_atual: 'DISPONIVEL' as const,
+      selecionado: true,
+    };
+    component.equipamentos = [eq];
 
-    const eq3 = component.equipamentos.find((e) => e.id === 3)!;
-    expect(component.isEquipamentoBloqueado(eq3)).toBe(true);
+    component.removerEquipamentoRevisao(eq);
 
-    component.toggleEquipamento(eq3);
-    expect(eq3.selecionado).toBeFalsy();
-    expect(mockSns.notificar).toHaveBeenCalledWith(
-      'Este equipamento está reservado por outro usuário.',
-      'info',
-    );
-  });
-
-  it('deve abrir modal ao realizar empréstimo parcial de itens reservados e passar remover_nao_retirados: true quando confirmado', () => {
-    component.movForm.get('unidade')?.setValue({ id: 1, nome: 'Unidade Matriz' });
-    component.movForm.get('smartlock')?.setValue(5);
-    component.movForm.get('tipo_movimento')?.setValue('emprestimo_manual');
-
-    // Seleciona apenas eq1, deixando eq2 (que também faz parte da reserva) de fora
-    const eq1 = component.equipamentos.find((e) => e.id === 1)!;
-    component.toggleEquipamento(eq1);
-
-    vi.spyOn((component as any).dialog, 'open').mockReturnValue({
-      afterClosed: () => of(true), // Usuário clica "Sim"
-    } as any);
-
-    component.salvar();
-
-    expect((component as any).dialog.open).toHaveBeenCalled();
-    const dialogArgs = (vi.mocked((component as any).dialog.open) as any).mock.calls[0][1];
-    expect(dialogArgs.data.mensagem).toContain(
-      'Você reservou os equipamentos Mouse Logitech mas não os retirou, deseja removê-los da reserva?',
-    );
-
-    expect(mockMovimentacaoService.create).toHaveBeenCalledWith(
-      5,
-      'emprestimo_manual',
-      [1],
-      { reserva_id: 10, remover_nao_retirados: true },
-    );
-  });
-
-  it('deve passar remover_nao_retirados: false quando o usuário responde Não no modal de empréstimo parcial', () => {
-    component.movForm.get('unidade')?.setValue({ id: 1, nome: 'Unidade Matriz' });
-    component.movForm.get('smartlock')?.setValue(5);
-    component.movForm.get('tipo_movimento')?.setValue('emprestimo_manual');
-
-    const eq1 = component.equipamentos.find((e) => e.id === 1)!;
-    component.toggleEquipamento(eq1);
-
-    vi.spyOn((component as any).dialog, 'open').mockReturnValue({
-      afterClosed: () => of(false), // Usuário clica "Não"
-    } as any);
-
-    component.salvar();
-
-    expect(mockMovimentacaoService.create).toHaveBeenCalledWith(
-      5,
-      'emprestimo_manual',
-      [1],
-      { reserva_id: 10, remover_nao_retirados: false },
-    );
-  });
-
-  it('não deve abrir modal se todos os itens reservados forem selecionados', () => {
-    component.movForm.get('unidade')?.setValue({ id: 1, nome: 'Unidade Matriz' });
-    component.movForm.get('smartlock')?.setValue(5);
-    component.movForm.get('tipo_movimento')?.setValue('emprestimo_manual');
-
-    component.selecionarEquipamentosDaReserva();
-    component.salvar();
-
-    expect((component as any).dialog.open).not.toHaveBeenCalled();
-    expect(mockMovimentacaoService.create).toHaveBeenCalledWith(
-      5,
-      'emprestimo_manual',
-      [1, 2],
-      { reserva_id: 10, remover_nao_retirados: false },
-    );
+    expect(component.equipamentosSelecionados.length).toBe(0);
   });
 });

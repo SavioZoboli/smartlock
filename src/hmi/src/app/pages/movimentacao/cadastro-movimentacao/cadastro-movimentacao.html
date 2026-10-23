@@ -1,4 +1,4 @@
-<div class="page-container">
+<div class="page-container" [class.mobile-layout]="isMobile">
   <div class="page-header-container">
     <div class="title-area">
       <div class="breadcrumb">Gerenciamento / Movimentações</div>
@@ -65,9 +65,60 @@
         </mat-button-toggle-group>
       </div>
 
+      @if (isMobile) {
+        <div class="form-row scanner-section">
+          <span class="section-label">Leitura por Câmera</span>
+
+          <app-barcode-scanner
+            [disabled]="isScannerDisabled"
+            disabledHint="Selecione a Unidade e o SmartLock antes de habilitar a leitura."
+            [continuous]="true"
+            (codeScanned)="onCodigoBarrasLido($event)"
+            (scanError)="onErroCamera($event)">
+          </app-barcode-scanner>
+
+          <div class="revisao-container">
+            <div class="revisao-header">
+              <span class="section-label">
+                Itens Lidos / Selecionados ({{ equipamentosSelecionados.length }})
+              </span>
+            </div>
+
+            @if (equipamentosSelecionados.length === 0) {
+              <p class="empty-hint">
+                Nenhum patrimônio lido até o momento. Aponte a câmera para o código de barras do equipamento.
+              </p>
+            } @else {
+              <mat-list class="revisao-list" role="list">
+                @for (item of equipamentosSelecionados; track item.id) {
+                  <mat-list-item class="revisao-list-item" role="listitem">
+                    <mat-icon matListItemIcon>{{ item.icone || 'inventory_2' }}</mat-icon>
+                    <div matListItemTitle class="revisao-item-title">
+                      Patrimônio: {{ item.patrimonio }}
+                    </div>
+                    <div matListItemLine class="revisao-item-subtitle">
+                      {{ item.apelido }} · {{ item.tipo }}
+                    </div>
+                    <button
+                      mat-icon-button
+                      matListItemMeta
+                      type="button"
+                      color="warn"
+                      aria-label="Remover item lido"
+                      (click)="removerEquipamentoRevisao(item)">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </mat-list-item>
+                }
+              </mat-list>
+            }
+          </div>
+        </div>
+      }
+
       @if (movForm.get('smartlock')?.value && movForm.get('tipo_movimento')?.value) {
         <div class="form-row">
-          <span class="section-label">Equipamentos</span>
+          <span class="section-label">Equipamentos Disponíveis</span>
 
           @if (reservaVigente && movForm.get('tipo_movimento')?.value === 'emprestimo_manual') {
             <div class="reserva-banner">

@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -9,6 +10,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
@@ -47,7 +49,9 @@ import {
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
+    MatListModule,
     MatProgressSpinnerModule,
+    BarcodeScannerComponent,
     MatDialogModule,
   ],
   templateUrl: './cadastro-movimentacao.html',
@@ -76,11 +80,24 @@ export class CadastroMovimentacao implements OnInit {
   isLoading = false;
   isLoadingSmartlocks = false;
   isLoadingEquipamentos = false;
-  isLoadingReserva = false;
+isLoadingReserva = false;
 
   readonly displayUnidade = displayUnidadeComRegional;
+  isMobile = false;
 
-  constructor() {
+  private subscriptions = new Subscription();
+
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private breakpointObserver: BreakpointObserver,
+    private unidadeService: UnidadeService,
+    private smartlockService: SmartlockService,
+    private equipamentoService: EquipamentoService,
+    private movimentacaoService: MovimentacaoService,
+    private sns: SystemNotificationService,
+    private cdr: ChangeDetectorRef,
+  ) {
     this.movForm = this.fb.group({
       unidade: ['', [Validators.required, objetoSelecionadoValidator]],
       smartlock: [{ value: '', disabled: true }, Validators.required],
@@ -89,10 +106,35 @@ export class CadastroMovimentacao implements OnInit {
   }
 
   ngOnInit(): void {
+    this.observarResponsividade();
     this.inicializaUnidades();
     this.observarUnidade();
     this.observarSmartlock();
     this.observarTipoMovimento();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  private observarResponsividade(): void {
+    const sub = this.breakpointObserver
+      .observe([Breakpoints.Handset, '(max-width: 768px)'])
+      .subscribe((result) => {
+        this.isMobile = result.matches;
+        this.cdr.detectChanges();
+      });
+    this.subscriptions.add(sub);
+  }
+
+  get isUnidadeESmartlockSelecionados(): boolean {
+    const unidade = this.movForm.get('unidade')?.value;
+    const smartlock = this.movForm.get('smartlock')?.value;
+    return !!(unidade && typeof unidade === 'object' && unidade.id && smartlock);
+  }
+
+  get isScannerDisabled(): boolean {
+    return !this.isUnidadeESmartlockSelecionados || this.isLoadingEquipamentos;
   }
 
   private inicializaUnidades(): void {
@@ -264,6 +306,66 @@ export class CadastroMovimentacao implements OnInit {
       return;
     }
     equipamento.selecionado = !equipamento.selecionado;
+  }
+
+  removerEquipamentoRevisao(equipamento: Equipamento): void {
+    equipamento.selecionado = false;
+    this.cdr.detectChanges();
+  }
+
+  onCodigoBarrasLido(codigoPatrimonio: string): void {
+    const codigoNormalizado = codigoPatrimonio.trim();
+    if (!codigoNormalizado) return;
+
+    const equipamento = this.equipamentos.find(
+      (e) => String(e.patrimonio).trim() === codigoNormalizado,
+    );
+
+    if (!equipamento) {
+      this.sns.notificar(
+        `Patrimônio "${codigoNormalizado}" não encontrado neste SmartLock.`,
+        'erro',
+      );
+      return;
+    }
+
+    let tipoAtual: TipoMovimento = this.movForm.get('tipo_movimento')?.value;
+
+    // Se o usuário ainda não selecionou o tipo de movimento, infere pelo status atual do equipamento lido
+    if (!tipoAtual) {
+      tipoAtual =
+        equipamento.status_atual === 'DISPONIVEL' ? 'emprestimo_manual' : 'devolucao_manual';
+      this.movForm.get('tipo_movimento')?.setValue(tipoAtual, { emitEvent: false });
+    }
+
+    const disponivelParaEmprestimo =
+      tipoAtual.includes('emprestimo') && equipamento.status_atual === 'DISPONIVEL';
+    const disponivelParaDevolucao =
+      !tipoAtual.includes('emprestimo') && equipamento.status_atual !== 'DISPONIVEL';
+
+    if (!disponivelParaEmprestimo && !disponivelParaDevolucao) {
+      const motivo = tipoAtual.includes('emprestimo')
+        ? 'já consta como EM USO'
+        : 'já consta como DISPONÍVEL';
+      this.sns.notificar(
+        `Patrimônio ${codigoNormalizado} (${equipamento.apelido}) ${motivo}.`,
+        'info',
+      );
+      return;
+    }
+
+    if (equipamento.selecionado) {
+      this.sns.notificar(`Patrimônio ${codigoNormalizado} já foi adicionado à lista.`, 'info');
+      return;
+    }
+
+    equipamento.selecionado = true;
+    this.sns.notificar(`Patrimônio ${codigoNormalizado} capturado!`, 'sucesso');
+    this.cdr.detectChanges();
+  }
+
+  onErroCamera(mensagem: string): void {
+    this.sns.notificar(mensagem, 'erro');
   }
 
   salvar(): void {
