@@ -1,20 +1,6 @@
 @use '../../../../assets/scss/shared-patterns';
 
-.page-container {
-  @extend %page-container;
-}
-
-.page-header-container {
-  @extend %page-header;
-
-  .btn-new {
-    @extend %btn-new;
-  }
-}
-
 .filtros-container {
-  @extend %filtros-container;
-
   .filtro-nome {
     flex: 1 1 260px;
   }
@@ -30,22 +16,6 @@
     align-items: center;
     white-space: nowrap;
   }
-}
-
-.table-container {
-  @extend %table-container;
-}
-
-.custom-table {
-  @extend %custom-table;
-}
-
-.fw-500 {
-  @extend %fw-500;
-}
-
-.inline-icon {
-  @extend %inline-icon;
 }
 
 .chip-entidade {
@@ -80,20 +50,4 @@
   &.has-equip {
     color: var(--mat-sys-primary); // cor de marca = possui equipamentos
   }
-}
-
-.align-right {
-  @extend %align-right;
-}
-
-.action-btn {
-  @extend %action-btn;
-}
-
-.empty-state {
-  @extend %empty-state;
-}
-
-.custom-paginator {
-  @extend %custom-paginator;
 }

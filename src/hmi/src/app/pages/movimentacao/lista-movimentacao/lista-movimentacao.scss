@@ -1,17 +1,5 @@
 @use '../../../../assets/scss/shared-patterns';
 
-.page-container {
-  @extend %page-container;
-}
-
-.page-header-container {
-  @extend %page-header;
-
-  .btn-new {
-    @extend %btn-new;
-  }
-}
-
 // Resumo de empréstimos do usuário logado
 .resumo-container {
   background-color: var(--mat-sys-surface-container-lowest);
@@ -106,8 +94,6 @@
 }
 
 .filtros-container {
-  @extend %filtros-container;
-
   .filtro-nome {
     flex: 1 1 260px;
   }
@@ -115,22 +101,6 @@
   .filtro-select {
     flex: 0 1 200px;
   }
-}
-
-.table-container {
-  @extend %table-container;
-}
-
-.custom-table {
-  @extend %custom-table;
-}
-
-.fw-500 {
-  @extend %fw-500;
-}
-
-.inline-icon {
-  @extend %inline-icon;
 }
 
 // Chip de tipo de movimentação (entrada/saída)
@@ -153,12 +123,4 @@
     background-color: var(--app-success-soft-bg);
     color: var(--app-success-soft-on);
   }
-}
-
-.empty-state {
-  @extend %empty-state;
-}
-
-.custom-paginator {
-  @extend %custom-paginator;
 }
