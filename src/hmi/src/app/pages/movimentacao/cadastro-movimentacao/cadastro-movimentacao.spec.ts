@@ -1,44 +1,112 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { vi } from 'vitest';
+import { provideRouter, Router } from '@angular/router';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { MatDialog } from '@angular/material/dialog';
 import { CadastroMovimentacao } from './cadastro-movimentacao';
 import { UnidadeService } from '../../../services/unidade.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
+import { ReservaService } from '../../../services/reserva.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 
 describe('CadastroMovimentacao', () => {
   let component: CadastroMovimentacao;
   let fixture: ComponentFixture<CadastroMovimentacao>;
-  let snsMock: { notificar: ReturnType<typeof vi.fn> };
+  let mockMovimentacaoService: any;
+  let mockReservaService: any;
+  let mockEquipamentoService: any;
+  let mockSmartlockService: any;
+  let mockUnidadeService: any;
+  let mockDialog: any;
+  let mockSns: any;
+
+  const mockEquipamentos = [
+    {
+      id: 1,
+      apelido: 'Notebook Dell',
+      patrimonio: 'PAT-001',
+      tipo: 'NOTEBOOK',
+      status_atual: 'DISPONIVEL',
+    },
+    {
+      id: 2,
+      apelido: 'Mouse Logitech',
+      patrimonio: 'PAT-002',
+      tipo: 'MOUSE',
+      status_atual: 'DISPONIVEL',
+    },
+    {
+      id: 3,
+      apelido: 'Tablet iPad',
+      patrimonio: 'PAT-003',
+      tipo: 'TABLET',
+      status_atual: 'DISPONIVEL',
+    },
+  ];
+
+  const mockReservaVigente = {
+    id: 10,
+    usuario_id: 1,
+    smartlock_id: 5,
+    reserva_inicio: new Date().toISOString(),
+    reserva_fim: new Date(Date.now() + 3600000).toISOString(),
+    situacao: 'AGENDADO',
+    equipamentos: [
+      { id: 1, apelido: 'Notebook Dell', patrimonio: 'PAT-001' },
+      { id: 2, apelido: 'Mouse Logitech', patrimonio: 'PAT-002' },
+    ],
+  };
 
   beforeEach(async () => {
-    snsMock = { notificar: vi.fn() };
-
+    mockUnidadeService = {
+      listAll: vi.fn().mockReturnValue(of([{ id: 1, nome: 'Unidade Matriz' }])),
+    };
+    mockSmartlockService = {
+      listByUnidade: vi.fn().mockReturnValue(of([{ id: 5, apelido: 'Armário TI' }])),
+    };
+    mockEquipamentoService = {
+      listBySmartlock: vi.fn().mockReturnValue(of(mockEquipamentos)),
+    };
+    mockReservaService = {
+      getReservaVigente: vi.fn().mockReturnValue(
+        of({
+          reservaUsuario: mockReservaVigente,
+          equipamentosReservadosOutros: [3],
+        }),
+      ),
+    };
+    mockMovimentacaoService = {
+      create: vi.fn().mockReturnValue(of({ id_movimento: 99 })),
+    };
+    mockSns = {
+      notificar: vi.fn(),
+      notificarErro: vi.fn(),
+    };
     await TestBed.configureTestingModule({
       imports: [CadastroMovimentacao],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([]),
-        { provide: UnidadeService, useValue: { listAll: () => of([]) } },
-        { provide: SmartlockService, useValue: { listByUnidade: () => of([]) } },
-        { provide: EquipamentoService, useValue: { listBySmartlock: () => of([]) } },
-        { provide: MovimentacaoService, useValue: { create: () => of({}) } },
-        { provide: SystemNotificationService, useValue: snsMock },
+        provideRouter([{ path: 'movimentacoes/lista', component: class {} }]),
+        provideAnimationsAsync(),
+        { provide: UnidadeService, useValue: mockUnidadeService },
+        { provide: SmartlockService, useValue: mockSmartlockService },
+        { provide: EquipamentoService, useValue: mockEquipamentoService },
+        { provide: ReservaService, useValue: mockReservaService },
+        { provide: MovimentacaoService, useValue: mockMovimentacaoService },
+        { provide: SystemNotificationService, useValue: mockSns },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CadastroMovimentacao);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    vi.spyOn((component as any).dialog, 'open').mockReturnValue({
+      afterClosed: () => of(true),
+    } as any);
+    fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('deve ser instanciado corretamente', () => {
     expect(component).toBeTruthy();
   });
 

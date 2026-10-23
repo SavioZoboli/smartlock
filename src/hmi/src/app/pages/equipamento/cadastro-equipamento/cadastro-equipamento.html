@@ -13,6 +13,11 @@
           <mat-label>Unidade</mat-label>
           <input type="text" matInput formControlName="unidade" [matAutocomplete]="autoUnidade" />
           <mat-icon matPrefix>business</mat-icon>
+          @if (importForm.get('unidade')?.value) {
+            <button mat-icon-button matSuffix type="button" (click)="limparUnidade()" aria-label="Limpar unidade">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <mat-autocomplete
             #autoUnidade="matAutocomplete"
             [displayWith]="unidadeDisplayFn"
@@ -22,6 +27,11 @@
               <mat-option [value]="unidade">{{ unidade.nome }}</mat-option>
             }
           </mat-autocomplete>
+          @if (importForm.get('unidade')?.hasError('required')) {
+            <mat-error>A unidade é obrigatória.</mat-error>
+          } @else if (importForm.get('unidade')?.hasError('objetoInvalido')) {
+            <mat-error>Selecione uma opção válida da lista.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -38,11 +48,21 @@
             "
           />
           <mat-icon matPrefix>lock</mat-icon>
+          @if (importForm.get('smartlock')?.value) {
+            <button mat-icon-button matSuffix type="button" (click)="limparSmartlock()" aria-label="Limpar smartlock">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <mat-autocomplete #autoLock="matAutocomplete" [displayWith]="smartlockDisplayFn">
             @for (lock of filteredSmartlocks | async; track lock.id) {
               <mat-option [value]="lock">{{ lock.apelido }}</mat-option>
             }
           </mat-autocomplete>
+          @if (importForm.get('smartlock')?.hasError('required')) {
+            <mat-error>O SmartLock é obrigatório.</mat-error>
+          } @else if (importForm.get('smartlock')?.hasError('objetoInvalido')) {
+            <mat-error>Selecione uma opção válida da lista.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -63,11 +83,19 @@
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item-rfid">
           <mat-label>Tag RFID</mat-label>
           <input matInput formControlName="tag" placeholder="Ex: A1B2C3D4" />
+          @if (novoItemForm.get('tag')?.hasError('required')) {
+            <mat-error>A tag é obrigatória.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item-patrimonio">
           <mat-label>Patrimônio</mat-label>
           <input matInput formControlName="patrimonio" maxlength="6" placeholder="000000" />
+          @if (novoItemForm.get('patrimonio')?.hasError('required')) {
+            <mat-error>O patrimônio é obrigatório.</mat-error>
+          } @else if (novoItemForm.get('patrimonio')?.hasError('pattern')) {
+            <mat-error>Deve ter 6 dígitos.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="item-tipo">
@@ -77,6 +105,9 @@
               <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
             }
           </mat-select>
+          @if (novoItemForm.get('tipo')?.hasError('required')) {
+            <mat-error>O tipo é obrigatório.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic">

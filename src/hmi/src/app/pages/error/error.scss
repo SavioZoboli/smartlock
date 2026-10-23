@@ -1,3 +1,5 @@
+@use '../../../assets/scss/shared-patterns';
+
 .error-page-container {
   display: flex;
   align-items: center;
@@ -54,5 +56,26 @@
 
   button mat-icon {
     margin-right: 4px;
+  }
+
+  @include shared-patterns.down(sm) {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+@include shared-patterns.down(sm) {
+  .error-page-container {
+    padding: 1rem;
+  }
+
+  .error-card {
+    width: 100%;
+    padding: 2rem 1.25rem;
+    box-sizing: border-box;
+  }
+
+  .error-titulo {
+    font-size: 1.25rem;
   }
 }

@@ -1,13 +1,12 @@
 @use '../../../assets/scss/shared-patterns';
 
-.dashboard-container {
-  @extend %report-container;
-}
-
 .page-header-container {
-  @extend %report-header;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
   gap: var(--app-space-lg);
+  margin-bottom: var(--app-space-lg);
 }
 
 .header-controls {
@@ -18,6 +17,10 @@
 
   .compact-filter-field {
     width: 240px;
+
+    @include shared-patterns.down(sm) {
+      width: 100%;
+    }
 
     // Força fundo de superfície para destacar sobre o fundo da página
     ::ng-deep .mat-mdc-text-field-wrapper {
@@ -47,10 +50,6 @@
   }
 }
 
-.state-message {
-  @extend %state-message;
-}
-
 .smartlock-group {
   & + .smartlock-group {
     margin-top: var(--app-space-xl, 32px);
@@ -64,12 +63,7 @@
   margin: 0 0 var(--app-space-md) 0;
 }
 
-.equipment-grid {
-  @extend %equipment-grid;
-}
-
 .equipment-card {
-  @extend %equipment-card;
   position: relative;
 
   // Indicador lateral: verde = online, cinza = offline.

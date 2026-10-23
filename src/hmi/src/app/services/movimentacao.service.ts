@@ -11,8 +11,17 @@ export class MovimentacaoService {
   private api_url = `${environment.api_url}/api/movimentacao`
   constructor(private http:HttpClient){}
 
-  public create(smartlock_id:number,movimento:string,equipamentos:number[]):Observable<any>{
-    return this.http.post(`${this.api_url}`,{smartlock_id,movimento,equipamentos},{withCredentials:true})
+  public create(
+    smartlock_id: number,
+    movimento: string,
+    equipamentos: number[],
+    reservaOptions?: { reserva_id?: number; remover_nao_retirados?: boolean },
+  ): Observable<any> {
+    return this.http.post(
+      `${this.api_url}`,
+      { smartlock_id, movimento, equipamentos, ...reservaOptions },
+      { withCredentials: true },
+    );
   }
 
   public listAll():Observable<any>{

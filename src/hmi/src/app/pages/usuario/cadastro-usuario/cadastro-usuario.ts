@@ -1,12 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { AsyncPipe, CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  FormGroup,
-  Validators,
-  ReactiveFormsModule,
-  FormControl,
-} from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -15,13 +9,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { firstValueFrom, map, Observable, startWith } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UnidadeService } from '../../../services/unidade.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { Unidade } from '../../unidade/lista-unidade/lista-unidade';
 import { UsuarioService } from '../../../services/usuario.service';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
+import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
+import { displayUnidadeComRegional } from '../../../shared/util/autocomplete-display.util';
 
 @Component({
   selector: 'app-cadastro-usuario',
@@ -49,10 +46,12 @@ export class CadastroUsuario implements OnInit {
     uuid: new FormControl('', Validators.required),
     email: new FormControl('', Validators.required),
     matricula: new FormControl('', [Validators.required, Validators.pattern('^[0-9]{5}$')]),
-    unidade: new FormControl('', Validators.required),
+    // Mesmo fix do cadastro-smartlock: exige objeto selecionado, não só texto.
+    unidade: new FormControl('', [Validators.required, objetoSelecionadoValidator]),
   });
 
-  unidades!: Unidade[];
+  // TODO: mesmo ponto de atenção da IUnidade (falta `regional`).
+  private unidades: Unidade[] = [];
   filteredUnidades!: Observable<Unidade[]>;
 
   usuario_id!: number | null;
@@ -86,7 +85,11 @@ export class CadastroUsuario implements OnInit {
       return;
     }
 
-    this.initAutocompleteFilter();
+    this.filteredUnidades = filtrarAutocomplete(
+      this.userForm.get('unidade')!,
+      this.unidadeService.listAll() as unknown as Observable<Unidade[]>,
+      'nome',
+    );
 
     if (this.usuario_id) {
       await this.carregarDadosUsuario();
@@ -105,19 +108,12 @@ export class CadastroUsuario implements OnInit {
 
   private async buscarUnidades(): Promise<boolean> {
     try {
-      this.unidades = await firstValueFrom(this.unidadeService.listAll());
+      this.unidades = (await firstValueFrom(this.unidadeService.listAll())) as unknown as Unidade[];
       return true;
     } catch {
       this.sns.notificar('Não foi possível buscar as unidades', 'erro');
       return false;
     }
-  }
-
-  private initAutocompleteFilter() {
-    this.filteredUnidades = this.userForm.get('unidade')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => this._filter(value || '')),
-    );
   }
 
   private async carregarDadosUsuario(): Promise<void> {
@@ -128,41 +124,28 @@ export class CadastroUsuario implements OnInit {
       this.userForm.patchValue(dadosUsuario);
       this.userForm.enable();
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar usuário. Ele pode não existir.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar usuário. Ele pode não existir.');
     }
   }
 
-  private _filter(value: any): Unidade[] {
-    if (!this.unidades) return [];
-
-    const stringValue = typeof value === 'string' ? value : value?.nome || '';
-    const filterValue = stringValue.toLowerCase();
-
-    return this.unidades.filter((option) => option.nome.toLowerCase().includes(filterValue));
-  }
-
-  // Usado pelo [displayWith] do mat-autocomplete: define o texto exibido
-  // no input quando uma Unidade é selecionada (ou carregada via patchValue).
-  displayUnidade = (unidade: Unidade | string): string => {
-    if (!unidade) return '';
-    if (typeof unidade === 'string') return unidade;
-    return `${unidade.nome} / ${unidade.regional}`;
-  };
+  readonly displayUnidade = displayUnidadeComRegional;
 
   salvar(): void {
     if (this.userForm.valid) {
-      
-      let {nome,sobrenome,email,uuid,matricula,unidade} = this.userForm.value;
-      let unidade_id = unidade.id
-      
-      this.isLoading = true;
-      this.userForm.disable(); // Trava para evitar duplo clique no botão salvar
+      let { nome, sobrenome, email, uuid, matricula, unidade } = this.userForm.value;
+      const nomeTrimmed = typeof nome === 'string' ? nome.trim() : nome;
+      const sobrenomeTrimmed = typeof sobrenome === 'string' ? sobrenome.trim() : sobrenome;
+      const emailTrimmed = typeof email === 'string' ? email.trim() : email;
+      const uuidTrimmed = typeof uuid === 'string' ? uuid.trim() : uuid;
+      const matriculaTrimmed = typeof matricula === 'string' ? matricula.trim() : matricula;
+      let unidade_id = unidade.id;
 
-      // Define se vai chamar a rota de criação ou atualização baseando-se na existência do ID
+      this.isLoading = true;
+      this.userForm.disable();
+
       const requisicao$ = this.usuario_id
-        ? this.usuarioService.update(this.usuario_id, nome, sobrenome, email,uuid,matricula,unidade_id)
-        : this.usuarioService.create(nome, sobrenome, email,uuid,matricula,unidade_id);
+        ? this.usuarioService.update(this.usuario_id, nomeTrimmed, sobrenomeTrimmed, emailTrimmed, uuidTrimmed, matriculaTrimmed, unidade_id)
+        : this.usuarioService.create(nomeTrimmed, sobrenomeTrimmed, emailTrimmed, uuidTrimmed, matriculaTrimmed, unidade_id);
 
       requisicao$.subscribe({
         next: () => {
@@ -179,7 +162,6 @@ export class CadastroUsuario implements OnInit {
     } else {
       this.userForm.markAllAsTouched();
       this.sns.notificar('Por favor, verifique os campos.', 'erro');
-    
     }
   }
 

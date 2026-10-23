@@ -1,0 +1,70 @@
+// Toggle custom (track + thumb) porque o mat-slide-toggle não expõe o
+// interior do thumb pra colocar ícone — DOM fechado do MDC.
+.theme-toggle-track {
+  position: fixed;
+  top: var(--app-space-lg);
+  right: var(--app-space-lg);
+  z-index: 1000; // acima do conteúdo normal, abaixo de overlays do Material (CDK overlay usa 1000+)
+
+  display: flex;
+  align-items: center;
+  width: 56px;
+  height: 30px;
+  padding: 3px;
+  border: none;
+  border-radius: var(--app-radius-pill);
+  cursor: pointer;
+
+  background-color: var(--mat-sys-surface-container-highest);
+  box-shadow: var(--app-shadow-sm);
+  border: 1px solid var(--mat-sys-outline-variant);
+  transition: background-color 0.25s ease;
+
+  &.checked {
+    background-color: var(--mat-sys-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+}
+
+.theme-toggle-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--mat-sys-surface);
+  box-shadow: var(--app-shadow-sm);
+
+  // Desliza da esquerda (claro) pra direita (escuro)
+  transform: translateX(0);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .checked & {
+    transform: translateX(26px);
+  }
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--mat-sys-on-surface);
+    transition: color 0.2s ease;
+  }
+
+  .checked & mat-icon {
+    color: var(--mat-sys-on-surface-alt);
+  }
+}
+
+// Mobile: encosta um pouco menos na borda pra não colidir com a área segura
+@media (max-width: 600px) {
+  .theme-toggle-track {
+    top: var(--app-space-md);
+    right: var(--app-space-md);
+  }
+}

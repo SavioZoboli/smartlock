@@ -1,4 +1,4 @@
-import { Component, effect, ElementRef, NgZone, ViewChild } from '@angular/core';
+import { Component, effect, ElementRef, NgZone, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,6 +13,8 @@ import { SystemNotificationService } from '../../services/system-notification.se
 import { Logo } from '../../components/logo/logo';
 import { ThemeTogglerService } from '../../services/theme-toggler.service';
 import { ServerStatus } from "../../components/server-status/server-status";
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { ThemeToggler } from '../../components/theme-toggler/theme-toggler';
 
 @Component({
   selector: 'app-login',
@@ -25,12 +27,17 @@ import { ServerStatus } from "../../components/server-status/server-status";
     MatButtonModule,
     MatIconModule,
     Logo,
-    ServerStatus
+    ServerStatus,
+    MatProgressSpinner,
+    ThemeToggler
 ],
   templateUrl: './login.html',
   styleUrls: ['./login.scss'],
 })
 export class LoginComponent {
+
+  carregandoGoogle = signal(false);
+
   constructor(
     private ngZone: NgZone,
     private authService: AuthService,
@@ -41,16 +48,19 @@ export class LoginComponent {
   ) {
     effect(() => {
     const isDark = this.themeService.isDarkTheme();
-    this.renderizarBotao(isDark ? 'filled_black' : 'outline');
+    this.renderizarBotao(isDark ? 'dark' : 'light');
   });
   }
 
   async ngOnInit(): Promise<void> {
+    this.carregandoGoogle.set(true)
     let token: string;
     try {
       token = await this.googleIdentityService.aguardarCarregamento();
+      
     } catch {
       this.sns.notificar('Não foi possível carregar o login com Google', 'erro');
+      this.carregandoGoogle.set(false)
       return;
     }
 
@@ -60,16 +70,24 @@ export class LoginComponent {
       callback: this.handleCredentialResponse.bind(this),
     });
 
-    this.renderizarBotao('outline'); // ver seção do tema abaixo
+    const isDark = this.themeService.isDarkTheme();
+    this.renderizarBotao(isDark ? 'dark' : 'light');
   }
 
-  renderizarBotao(theme: 'outline' | 'filled_blue' | 'filled_black') {
+  renderizarBotao(theme: 'light' | 'dark') {
+    // O effect do tema pode disparar antes do SDK do Google terminar de carregar;
+    // nesse caso o ngOnInit renderiza o botão quando o SDK estiver pronto.
+    // @ts-ignore
+    if (typeof google === 'undefined' || !google.accounts?.id) return;
+
     const container = document.getElementById('google-btn');
     if (!container) return;
     container.innerHTML = ''; // limpa o botão anterior
 
     // @ts-ignore
     google.accounts.id.renderButton(container, { theme, size: 'large', width: 300 });
+
+    this.carregandoGoogle.set(false)
   }
 
   handleCredentialResponse(response: any) {
@@ -100,8 +118,7 @@ export class LoginComponent {
           }
         },
         error: (err) => {
-          console.log(err);
-          this.sns.notificar('Erro ao validar a autenticação', 'erro');
+          this.sns.notificarErro(err, 'Erro ao validar a autenticação');
         },
       });
     });

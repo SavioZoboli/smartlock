@@ -1,0 +1,56 @@
+// =============================================================================
+// _breakpoints.scss
+// -----------------------------------------------------------------------------
+// Única fonte de verdade dos tamanhos de tela. Não escreva `@media (max-width:
+// ...)` com valores soltos nos componentes: use os mixins `down()` / `up()`
+// (disponíveis via `@use '.../shared-patterns' as *;`, que re-exporta este
+// arquivo).
+//
+//   xs  480px  celular pequeno
+//   sm  600px  celular grande
+//   md  768px  tablet retrato (navbar vira hambúrguer)
+//   lg  1024px tablet paisagem / desktop pequeno
+//   xl  1280px desktop
+//
+// Uso:
+//   @include down(md) { ... }   // telas MENORES que 768px  (max-width: 767.98px)
+//   @include up(md)   { ... }   // telas de 768px para cima (min-width: 768px)
+//   @include between(sm, lg) { ... }
+// =============================================================================
+
+@use 'sass:map';
+
+$breakpoints: (
+  xs: 480px,
+  sm: 600px,
+  md: 768px,
+  lg: 1024px,
+  xl: 1280px,
+);
+
+@function bp($name) {
+  @if not map.has-key($breakpoints, $name) {
+    @error "Breakpoint desconhecido: `#{$name}`. Use: #{map.keys($breakpoints)}.";
+  }
+  @return map.get($breakpoints, $name);
+}
+
+// Abaixo do breakpoint (exclusivo). O -0.02px evita sobreposição com up().
+@mixin down($name) {
+  @media (max-width: #{bp($name) - 0.02px}) {
+    @content;
+  }
+}
+
+// A partir do breakpoint (inclusivo).
+@mixin up($name) {
+  @media (min-width: #{bp($name)}) {
+    @content;
+  }
+}
+
+@mixin between($min, $max) {
+  @media (min-width: #{bp($min)}) and (max-width: #{bp($max) - 0.02px}) {
+    @content;
+  }
+}

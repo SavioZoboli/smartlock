@@ -6,15 +6,38 @@
 
 .page-header-container {
   @extend %report-header;
+
+  /* AJUSTE MOBILE: Reduzir margens e fonte do título em telas pequenas */
+  @media (max-width: 768px) {
+    margin-bottom: var(--app-space-md);
+    
+    .title-area h2 {
+      font-size: 1.25rem;
+    }
+  }
 }
 
 .state-message {
   @extend %state-message;
+
+  /* AJUSTE MOBILE: Diminuir o espaço vazio de estados vazios/carregando */
+  @media (max-width: 768px) {
+    padding: 2rem 1rem;
+    font-size: 0.85rem;
+  }
 }
 
 .equipment-grid {
   @extend %equipment-grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  // Colunas com largura máxima: poucos dados, então os cartões não esticam.
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 280px));
+  justify-content: start;
+
+  @include shared-patterns.down(md) {
+    // 2 colunas no mobile
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--app-space-sm);
+  }
 }
 
 .equipment-card {
@@ -28,10 +51,25 @@
   &.status-late .status-indicator {
     background-color: var(--app-danger);
   }
+
+  /* AJUSTE MOBILE: Reduzir o padding interno do card para ganhar espaço */
+  @media (max-width: 768px) {
+    .card-content {
+      padding: 10px 12px;
+    }
+  }
 }
 
 .card-header {
   @extend %report-card-header;
+
+  /* AJUSTE MOBILE: Garantir que o cabeçalho lide bem com quebras de linha */
+  @media (max-width: 768px) {
+    .eq-code {
+      white-space: normal; /* Permite quebrar linha se o nome for muito longo */
+      font-size: 0.85rem;
+    }
+  }
 }
 
 .card-body {
@@ -79,4 +117,11 @@
 .devolver-btn {
   align-self: flex-start;
   margin-top: 4px;
+
+  /* AJUSTE MOBILE: Fazer o botão ocupar a largura toda para facilitar o toque */
+  @media (max-width: 768px) {
+    align-self: stretch;
+    width: 100%;
+    margin-top: 8px;
+  }
 }

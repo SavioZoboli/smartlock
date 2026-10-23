@@ -25,11 +25,21 @@
             <mat-label>SmartLock de origem</mat-label>
             <input type="text" matInput formControlName="origem" [matAutocomplete]="autoOrigem">
             <mat-icon matPrefix>lock</mat-icon>
+            @if (form.get('origem')?.value) {
+              <button mat-icon-button matSuffix type="button" (click)="limparOrigem()" aria-label="Limpar origem">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
             <mat-autocomplete #autoOrigem="matAutocomplete" [displayWith]="displaySmartlock" (optionSelected)="onOrigemSelecionada()">
               @for (smartlock of filteredOrigem | async; track smartlock.id) {
                 <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
               }
             </mat-autocomplete>
+            @if (form.get('origem')?.hasError('required')) {
+              <mat-error>O SmartLock de origem é obrigatório.</mat-error>
+            } @else if (form.get('origem')?.hasError('objetoInvalido')) {
+              <mat-error>Selecione uma opção válida da lista.</mat-error>
+            }
           </mat-form-field>
 
           <div class="box-list">
@@ -74,11 +84,21 @@
             <mat-label>SmartLock de destino</mat-label>
             <input type="text" matInput formControlName="destino" [matAutocomplete]="autoDestino">
             <mat-icon matPrefix>lock</mat-icon>
+            @if (form.get('destino')?.value) {
+              <button mat-icon-button matSuffix type="button" (click)="limparDestino()" aria-label="Limpar destino">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
             <mat-autocomplete #autoDestino="matAutocomplete" [displayWith]="displaySmartlock" (optionSelected)="onDestinoSelecionada()">
               @for (smartlock of filteredDestino | async; track smartlock.id) {
                 <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
               }
             </mat-autocomplete>
+            @if (form.get('destino')?.hasError('required')) {
+              <mat-error>O SmartLock de destino é obrigatório.</mat-error>
+            } @else if (form.get('destino')?.hasError('objetoInvalido')) {
+              <mat-error>Selecione uma opção válida da lista.</mat-error>
+            }
           </mat-form-field>
 
           <div class="box-list">

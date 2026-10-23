@@ -1,11 +1,10 @@
-<div class="login-container">
-  <div class="login-image-section">
-    <div class="gradient-overlay"></div>
-  </div>
+<div class="login-container sonar-background">
+  @for (ring of [1, 2, 3, 4, 5]; track ring) {
+    <div class="sonar-ring"></div>
+  }
 
   <div class="login-form-section">
     <div class="login-content">
-      
       <div class="logo-container">
         <app-logo></app-logo>
       </div>
@@ -14,17 +13,18 @@
         <h2>Acesse o Sistema</h2>
         <p>Utilize sua conta institucional para entrar na HMI.</p>
       </div>
+      @if (carregandoGoogle()) {
+        <mat-spinner style="width: 100px;height:100px"></mat-spinner>
+      }
+      <div data-color_scheme="default" id="google-btn"></div>
 
-      <div data-theme="filled_black" id="google-btn"></div>
-
-    
       <div class="footer-notice">
-        Problemas com seu acesso institucional? <a href="#">Contatar o TI</a>
+        Problemas no acesso? Entre em contato com o e-mail:
+        <a href="mailto:savio.zoboli@edu.sc.senai.br">savio.zoboli@edu.sc.senai.br</a>
       </div>
-<app-server-status [searchedModule]="'all'"></app-server-status>
-  
-
+      <app-server-status [searchedModule]="'all'"></app-server-status>
     </div>
-    
   </div>
 </div>
+
+<app-theme-toggler></app-theme-toggler>

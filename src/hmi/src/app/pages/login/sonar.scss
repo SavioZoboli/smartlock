@@ -1,0 +1,51 @@
+$wave-color: rgba(#e84910,.3);
+$app-color:#e84910;
+
+.sonar-background {
+  position: relative;
+  overflow: hidden; // Impede que as ondas quebrem o layout
+}
+
+.sonar-ring {
+  z-index: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px; // Tamanho base (não anima mais)
+  height: 100px;
+  margin: -50px 0 0 -50px; // Centraliza sem usar transform (fica livre pra animação)
+  border: 3px solid $wave-color; // A cor da borda da onda
+  border-radius: 50%; // Transforma em círculo
+  opacity: 0; // Começa invisível
+  will-change: transform, opacity; // Sinaliza ao navegador pra otimizar essas camadas
+
+  // Anima transform/opacity em vez de width/height: evita reflow, roda na GPU
+  animation: sonar-pulse 4s linear infinite;
+
+  // Adiciona atrasos dinâmicos para cada anel gerado pelo *ngFor
+  &:nth-child(1) { animation-delay: 0s; }
+  &:nth-child(2) { animation-delay: 1s; }
+  &:nth-child(3) { animation-delay: 2s; }
+  &:nth-child(4) { animation-delay: 3s; }
+  &:nth-child(5) { animation-delay: 4s; }
+
+  // Mobile: menos anéis simultâneos = menos custo de composição
+  @media (max-width: 600px) {
+    &:nth-child(4),
+    &:nth-child(5) {
+      display: none;
+    }
+  }
+}
+
+// Define a animação das ondas (transform em vez de width/height)
+@keyframes sonar-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8; // Quase visível no centro
+  }
+  100% {
+    transform: scale(25); // 100px * 25 = 2500px, mesmo resultado visual
+    opacity: 0; // Fica totalmente transparente
+  }
+}

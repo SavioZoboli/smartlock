@@ -3,6 +3,7 @@ import { environment } from '../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Equipamento } from '../models/equipamento.model';
+import { EquipamentoEmUso, HistoricoItem, PaginatedResponse } from '../reports/extrato-emprestimos/extrato-emprestimos';
 
 export type EquipamentoCreateAttributes = {
   rfid: string;
@@ -98,4 +99,21 @@ export class EquipamentoService {
       { withCredentials: true },
     );
   }
+
+  buscarQtdEmUsoPorUsuario():Observable<any>{
+    return this.http.get(`${this.api_url}/relatorio/qtdPorUsuario`,{
+      withCredentials:true
+    })
+  }
+
+  buscarEquipamentosEmUso(usuarioId: number): Observable<EquipamentoEmUso[]> {
+  return this.http.get<EquipamentoEmUso[]>(`${this.api_url}/equipamentos/em-uso/${usuarioId}`);
+}
+
+buscarHistorico(usuarioId: number, page: number, pageSize = 10): Observable<PaginatedResponse<HistoricoItem>> {
+  return this.http.get<PaginatedResponse<HistoricoItem>>(
+    `${this.api_url}/emprestimos/historico/${usuarioId}`,
+    { params: { page, pageSize } }
+  );
+}
 }

@@ -24,6 +24,32 @@ html {
   height: 100%;
 }
 
+// Sem rolagem lateral no documento. Usa só o body (o overflow propaga para o
+// viewport), evitando criar uma segunda barra de rolagem vertical.
+body {
+  overflow-x: hidden;
+}
+
+// O componente da rota é renderizado como irmão do <router-outlet>, numa tag
+// customizada (display: inline por padrão). Forçar bloco com min-width: 0 impede
+// que o conteúdo da página estique além da largura da tela.
+main {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  > :not(router-outlet) {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+*{
+  box-sizing: border-box;
+}
+
 .material-symbols-rounded {
   font-variation-settings:
     'FILL' 0,
@@ -44,6 +70,138 @@ html {
 .main-content {
   flex: 1;
   overflow-y: auto;
+}
+
+// Classes globais compartilhadas entre páginas e relatórios (declaradas uma
+// única vez aqui para evitar duplicação nos bundles de cada componente).
+.page-container {
+  @extend %page-container;
+}
+
+.page-header-container {
+  @extend %page-header;
+}
+
+.btn-new {
+  @extend %btn-new;
+}
+
+.btn-discrete {
+  @extend %btn-discrete;
+}
+
+.form-container {
+  @extend %form-container;
+}
+
+.cadastro-form {
+  @extend %cadastro-form;
+}
+
+.form-row {
+  @extend %form-row;
+}
+
+.full-width {
+  @extend %full-width;
+}
+
+.field-icon {
+  @extend %field-icon;
+}
+
+.loading-overlay {
+  @extend %loading-overlay;
+}
+
+.form-actions {
+  @extend %form-actions;
+}
+
+.table-container {
+  @extend %table-container;
+}
+
+.custom-table {
+  @extend %custom-table;
+}
+
+.custom-paginator {
+  @extend %custom-paginator;
+}
+
+.filtros-container {
+  @extend %filtros-container;
+}
+
+.fw-500 {
+  @extend %fw-500;
+}
+
+.inline-icon {
+  @extend %inline-icon;
+}
+
+.align-right {
+  @extend %align-right;
+}
+
+.action-btn {
+  @extend %action-btn;
+}
+
+.empty-state {
+  @extend %empty-state;
+}
+
+.report-container,
+.dashboard-container {
+  @extend %report-container;
+
+  .page-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--app-space-lg);
+    margin-bottom: var(--app-space-lg);
+  }
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-md);
+  flex-wrap: wrap;
+
+  .compact-filter-field {
+    width: 240px;
+
+    @include shared.down(sm) {
+      width: 100%;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      background-color: var(--mat-sys-surface-container-low);
+    }
+
+    .filter-icon {
+      color: var(--mat-sys-on-surface-variant);
+      margin-right: var(--app-space-sm);
+    }
+  }
+}
+
+.state-message {
+  @extend %state-message;
+}
+
+.equipment-grid {
+  @extend %equipment-grid;
+}
+
+.equipment-card {
+  @extend %equipment-card;
 }
 
 // Chip de status (usado nas telas de lista: disponível/emprestado/manutenção,

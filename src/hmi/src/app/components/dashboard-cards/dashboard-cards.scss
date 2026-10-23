@@ -1,7 +1,19 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
 .kpi-container {
   padding: var(--app-space-lg);
   max-width: 1600px;
   margin: 0 auto;
+
+  /* AJUSTE MOBILE: Reduz as margens gerais da tela */
+  @media (max-width: 768px) {
+    padding: var(--app-space-md);
+  }
 }
 
 .kpi-header {
@@ -59,8 +71,15 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: var(--app-space-md);
+
+  /* AJUSTE MOBILE: Permite que os cards fiquem menores para formar 
+     até 2 colunas na tela do celular, e reduz o espaço entre eles */
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr));
+    gap: var(--app-space-sm);
+  }
 }
 
 .kpi-card {
@@ -70,14 +89,28 @@
   padding: 16px !important;
   box-shadow: var(--app-shadow-sm) !important;
 
+  /* AJUSTE MOBILE: Altera o layout interno do card para vertical (empilhado) 
+     e diminui os respiros, otimizando a leitura em espaços curtos */
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px !important;
+    gap: 8px;
+  }
+
   .kpi-icon {
     font-size: 28px;
     height: 28px;
     width: 28px;
-    // Ícone grande e decorativo: usa o laranja literal da marca (3.89:1,
-    // dentro do mínimo de 3:1 para elementos gráficos/large-scale).
     color: var(--app-brand-primary);
     flex-shrink: 0;
+
+    /* AJUSTE MOBILE: Reduz ligeiramente o tamanho do ícone */
+    @media (max-width: 768px) {
+      font-size: 24px;
+      height: 24px;
+      width: 24px;
+    }
   }
 
   .kpi-value {
@@ -89,5 +122,10 @@
   .kpi-label {
     font-size: 0.78rem;
     color: var(--mat-sys-on-surface-variant);
+    
+    /* AJUSTE MOBILE: Garante um bom alinhamento caso o rótulo quebre em duas linhas */
+    @media (max-width: 768px) {
+      line-height: 1.2;
+    }
   }
 }
