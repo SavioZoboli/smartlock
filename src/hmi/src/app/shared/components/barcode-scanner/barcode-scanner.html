@@ -1,0 +1,52 @@
+<div class="barcode-scanner-container">
+  <div class="scanner-controls">
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      class="scanner-toggle-btn"
+      [disabled]="disabled || isStarting"
+      (click)="toggleScanner()">
+      <mat-icon>{{ isScanning ? 'videocam_off' : 'qr_code_scanner' }}</mat-icon>
+      <span>{{ isScanning ? stopButtonText : startButtonText }}</span>
+    </button>
+
+    @if (disabled && disabledHint) {
+      <span class="scanner-hint">{{ disabledHint }}</span>
+    }
+  </div>
+
+  @if (isStarting) {
+    <div class="scanner-loading">
+      <mat-spinner diameter="28"></mat-spinner>
+      <span>Solicitando permissão e iniciando câmera...</span>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="scanner-error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+
+  <div
+    class="scanner-viewport-wrapper"
+    [class.scanner-hidden]="!isScanning && !isStarting"
+    [class.scan-flash]="scanSuccessFlash">
+    <div [id]="readerElementId" class="scanner-viewport"></div>
+
+    @if (isScanning) {
+      <div class="scanner-status-bar">
+        <span class="status-badge">
+          <span class="pulse-dot"></span>
+          Leitura sequencial ativa
+        </span>
+        @if (lastScannedValue) {
+          <span class="last-read-chip">Último: {{ lastScannedValue }}</span>
+        }
+      </div>
+    }
+  </div>
+</div>
+

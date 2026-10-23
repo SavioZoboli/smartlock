@@ -1,6 +1,7 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -9,8 +10,9 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Observable, startWith, map } from 'rxjs';
+import { Observable, Subscription, startWith, map } from 'rxjs';
 import { Router } from '@angular/router';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
@@ -19,6 +21,7 @@ import { Unidade } from '../../unidade/lista-unidade/lista-unidade';
 import { UnidadeService } from '../../../services/unidade.service';
 import { MovimentacaoService } from '../../../services/movimentacao.service';
 import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
+import { BarcodeScannerComponent } from '../../../shared/components/barcode-scanner/barcode-scanner';
 
 export interface SmartLock {
   id: number;
@@ -35,7 +38,7 @@ export interface Equipamento {
   status_atual: 'DISPONIVEL' | 'EM USO';
   emprestado_por?: number | null;
   selecionado?: boolean;
-  icone?:string
+  icone?: string;
 }
 
 type TipoMovimento = 'emprestimo_manual' | 'devolucao_manual';
@@ -54,12 +57,14 @@ type TipoMovimento = 'emprestimo_manual' | 'devolucao_manual';
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
+    MatListModule,
     MatProgressSpinnerModule,
+    BarcodeScannerComponent,
   ],
   templateUrl: './cadastro-movimentacao.html',
   styleUrls: ['./cadastro-movimentacao.scss'],
 })
-export class CadastroMovimentacao implements OnInit {
+export class CadastroMovimentacao implements OnInit, OnDestroy {
   movForm: FormGroup;
 
   unidades!: Unidade[];
@@ -71,10 +76,14 @@ export class CadastroMovimentacao implements OnInit {
   isLoading = false;
   isLoadingSmartlocks = false;
   isLoadingEquipamentos = false;
+  isMobile = false;
+
+  private subscriptions = new Subscription();
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
+    private breakpointObserver: BreakpointObserver,
     private unidadeService: UnidadeService,
     private smartlockService: SmartlockService,
     private equipamentoService: EquipamentoService,
@@ -90,10 +99,35 @@ export class CadastroMovimentacao implements OnInit {
   }
 
   ngOnInit(): void {
+    this.observarResponsividade();
     this.inicializaUnidades();
     this.observarUnidade();
     this.observarSmartlock();
     this.observarTipoMovimento();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  private observarResponsividade(): void {
+    const sub = this.breakpointObserver
+      .observe([Breakpoints.Handset, '(max-width: 768px)'])
+      .subscribe((result) => {
+        this.isMobile = result.matches;
+        this.cdr.detectChanges();
+      });
+    this.subscriptions.add(sub);
+  }
+
+  get isUnidadeESmartlockSelecionados(): boolean {
+    const unidade = this.movForm.get('unidade')?.value;
+    const smartlock = this.movForm.get('smartlock')?.value;
+    return !!(unidade && typeof unidade === 'object' && unidade.id && smartlock);
+  }
+
+  get isScannerDisabled(): boolean {
+    return !this.isUnidadeESmartlockSelecionados || this.isLoadingEquipamentos;
   }
 
   private inicializaUnidades(): void {
@@ -134,7 +168,7 @@ export class CadastroMovimentacao implements OnInit {
 
   // Quando a unidade muda: reseta smartlock e equipamentos, e busca as novas smartlocks
   private observarUnidade(): void {
-    this.movForm.get('unidade')!.valueChanges.subscribe((unidade) => {
+    const sub = this.movForm.get('unidade')!.valueChanges.subscribe((unidade) => {
       this.smartlocks = [];
       this.equipamentos = [];
       this.movForm.get('smartlock')!.reset({ value: '', disabled: true });
@@ -143,6 +177,7 @@ export class CadastroMovimentacao implements OnInit {
         this.carregarSmartlocks(unidade.id);
       }
     });
+    this.subscriptions.add(sub);
   }
 
   private carregarSmartlocks(unidadeId: number): void {
@@ -163,12 +198,13 @@ export class CadastroMovimentacao implements OnInit {
 
   // Quando a smartlock muda: reseta equipamentos e busca os novos
   private observarSmartlock(): void {
-    this.movForm.get('smartlock')!.valueChanges.subscribe((smartlockId) => {
+    const sub = this.movForm.get('smartlock')!.valueChanges.subscribe((smartlockId) => {
       this.equipamentos = [];
       if (smartlockId) {
         this.carregarEquipamentos(smartlockId);
       }
     });
+    this.subscriptions.add(sub);
   }
 
   private carregarEquipamentos(smartlockId: number): void {
@@ -192,9 +228,10 @@ export class CadastroMovimentacao implements OnInit {
 
   // Ao trocar o tipo de movimento, desmarca as seleções (a lista visível muda)
   private observarTipoMovimento(): void {
-    this.movForm.get('tipo_movimento')!.valueChanges.subscribe(() => {
+    const sub = this.movForm.get('tipo_movimento')!.valueChanges.subscribe(() => {
       this.equipamentos.forEach((e) => (e.selecionado = false));
     });
+    this.subscriptions.add(sub);
   }
 
   // Lista filtrada exibida na tela, de acordo com o tipo de movimento escolhido
@@ -214,6 +251,66 @@ export class CadastroMovimentacao implements OnInit {
 
   toggleEquipamento(equipamento: Equipamento): void {
     equipamento.selecionado = !equipamento.selecionado;
+  }
+
+  removerEquipamentoRevisao(equipamento: Equipamento): void {
+    equipamento.selecionado = false;
+    this.cdr.detectChanges();
+  }
+
+  onCodigoBarrasLido(codigoPatrimonio: string): void {
+    const codigoNormalizado = codigoPatrimonio.trim();
+    if (!codigoNormalizado) return;
+
+    const equipamento = this.equipamentos.find(
+      (e) => String(e.patrimonio).trim() === codigoNormalizado,
+    );
+
+    if (!equipamento) {
+      this.sns.notificar(
+        `Patrimônio "${codigoNormalizado}" não encontrado neste SmartLock.`,
+        'erro',
+      );
+      return;
+    }
+
+    let tipoAtual: TipoMovimento = this.movForm.get('tipo_movimento')?.value;
+
+    // Se o usuário ainda não selecionou o tipo de movimento, infere pelo status atual do equipamento lido
+    if (!tipoAtual) {
+      tipoAtual =
+        equipamento.status_atual === 'DISPONIVEL' ? 'emprestimo_manual' : 'devolucao_manual';
+      this.movForm.get('tipo_movimento')?.setValue(tipoAtual, { emitEvent: false });
+    }
+
+    const disponivelParaEmprestimo =
+      tipoAtual.includes('emprestimo') && equipamento.status_atual === 'DISPONIVEL';
+    const disponivelParaDevolucao =
+      !tipoAtual.includes('emprestimo') && equipamento.status_atual !== 'DISPONIVEL';
+
+    if (!disponivelParaEmprestimo && !disponivelParaDevolucao) {
+      const motivo = tipoAtual.includes('emprestimo')
+        ? 'já consta como EM USO'
+        : 'já consta como DISPONÍVEL';
+      this.sns.notificar(
+        `Patrimônio ${codigoNormalizado} (${equipamento.apelido}) ${motivo}.`,
+        'info',
+      );
+      return;
+    }
+
+    if (equipamento.selecionado) {
+      this.sns.notificar(`Patrimônio ${codigoNormalizado} já foi adicionado à lista.`, 'info');
+      return;
+    }
+
+    equipamento.selecionado = true;
+    this.sns.notificar(`Patrimônio ${codigoNormalizado} capturado!`, 'sucesso');
+    this.cdr.detectChanges();
+  }
+
+  onErroCamera(mensagem: string): void {
+    this.sns.notificar(mensagem, 'erro');
   }
 
   salvar(): void {

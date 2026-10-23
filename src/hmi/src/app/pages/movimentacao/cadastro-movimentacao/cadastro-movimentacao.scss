@@ -3,6 +3,10 @@
 .page-container {
   @extend %page-container;
   max-width: 800px;
+
+  &.mobile-layout {
+    padding: var(--app-space-md, 1rem);
+  }
 }
 
 .page-header-container {
@@ -29,6 +33,58 @@
   font-size: 0.85rem;
   color: var(--mat-sys-on-surface-variant);
   font-style: italic;
+}
+
+.scanner-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-md, 1rem);
+  padding: var(--app-space-md, 1rem);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--app-radius-md);
+  background-color: var(--mat-sys-surface-container-lowest, transparent);
+}
+
+.revisao-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.revisao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.revisao-list {
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--app-radius-md);
+  padding: 0;
+}
+
+.revisao-list-item {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .revisao-item-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--mat-sys-on-surface);
+  }
+
+  .revisao-item-subtitle {
+    font-size: 0.78rem;
+    color: var(--mat-sys-on-surface-variant);
+  }
 }
 
 .equipamento-list {
