@@ -34,6 +34,7 @@ import {
   EquipamentoMovimentacao,
   filtrarEquipamentosPorMovimento,
 } from './movimentacao.util';
+import { BarcodeScannerComponent } from '../../../shared/components/barcode-scanner/barcode-scanner';
 
 @Component({
   selector: 'app-cadastro-movimentacao',
@@ -51,8 +52,8 @@ import {
     MatIconModule,
     MatListModule,
     MatProgressSpinnerModule,
-    BarcodeScannerComponent,
     MatDialogModule,
+    BarcodeScannerComponent,
   ],
   templateUrl: './cadastro-movimentacao.html',
   styleUrls: ['./cadastro-movimentacao.scss'],
@@ -61,6 +62,7 @@ export class CadastroMovimentacao implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly unidadeService = inject(UnidadeService);
   private readonly smartlockService = inject(SmartlockService);
   private readonly equipamentoService = inject(EquipamentoService);
@@ -80,24 +82,12 @@ export class CadastroMovimentacao implements OnInit {
   isLoading = false;
   isLoadingSmartlocks = false;
   isLoadingEquipamentos = false;
-isLoadingReserva = false;
-
-  readonly displayUnidade = displayUnidadeComRegional;
+  isLoadingReserva = false;
   isMobile = false;
 
-  private subscriptions = new Subscription();
+  readonly displayUnidade = displayUnidadeComRegional;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private breakpointObserver: BreakpointObserver,
-    private unidadeService: UnidadeService,
-    private smartlockService: SmartlockService,
-    private equipamentoService: EquipamentoService,
-    private movimentacaoService: MovimentacaoService,
-    private sns: SystemNotificationService,
-    private cdr: ChangeDetectorRef,
-  ) {
+  constructor() {
     this.movForm = this.fb.group({
       unidade: ['', [Validators.required, objetoSelecionadoValidator]],
       smartlock: [{ value: '', disabled: true }, Validators.required],
@@ -113,18 +103,14 @@ isLoadingReserva = false;
     this.observarTipoMovimento();
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
-  }
-
   private observarResponsividade(): void {
-    const sub = this.breakpointObserver
+    this.breakpointObserver
       .observe([Breakpoints.Handset, '(max-width: 768px)'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         this.isMobile = result.matches;
         this.cdr.detectChanges();
       });
-    this.subscriptions.add(sub);
   }
 
   get isUnidadeESmartlockSelecionados(): boolean {
@@ -308,7 +294,7 @@ isLoadingReserva = false;
     equipamento.selecionado = !equipamento.selecionado;
   }
 
-  removerEquipamentoRevisao(equipamento: Equipamento): void {
+  removerEquipamentoRevisao(equipamento: EquipamentoMovimentacao): void {
     equipamento.selecionado = false;
     this.cdr.detectChanges();
   }
@@ -329,7 +315,15 @@ isLoadingReserva = false;
       return;
     }
 
-    let tipoAtual: TipoMovimento = this.movForm.get('tipo_movimento')?.value;
+    if (this.isEquipamentoBloqueado(equipamento)) {
+      this.sns.notificar(
+        'Este equipamento está reservado por outro usuário.',
+        'info',
+      );
+      return;
+    }
+
+    let tipoAtual: string = this.movForm.get('tipo_movimento')?.value;
 
     // Se o usuário ainda não selecionou o tipo de movimento, infere pelo status atual do equipamento lido
     if (!tipoAtual) {
