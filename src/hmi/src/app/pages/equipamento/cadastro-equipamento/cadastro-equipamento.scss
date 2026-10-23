@@ -1,26 +1,7 @@
-@use '../../../../assets/scss/shared-patterns';
-
 .page-container {
-  @extend %page-container;
   width: fit-content;
   max-width: 100%;
   box-sizing: border-box;
-}
-
-.page-header-container {
-  @extend %page-header;
-}
-
-.form-container {
-  @extend %form-container;
-}
-
-.cadastro-form {
-  @extend %cadastro-form;
-}
-
-.form-row {
-  @extend %form-row;
 }
 
 // Linha de adição manual de itens
@@ -135,16 +116,4 @@
       text-align: center;
     }
   }
-}
-
-.full-width {
-  @extend %full-width;
-}
-
-.field-icon {
-  @extend %field-icon;
-}
-
-.form-actions {
-  @extend %form-actions;
 }

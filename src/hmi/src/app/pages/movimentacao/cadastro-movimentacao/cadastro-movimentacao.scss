@@ -1,28 +1,5 @@
-@use '../../../../assets/scss/shared-patterns';
-
 .page-container {
-  @extend %page-container;
   max-width: 800px;
-}
-
-.page-header-container {
-  @extend %page-header;
-}
-
-.form-container {
-  @extend %form-container;
-}
-
-.loading-overlay {
-  @extend %loading-overlay;
-}
-
-.form-row {
-  @extend %form-row;
-}
-
-.full-width {
-  @extend %full-width;
 }
 
 .empty-hint {
@@ -177,8 +154,4 @@
       color: var(--mat-sys-on-surface-variant);
     }
   }
-}
-
-.form-actions {
-  @extend %form-actions;
 }

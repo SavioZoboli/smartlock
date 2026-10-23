@@ -1,34 +1,4 @@
 @use '../../../assets/scss/shared-patterns' as *;
-@use '../../../assets/scss/tokens' as *;
-
-
-.table-container {
-  @extend %table-container;
-}
-
-.custom-table {
-  @extend %custom-table;
-}
-
-.fw-500 {
-  @extend %fw-500;
-}
-
-.inline-icon {
-  @extend %inline-icon;
-}
-
-.align-right {
-  @extend %align-right;
-}
-
-.action-btn {
-  @extend %action-btn;
-}
-
-.empty-state {
-  @extend %empty-state;
-}
 
 .regional-tag {
   display: block;

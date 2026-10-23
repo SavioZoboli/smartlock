@@ -1,33 +1,8 @@
 @use '../../../../assets/scss/shared-patterns' as *;
 
 .page-container {
-  @extend %page-container;
   width: 100%;
   max-width: 1100px;
-}
-
-.page-header-container {
-  @extend %page-header;
-}
-
-.form-container {
-  @extend %form-container;
-}
-
-.loading-overlay {
-  @extend %loading-overlay;
-}
-
-.form-row {
-  @extend %form-row;
-}
-
-.full-width {
-  @extend %full-width;
-}
-
-.form-actions {
-  @extend %form-actions;
 }
 
 .form-grid {
@@ -111,74 +86,63 @@
     max-height: 420px;
     overflow-y: auto;
     padding: var(--app-space-xs);
-
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background-color: var(--mat-sys-outline-variant);
-      border-radius: 3px;
-    }
-  }
-
-  .equipamento-card {
-    @extend %equipment-card;
-    align-items: center;
-    padding: var(--app-space-sm) var(--app-space-md) !important;
-    cursor: pointer;
-    border: 1px solid var(--mat-sys-outline-variant);
-    transition:
-      border-color 0.2s,
-      background-color 0.2s,
-      transform 0.2s,
-      box-shadow 0.2s;
-    
-      &.selecionado{
-        border-color:var(--mat-sys-primary);
-      }
-
-      &.reservado{
-        border-color: var(--mat-sys-secondary);
-        .equipamento-info{
-          .equipamento-nome{
-            color:var(--mat-sys-secondary);
-          }
-          .equipamento-patrimonio{
-            color:var(--mat-sys-secondary);
-          }
-          .info-reserva{
-            font-size: 0.78rem;
-            color:var(--mat-sys-secondary);
-          }
-        }
-      }
-
-    .equipamento-info {
-      display: flex;
-      flex-direction: column;
-      margin-left: var(--app-space-sm);
-      overflow: hidden;
-
-      .equipamento-nome {
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--mat-sys-on-surface);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .equipamento-patrimonio {
-        font-size: 0.78rem;
-        color: var(--mat-sys-on-surface-variant);
-      }
-    }
   }
 
   .selecao-resumo {
     margin-top: var(--app-space-sm);
     font-size: 0.82rem;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.equipamento-card {
+  @extend %equipment-card;
+  align-items: center;
+  padding: var(--app-space-sm) var(--app-space-md) !important;
+  cursor: pointer;
+  border: 1px solid var(--mat-sys-outline-variant);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+
+  &.selecionado {
+    border-color: var(--mat-sys-primary);
+  }
+
+  &.reservado {
+    border-color: var(--mat-sys-secondary);
+
+    .equipamento-nome,
+    .equipamento-patrimonio,
+    .info-reserva {
+      color: var(--mat-sys-secondary);
+    }
+
+    .info-reserva {
+      font-size: 0.78rem;
+    }
+  }
+}
+
+.equipamento-info {
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--app-space-sm);
+  overflow: hidden;
+
+  .equipamento-nome {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--mat-sys-on-surface);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .equipamento-patrimonio {
+    font-size: 0.78rem;
     color: var(--mat-sys-on-surface-variant);
   }
 }
