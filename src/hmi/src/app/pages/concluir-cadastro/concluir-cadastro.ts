@@ -134,7 +134,11 @@ export class ConcluirCadastro implements OnInit {
   }
 
   cancelar(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    // logout() retorna um Observable frio: é preciso assinar para a requisição ser feita.
+    // Navega para o login independentemente do resultado.
+    this.authService.logout().subscribe({
+      complete: () => this.router.navigate(['/login']),
+      error: () => this.router.navigate(['/login']),
+    });
   }
 }

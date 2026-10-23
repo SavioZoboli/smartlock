@@ -15,7 +15,8 @@ export class SystemNotificationService {
 
   private snackbar_class:readonly SnackbarClass[] = [
     {tipo:'sucesso',classe:'success-snackbar'},
-    {tipo:'erro',classe:'error-snackbar'}
+    {tipo:'erro',classe:'error-snackbar'},
+    {tipo:'info',classe:'info-snackbar'}
   ]
 
   public notificar(mensagem:string,tipo:'sucesso'|'erro'|'info'){

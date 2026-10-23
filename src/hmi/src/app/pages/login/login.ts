@@ -75,6 +75,11 @@ export class LoginComponent {
   }
 
   renderizarBotao(theme: 'light' | 'dark') {
+    // O effect do tema pode disparar antes do SDK do Google terminar de carregar;
+    // nesse caso o ngOnInit renderiza o botão quando o SDK estiver pronto.
+    // @ts-ignore
+    if (typeof google === 'undefined' || !google.accounts?.id) return;
+
     const container = document.getElementById('google-btn');
     if (!container) return;
     container.innerHTML = ''; // limpa o botão anterior
