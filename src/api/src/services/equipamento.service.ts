@@ -228,6 +228,12 @@ class EquipamentoService {
           )`),
               "data_movimentacao",
             ],
+            [
+              Sequelize.literal(
+                `EXISTS (SELECT 1 FROM equipamento_credencial ec WHERE ec.equipamento_id = "Equipamento"."id")`,
+              ),
+              "possui_credencial",
+            ],
           ],
         },
         include: [
@@ -264,6 +270,7 @@ class EquipamentoService {
         unidade: e.smartlockBase.unidade.nome,
         regional: e.smartlockBase.unidade.regional.id,
         data_movimentacao: e.get("data_movimentacao"),
+        possui_credencial: Boolean(e.get("possui_credencial")),
       }));
     } catch (e) {
       throw e;

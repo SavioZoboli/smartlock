@@ -1,0 +1,91 @@
+<div class="page-container">
+  <div class="page-header-container">
+    <div class="title-area">
+      <div class="breadcrumb">Gerenciamento / Equipamentos / Credenciais</div>
+      <h2>
+        {{ modoEdicao ? 'Editar' : 'Cadastrar' }} Credencial
+        {{ descricaoEquipamento() ? '- ' + descricaoEquipamento() : '' }}
+      </h2>
+    </div>
+  </div>
+
+  <div class="form-container">
+    @if (isLoading()) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+    }
+
+    <form [formGroup]="credForm" (ngSubmit)="salvar()" autocomplete="off">
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Login</mat-label>
+          <input
+            matInput
+            formControlName="login"
+            [maxlength]="tamanhoMaxLogin"
+            autocomplete="off"
+          />
+          <mat-icon matPrefix>person</mat-icon>
+          @if (credForm.controls.login.hasError('required')) {
+            <mat-error>O login é obrigatório.</mat-error>
+          } @else if (credForm.controls.login.hasError('maxlength')) {
+            <mat-error>O login deve ter no máximo {{ tamanhoMaxLogin }} caracteres.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>{{ modoEdicao && credencial()?.possui_senha ? 'Nova senha' : 'Senha' }}</mat-label>
+          <input
+            matInput
+            formControlName="senha"
+            [type]="ocultarSenha() ? 'password' : 'text'"
+            autocomplete="new-password"
+          />
+          <mat-icon matPrefix>key</mat-icon>
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="alternarVisibilidadeSenha()"
+            [attr.aria-label]="ocultarSenha() ? 'Mostrar senha digitada' : 'Ocultar senha digitada'"
+            [matTooltip]="ocultarSenha() ? 'Mostrar' : 'Ocultar'"
+          >
+            <mat-icon>{{ ocultarSenha() ? 'visibility' : 'visibility_off' }}</mat-icon>
+          </button>
+          @if (modoEdicao && credencial()?.possui_senha) {
+            <mat-hint>Deixe em branco para manter a senha atual.</mat-hint>
+          } @else {
+            <mat-hint>Opcional. A senha é armazenada criptografada.</mat-hint>
+          }
+          @if (credForm.controls.senha.hasError('senhaMuitoLonga')) {
+            <mat-error>A senha excede o tamanho máximo permitido.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      @if (modoEdicao && credencial()?.possui_senha) {
+        <div class="form-row">
+          <mat-checkbox formControlName="removerSenha">Remover senha cadastrada</mat-checkbox>
+        </div>
+      }
+
+      <div class="form-actions">
+        @if (modoEdicao) {
+          <button mat-stroked-button type="button" color="warn" (click)="onExcluir()">
+            <mat-icon>delete</mat-icon>
+            Excluir
+          </button>
+        }
+        <span class="spacer"></span>
+        <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="credForm.invalid || isLoading()">
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

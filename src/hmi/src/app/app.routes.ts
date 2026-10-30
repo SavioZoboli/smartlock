@@ -22,6 +22,7 @@ import { ListaReserva } from './pages/reserva/lista-reserva/lista-reserva';
 import { CadastroReserva } from './pages/reserva/cadastro-reserva/cadastro-reserva';
 import { ExtratoEmprestimosComponent } from './reports/extrato-emprestimos/extrato-emprestimos';
 import { ReportReservaCalendario } from './reports/report-reserva-calendario/report-reserva-calendario';
+import { CredencialEquipamento } from './pages/equipamento/credencial-equipamento/credencial-equipamento';
 
 export const routes: Routes = [
   // 1. Rota Pública (Tela de Login ocupa a tela inteira)
@@ -71,6 +72,7 @@ export const routes: Routes = [
 
           { path: 'equipamentos/cadastro', component: CadastroEquipamento, title: 'SmartLock | Novo Equipamento' },
           { path: 'equipamentos/editar/:id', component: UpdateEquipamento, title: 'SmartLock | Editar Equipamento' },
+          { path: 'equipamentos/credencial/:id', component: CredencialEquipamento, title: 'SmartLock | Credenciais do Equipamento' },
           { path: 'equipamentos/transferir', component: RedirectEquipamento, title: 'SmartLock | Transferir Equipamento' },
 
           { path: 'smartlocks/cadastro', component: CadastroSmartlock, title: 'SmartLock | Novo Smartlock' },
