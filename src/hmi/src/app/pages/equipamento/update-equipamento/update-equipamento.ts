@@ -184,4 +184,8 @@ export class UpdateEquipamento implements OnInit {
   onCancelar(): void {
     this.router.navigate(['/equipamentos/lista']);
   }
+
+  onCredenciais(): void {
+    this.router.navigate(['/equipamentos/credencial', this.equipamento_id]);
+  }
 }

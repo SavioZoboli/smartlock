@@ -24,5 +24,6 @@ export interface EquipamentoComigo {
   patrimonio: string;
   dataRetirada: string;        // ISO date
   smartlock: string;         // unidade / smartlock de origem
-  icone?:string
+  icone?:string;
+  possui_credencial?: boolean;
 }

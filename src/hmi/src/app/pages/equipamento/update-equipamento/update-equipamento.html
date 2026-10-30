@@ -89,6 +89,10 @@
           Excluir
         </button>
         <span class="spacer"></span>
+        <button mat-stroked-button type="button" (click)="onCredenciais()">
+          <mat-icon>key</mat-icon>
+          Credenciais
+        </button>
         <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
         <button mat-flat-button color="primary" type="submit" [disabled]="eqForm.invalid">
           Salvar

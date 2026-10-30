@@ -184,6 +184,10 @@ export class ListaEquipamento {
     this.router.navigate(['/equipamentos/editar', equipamento.id]);
   }
 
+  onCredenciais(equipamento: Equipamento): void {
+    this.router.navigate(['/equipamentos/credencial', equipamento.id]);
+  }
+
   onExcluir(equipamento: Equipamento): void {
     this.confirmDelete
       .confirmarEExcluir({

@@ -125,3 +125,13 @@
     margin-top: 8px;
   }
 }
+
+.btn-credenciais {
+  align-self: flex-start;
+  margin-top: 8px;
+
+  @media (max-width: 768px) {
+    align-self: stretch;
+    width: 100%;
+  }
+}

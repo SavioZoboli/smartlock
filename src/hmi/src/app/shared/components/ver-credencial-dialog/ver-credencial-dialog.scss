@@ -1,0 +1,90 @@
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-sm, 8px);
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+    flex-shrink: 0;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--app-space-lg, 24px) 0;
+}
+
+.credencial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-md, 16px);
+  margin: 0;
+}
+
+.credencial-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  dt {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .valor {
+    padding: 8px 12px;
+    border-radius: var(--app-radius-sm, 4px);
+    background-color: var(--mat-sys-surface-container);
+    color: var(--mat-sys-on-surface);
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    word-break: break-all;
+    user-select: all;
+  }
+
+  .mascarada {
+    letter-spacing: 3px;
+    user-select: none;
+  }
+
+  .vazio {
+    font-family: inherit;
+    font-style: italic;
+    color: var(--mat-sys-on-surface-variant);
+    user-select: none;
+  }
+}
+
+.aviso-auditoria {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: var(--app-space-md, 16px) 0 0;
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant);
+
+  .sm-icon {
+    font-size: 16px;
+    height: 16px;
+    width: 16px;
+  }
+}
+
+.btn-spinner {
+  display: inline-block;
+  margin-right: 8px;
+}
+
