@@ -192,10 +192,17 @@ class EquipamentoService {
     }
   }
 
-  async listBySmartlock(smartlock_id: number) {
+  async listBySmartlock(smartlock_id: number, usuario_id: number) {
     try {
       let equipamentos = await Equipamento.findAll({
-        where: { smartlock_base_id: smartlock_id, ativo: true },
+        where: {
+          smartlock_base_id: smartlock_id,
+          ativo: true,
+          [Op.or]: [
+            { usuario_atual_id: null },
+            { usuario_atual_id: usuario_id },
+          ],
+        },
         order: [
           ["apelido", "asc"],
           ["patrimonio", "asc"],

@@ -155,12 +155,7 @@ class MovimentacaoService {
             continue;
           }
 
-          // Fluxo automático (hardware): só quem pegou pode devolver.
-          // Fluxo manual (HMI): operador pode devolver em nome de outro usuário.
-          if (
-            !this.isManual(tipo_movimento) &&
-            equipamento.usuario_atual_id !== usuario_id
-          ) {
+          if (equipamento.usuario_atual_id !== usuario_id) {
             indisponiveis.push({
               id: equipamento.id,
               patrimonio: equipamento.patrimonio,
