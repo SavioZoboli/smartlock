@@ -114,6 +114,10 @@ class EquipamentoController {
   }
 
   async listBySmartlock(req: Request, res: Response) {
+    const usuario_id = req.user?.id;
+    if (!usuario_id) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
     let rawId = req.params.smartlock_id;
     if (!rawId || typeof rawId != "string") {
       return res
@@ -125,7 +129,10 @@ class EquipamentoController {
       return res.status(400).json({ message: "O código precisa se numérico" });
     }
     try {
-      let equipamentos = await equipamentoService.listBySmartlock(smartlock_id);
+      let equipamentos = await equipamentoService.listBySmartlock(
+        smartlock_id,
+        usuario_id,
+      );
       return res.status(200).json(equipamentos);
     } catch (e) {
       return res.status(500).json({ message: "Erro interno do servidor" });

@@ -21,3 +21,6 @@ src/hmi/dist
 
 # Worker MQTT
 src/worker-mqtt/ca.crt
+
+# API
+src/api/dist
