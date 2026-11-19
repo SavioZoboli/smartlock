@@ -27,6 +27,7 @@ void HardwareIOHandler::init() {
 
     currentDoorState = (digitalRead(SENSOR_PORTA_PIN) == HIGH);
     lastDoorReading = currentDoorState;
+    StatusFeedback::set(Component::PORTA, currentDoorState ? State::OPEN : State::CLOSED);
 }
 
 void HardwareIOHandler::update() {
@@ -62,8 +63,10 @@ void HardwareIOHandler::update() {
             // Dispara o evento apenas se a porta mudou para FECHADA
             if (currentDoorState == false) {
                 flagJustClosed = true; 
+                StatusFeedback::set(Component::PORTA, State::CLOSED);
                 Serial.println("[HARDWARE] Porta Fisicamente Fechada.");
             } else {
+                StatusFeedback::set(Component::PORTA, State::OPEN);
                 Serial.println("[HARDWARE] Porta Fisicamente Aberta.");
             }
         }
@@ -78,13 +81,11 @@ void HardwareIOHandler::unlockDoor() {
     digitalWrite(RELE_PIN, HIGH); 
     relayIsActive = true;
     relayOpenedAt = millis();
-    StatusFeedback::set(Component::PORTA,State::OPEN);
     Serial.println("[HARDWARE] Relé Acionado (Porta Destrancada).");
 }
 
 void HardwareIOHandler::lockDoor() {
     digitalWrite(RELE_PIN, LOW);
-    StatusFeedback::set(Component::PORTA,State::CLOSED);
     relayIsActive = false;
 }
 
