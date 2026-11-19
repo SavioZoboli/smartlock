@@ -83,6 +83,7 @@ void loop()
     WiFiHandler::update();
     Time::update();
     MqttHandler::update();
+    HardwareIOHandler::update();
     StatusFeedback::update();
     System::update();
 
@@ -103,7 +104,6 @@ void loop()
     }
 
     // 1. Atualiza as rotinas de background
-    HardwareIOHandler::update();
     AuthHandler::update();
 
     char uidLida[16] = {0};
@@ -166,7 +166,6 @@ void loop()
             BuzzerHandler::play(SoundEffect::LOGOFF);
             DisplayHandler::setFixedMessage("Fazendo leitura");
             ReaderModule::beginReading();
-            StatusFeedback::set(Component::PORTA, State::CLOSED);
             System::setState(SystemState::READING);
             
             timerLeitura = millis(); // INICIA O CRONÔMETRO DE SEGURANÇA
