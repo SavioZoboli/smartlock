@@ -2,12 +2,13 @@
 import dotenv from 'dotenv';
 import systemStatus from './system-status/system-status';
 
+// Garante o carregamento das variáveis de ambiente
+dotenv.config();
 
 // Importação do cliente MQTT
 require('./config/mqtt');
 
-// Garante o carregamento das variáveis de ambiente
-dotenv.config();
+
 
 
 // Inicializa o envio de status
