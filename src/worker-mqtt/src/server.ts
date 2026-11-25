@@ -8,8 +8,5 @@ dotenv.config();
 // Importação do cliente MQTT
 require('./config/mqtt');
 
-
-
-
 // Inicializa o envio de status
 systemStatus.polling()
