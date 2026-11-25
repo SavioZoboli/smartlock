@@ -6,6 +6,7 @@ import {
   Regiao,
   Reserva,
   SmartLock,
+  TipoEquipamento,
   Unidade,
   Usuario,
 } from "../models/index.model";
@@ -214,7 +215,14 @@ class ReservaService {
             model: Equipamento,
             as: "equipamentos",
             through: { attributes: [] },
-            attributes: ["id", "apelido", "patrimonio", "tipo"],
+            attributes: ["id", "apelido", "patrimonio", "tipo_id"],
+            include: [
+              {
+                model: TipoEquipamento,
+                as: "tipoEquipamento",
+                attributes: ["id", "nome", "icone"],
+              },
+            ],
           },
         ],
         order: [["reserva_inicio", "ASC"]],
@@ -353,7 +361,14 @@ class ReservaService {
           model: Equipamento,
           as: "equipamentos",
           through: { attributes: [] },
-          attributes: ["id", "apelido", "patrimonio", "tipo", "status_atual"],
+          attributes: ["id", "apelido", "patrimonio", "tipo_id", "status_atual"],
+          include: [
+            {
+              model: TipoEquipamento,
+              as: "tipoEquipamento",
+              attributes: ["id", "nome", "icone"],
+            },
+          ],
         },
       ],
       order: [["reserva_inicio", "ASC"]],

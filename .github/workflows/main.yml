@@ -26,8 +26,51 @@ jobs:
         id: repo
         run: echo "repo_lc=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-  build-frontend:
+  # 1. Testes automatizados
+  test-frontend:
     needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: src/hmi/package-lock.json
+      - name: Instalar dependências (HMI)
+        working-directory: src/hmi
+        run: npm ci
+      - name: Rodar testes unitários (HMI)
+        working-directory: src/hmi
+        env:
+          CI: true
+          NG_CLI_ANALYTICS: false
+        run: npx ng test --watch=false
+
+  test-api:
+    needs: changes
+    if: needs.changes.outputs.api-dados == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: src/api/package-lock.json
+      - name: Instalar dependências (API)
+        working-directory: src/api
+        run: npm ci
+      - name: Validar TypeScript e sintaxe das migrations (API)
+        working-directory: src/api
+        run: |
+          npx tsc --noEmit
+          for f in migrations/*.js; do node -c "$f"; done
+
+  # 2. Build e push das imagens Docker (somente após testes passarem)
+  build-frontend:
+    needs: [changes, test-frontend]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -38,13 +81,13 @@ jobs:
           ENV_HMI: ${{ secrets.ENV_HMI }}
         run: |
           echo "$ENV_HMI" > /tmp/env_hmi.env
-          
+
           API_URL=$(awk -F '=' '/API_URL/ {print $2}' /tmp/env_hmi.env | tr -d ' ' | tr -d '\r')
-          
+
           sed -e "s|API_URL|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.ts
-          
+
           sed -e "s|API_URL|$API_URL|g" src/hmi/src/environments/environment.template.ts > src/hmi/src/environments/environment.prod.ts
-          
+
           rm /tmp/env_hmi.env
 
       - uses: docker/setup-buildx-action@v3
@@ -60,7 +103,7 @@ jobs:
           tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/hmi:latest
 
   build-api-dados:
-    needs: changes
+    needs: [changes, test-api]
     if: needs.changes.outputs.api-dados == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -95,13 +138,19 @@ jobs:
           push: true
           tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/worker-mqtt:latest
 
+  # 3. Aprovação manual (environment: production) + 4. Deploy no servidor (CD)
+  #    A primeira ação do deploy no servidor é sempre verificar/executar migrations antes de subir os novos containers.
   deploy:
-    needs: [changes, build-frontend, build-api-dados, build-worker-mqtt]
+    needs: [changes, test-frontend, test-api, build-frontend, build-api-dados, build-worker-mqtt]
     if: |
       always() &&
+      needs.changes.result == 'success' &&
+      (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
+      (needs.test-api.result == 'success' || needs.test-api.result == 'skipped') &&
       (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
       (needs.build-api-dados.result == 'success' || needs.build-api-dados.result == 'skipped') &&
       (needs.build-worker-mqtt.result == 'success' || needs.build-worker-mqtt.result == 'skipped')
+    environment: production
     runs-on: self-hosted
     steps:
       - name: Escrever .env files de forma segura
@@ -111,17 +160,15 @@ jobs:
         run: |
           echo "$ENV_API_DADOS" > /srv/app/api/.env
           echo "$ENV_WORKER_MQTT" > /srv/app/worker-mqtt/.env
-          
+
       - name: Login GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-        
-      - name: Deploy e Execução de Migrations
-        run: |
-          docker compose -f /srv/app/docker-compose.yml pull
-          docker compose -f /srv/app/docker-compose.yml up -d
-          
-          # Pausa estratégica para inicialização do BD e da API
-          sleep 10
-          
-          # Execução não-interativa. Substitua 'app-api-1' pelo nome exato do serviço no compose caso este seja apenas o nome do container gerado.
-          docker exec -i app-api-1 npx sequelize-cli db:migrate
+
+      - name: Baixar imagens atualizadas
+        run: docker compose -f /srv/app/docker-compose.yml pull
+
+      - name: Verificar e executar migrations pendentes (sempre antes do deploy)
+        run: docker compose -f /srv/app/docker-compose.yml run --rm api node dist/migrate.js
+
+      - name: Subir serviços atualizados
+        run: docker compose -f /srv/app/docker-compose.yml up -d

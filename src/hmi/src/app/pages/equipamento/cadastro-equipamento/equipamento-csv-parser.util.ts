@@ -3,7 +3,7 @@ import { FormArray } from '@angular/forms';
 export interface ItemEquipamentoCsv {
   tag: string;
   patrimonio: string;
-  tipo: string;
+  tipo: string | number;
   apelido?: string;
 }
 
@@ -26,7 +26,7 @@ export function lerArquivoComoTexto(file: File): Promise<string> {
  */
 export function parseEquipamentosCsv(
   conteudoCsv: string,
-  tipoPadrao: string = '',
+  tipoPadrao: string | number = '',
 ): ItemEquipamentoCsv[] {
   if (!conteudoCsv) return [];
 

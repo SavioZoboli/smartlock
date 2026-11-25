@@ -196,7 +196,7 @@ export class CadastroMovimentacao implements OnInit {
           this.equipamentos = res.map((e) => ({
             ...e,
             selecionado: false,
-            icone: obterIconeTipoEquipamento(e.tipo),
+            icone: obterIconeTipoEquipamento(e.tipo, e.icone),
           }));
           this.aplicarTagsDeReserva();
           this.isLoadingEquipamentos = false;

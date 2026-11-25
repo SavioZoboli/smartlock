@@ -4,6 +4,7 @@ import {
   Movimentacao,
   ItensMovimentacao,
   SmartLock,
+  TipoEquipamento,
   Unidade,
   Usuario,
   Equipamento,
@@ -118,7 +119,7 @@ class MovimentacaoService {
       // 2. Cada um está livre pra essa ação?
       const indisponiveis: {
         id: number;
-        patrimonio: string;
+        patrimonio: string | null;
         motivo: string;
       }[] = [];
 
@@ -126,7 +127,7 @@ class MovimentacaoService {
         if (!equipamento.ativo) {
           indisponiveis.push({
             id: equipamento.id,
-            patrimonio: equipamento.patrimonio,
+            patrimonio: equipamento.patrimonio ?? null,
             motivo: "inativo",
           });
           continue;
@@ -139,7 +140,7 @@ class MovimentacaoService {
           ) {
             indisponiveis.push({
               id: equipamento.id,
-              patrimonio: equipamento.patrimonio,
+              patrimonio: equipamento.patrimonio ?? null,
               motivo: "já emprestado",
             });
           }
@@ -149,7 +150,7 @@ class MovimentacaoService {
           if (equipamento.status_atual !== STATUS_EMPRESTADO) {
             indisponiveis.push({
               id: equipamento.id,
-              patrimonio: equipamento.patrimonio,
+              patrimonio: equipamento.patrimonio ?? null,
               motivo: "não está emprestado",
             });
             continue;
@@ -158,7 +159,7 @@ class MovimentacaoService {
           if (equipamento.usuario_atual_id !== usuario_id) {
             indisponiveis.push({
               id: equipamento.id,
-              patrimonio: equipamento.patrimonio,
+              patrimonio: equipamento.patrimonio ?? null,
               motivo: "emprestado a outro usuário",
             });
           }
@@ -369,8 +370,15 @@ class MovimentacaoService {
       {
         model: Equipamento,
         as: "equipamentos",
-        attributes: ["id", "apelido", "patrimonio", "tipo", "status_atual"],
+        attributes: ["id", "apelido", "patrimonio", "tipo_id", "status_atual"],
         through: { attributes: [] },
+        include: [
+          {
+            model: TipoEquipamento,
+            as: "tipoEquipamento",
+            attributes: ["nome", "icone"],
+          },
+        ],
       },
     ],
     order: [["timestamp", "DESC"]],
@@ -388,7 +396,9 @@ class MovimentacaoService {
       id: e.id,
       apelido: e.apelido,
       patrimonio: e.patrimonio,
-      tipo: e.tipo,
+      tipo_id: e.tipo_id,
+      tipo: e.tipoEquipamento?.nome ?? null,
+      icone: e.tipoEquipamento?.icone ?? null,
       situacao: e.status_atual,
     })),
   }));

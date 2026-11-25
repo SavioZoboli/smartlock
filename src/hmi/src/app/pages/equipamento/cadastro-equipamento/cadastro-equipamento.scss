@@ -4,6 +4,22 @@
   box-sizing: border-box;
 }
 
+.tipo-global-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .tipo-global-field {
+    flex: 1 1 260px;
+  }
+
+  .btn-novo-tipo {
+    height: 56px;
+    white-space: nowrap;
+  }
+}
+
 // Linha de adição manual de itens
 .novo-item-row {
   flex-direction: row;

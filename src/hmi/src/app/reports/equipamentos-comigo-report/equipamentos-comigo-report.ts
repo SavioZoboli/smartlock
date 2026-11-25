@@ -7,7 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { EquipamentoComigo } from '../../models/equipamento.model';
-import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
+import { obterIconeTipoEquipamento } from '../../shared/tipoEquipamentos.constant';
 import {
   VerCredencialDialog,
   VerCredencialDialogData,
@@ -27,7 +27,6 @@ export class EquipamentosComigoReport implements OnInit {
   private dialog = inject(MatDialog);
   equipamentos: EquipamentoComigo[] = [];
   carregando = signal(false)
-  private tiposEquipamentos = TIPO_EQUIPAMENTOS
 
   constructor(private equipamentoService: EquipamentoService) {}
 
@@ -39,7 +38,10 @@ export class EquipamentosComigoReport implements OnInit {
     this.carregando.update(()=>true);
     this.equipamentoService.buscarEquipamentosComigo().subscribe({
       next: (res) => {
-        this.equipamentos = res.map((linha:any)=>{return {...linha,icone:this.tiposEquipamentos.find(t=>t.descricao==linha.tipo)?.icone}});
+        this.equipamentos = res.map((linha: any) => ({
+          ...linha,
+          icone: obterIconeTipoEquipamento(linha.tipo, linha.icone),
+        }));
         this.carregando.update(()=>false);
       },
       error: (e) => {

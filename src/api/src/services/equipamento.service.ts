@@ -6,6 +6,7 @@ import {
   Regiao,
   Reserva,
   SmartLock,
+  TipoEquipamento,
   Unidade,
   Usuario,
 } from "../models/index.model";
@@ -15,8 +16,10 @@ interface EquipamentoEmUsoDTO {
   id: number;
   apelido: string | null;
   tag: string;
-  patrimonio: string;
+  patrimonio: string | null;
   tipo: string;
+  tipo_id?: number;
+  icone?: string | null;
   dataRetirada: Date | null;
 }
 
@@ -24,8 +27,10 @@ interface EquipamentoResumoDTO {
   id: number;
   apelido: string | null;
   tag: string;
-  patrimonio: string;
+  patrimonio: string | null;
   tipo: string;
+  tipo_id?: number;
+  icone?: string | null;
 }
 
 interface MovimentacaoHistoricoDTO {
@@ -43,22 +48,84 @@ interface PaginatedResult<T> {
 }
 
 class EquipamentoService {
-  async bulkCreate(equipamentos: EquipamentoAttributes[]): Promise<number> {
+  async bulkCreate(equipamentos: any[]): Promise<number> {
     try {
-      const patrimonios = equipamentos.map((e) => e.patrimonio);
-      const existentes = await Equipamento.findAll({
-        where: { patrimonio: { [Op.in]: patrimonios } },
-        attributes: ["patrimonio"],
+      const tipoIds = Array.from(
+        new Set(equipamentos.map((e) => Number(e.tipo_id ?? e.tipo))),
+      );
+      if (tipoIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+        throw new Error("ERR_TIPO_NOT_FOUND");
+      }
+
+      const tiposEncontrados = await TipoEquipamento.findAll({
+        where: { id: { [Op.in]: tipoIds } },
         raw: true,
       });
+      const tiposMap = new Map<number, any>(
+        tiposEncontrados.map((t: any) => [Number(t.id), t]),
+      );
 
-      if (existentes.length > 0) {
+      const patrimoniosLote = new Set<string>();
+      const duplicadosLote = new Set<string>();
+
+      const equipamentosNormalizados = equipamentos.map((e) => {
+        const tipoId = Number(e.tipo_id ?? e.tipo);
+        const tipoInfo = tiposMap.get(tipoId);
+        if (!tipoInfo) {
+          throw new Error("ERR_TIPO_NOT_FOUND");
+        }
+
+        const patrimonio =
+          typeof e.patrimonio === "string" && e.patrimonio.trim().length > 0
+            ? e.patrimonio.trim()
+            : null;
+
+        if (tipoInfo.has_patrimonio && !patrimonio) {
+          throw new Error("ERR_PATRIMONIO_OBRIGATORIO");
+        }
+
+        if (patrimonio) {
+          if (patrimoniosLote.has(patrimonio)) {
+            duplicadosLote.add(patrimonio);
+          } else {
+            patrimoniosLote.add(patrimonio);
+          }
+        }
+
+        const { tipo: _tipoIgnorado, ...resto } = e;
+        return {
+          ...resto,
+          tipo_id: tipoId,
+          patrimonio,
+        };
+      });
+
+      if (duplicadosLote.size > 0) {
         const erro: any = new Error("ERR_DUPLICATE");
-        erro.duplicados = existentes.map((e: any) => e.patrimonio);
+        erro.duplicados = Array.from(duplicadosLote);
         throw erro;
       }
 
-      let created = await Equipamento.bulkCreate(equipamentos);
+      const patrimonios = Array.from(patrimoniosLote);
+      if (patrimonios.length > 0) {
+        const existentes = await Equipamento.findAll({
+          where: { patrimonio: { [Op.in]: patrimonios } },
+          attributes: ["patrimonio"],
+          raw: true,
+        });
+
+        if (existentes.length > 0) {
+          const erro: any = new Error("ERR_DUPLICATE");
+          erro.duplicados = existentes
+            .map((e: any) => e.patrimonio)
+            .filter((p: any): p is string => typeof p === "string");
+          throw erro;
+        }
+      }
+
+      let created = await Equipamento.bulkCreate(
+        equipamentosNormalizados as EquipamentoAttributes[],
+      );
       return created.length;
     } catch (e: any) {
       if (e.name === "SequelizeUniqueConstraintError") {
@@ -77,7 +144,11 @@ class EquipamentoService {
           "id",
           "patrimonio",
           ["status_atual", "status"],
-          "tipo",
+          "tipo_id",
+          [Sequelize.col("tipoEquipamento.nome"), "tipo"],
+          [Sequelize.col("tipoEquipamento.icone"), "icone"],
+          [Sequelize.col("tipoEquipamento.has_patrimonio"), "has_patrimonio"],
+          [Sequelize.col("tipoEquipamento.has_credencial"), "has_credencial"],
           "apelido",
           [Sequelize.col("smartlockBase.apelido"), "smartlock"],
           [Sequelize.col("smartlockBase.unidade.nome"), "unidade"],
@@ -88,6 +159,11 @@ class EquipamentoService {
           ["patrimonio", "asc"],
         ],
         include: [
+          {
+            model: TipoEquipamento,
+            as: "tipoEquipamento",
+            attributes: [],
+          },
           {
             model: SmartLock,
             as: "smartlockBase",
@@ -122,10 +198,23 @@ class EquipamentoService {
           "id",
           "patrimonio",
           "tag",
-          "tipo",
+          "tipo_id",
+          [Sequelize.col("tipoEquipamento.nome"), "tipo"],
+          [Sequelize.col("tipoEquipamento.icone"), "icone"],
+          [Sequelize.col("tipoEquipamento.has_patrimonio"), "has_patrimonio"],
+          [Sequelize.col("tipoEquipamento.has_credencial"), "has_credencial"],
           "apelido",
+          "ativo",
           ["smartlock_base_id", "smartlock_id"],
         ],
+        include: [
+          {
+            model: TipoEquipamento,
+            as: "tipoEquipamento",
+            attributes: [],
+          },
+        ],
+        raw: true,
       });
       if (!equipamento) {
         throw new Error("ERR_NOT_FOUND");
@@ -139,8 +228,8 @@ class EquipamentoService {
   async update(
     id: number,
     tag: string,
-    patrimonio: string,
-    tipo: string,
+    patrimonio: string | null | undefined,
+    tipo_id: number,
     smartlock_id: number,
     apelido: string,
   ): Promise<void> {
@@ -149,9 +238,24 @@ class EquipamentoService {
       if (!equipamento) {
         throw new Error("ERR_NOT_FOUND");
       }
+
+      const tipoEquipamento = await TipoEquipamento.findByPk(tipo_id);
+      if (!tipoEquipamento) {
+        throw new Error("ERR_TIPO_NOT_FOUND");
+      }
+
+      const patrimonioNormalizado =
+        typeof patrimonio === "string" && patrimonio.trim().length > 0
+          ? patrimonio.trim()
+          : null;
+
+      if (tipoEquipamento.has_patrimonio && !patrimonioNormalizado) {
+        throw new Error("ERR_PATRIMONIO_OBRIGATORIO");
+      }
+
       equipamento.tag = tag;
-      equipamento.patrimonio = patrimonio;
-      equipamento.tipo = tipo;
+      equipamento.patrimonio = patrimonioNormalizado;
+      equipamento.tipo_id = tipo_id;
       equipamento.smartlock_base_id = smartlock_id;
       equipamento.apelido = apelido;
       await equipamento.save();
@@ -203,12 +307,23 @@ class EquipamentoService {
             { usuario_atual_id: usuario_id },
           ],
         },
+        include: [
+          {
+            model: TipoEquipamento,
+            as: "tipoEquipamento",
+            attributes: ["id", "nome", "icone", "has_patrimonio", "has_credencial"],
+          },
+        ],
         order: [
           ["apelido", "asc"],
           ["patrimonio", "asc"],
         ],
       });
-      return equipamentos;
+      return equipamentos.map((e: any) => ({
+        ...e.get({ plain: true }),
+        tipo: e.tipoEquipamento?.nome ?? null,
+        icone: e.tipoEquipamento?.icone ?? null,
+      }));
     } catch (e) {
       throw e;
     }
@@ -245,6 +360,11 @@ class EquipamentoService {
         },
         include: [
           {
+            model: TipoEquipamento,
+            as: "tipoEquipamento",
+            attributes: ["nome", "icone", "has_credencial"],
+          },
+          {
             model: SmartLock,
             as: "smartlockBase",
             attributes: ["id", "apelido"],
@@ -272,7 +392,9 @@ class EquipamentoService {
         id: e.id,
         apelido: e.apelido,
         patrimonio: e.patrimonio,
-        tipo: e.tipo,
+        tipo_id: e.tipo_id,
+        tipo: e.tipoEquipamento?.nome ?? null,
+        icone: e.tipoEquipamento?.icone ?? null,
         smartlock: e.smartlockBase.apelido,
         unidade: e.smartlockBase.unidade.nome,
         regional: e.smartlockBase.unidade.regional.id,
@@ -294,7 +416,9 @@ class EquipamentoService {
         attributes: [
           "id",
           "apelido",
-          "tipo",
+          "tipo_id",
+          [Sequelize.col("tipoEquipamento.nome"), "tipo"],
+          [Sequelize.col("tipoEquipamento.icone"), "icone"],
           "patrimonio",
           [Sequelize.col("usuarioAtual.nome"), "responsavel"],
           [Sequelize.col("reservas.reserva_inicio"), "reserva_inicio"],
@@ -302,6 +426,11 @@ class EquipamentoService {
           [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],
         ],
         include: [
+          {
+            model: TipoEquipamento,
+            as: "tipoEquipamento",
+            attributes: [],
+          },
           {
             model: Usuario,
             as: "usuarioAtual",
@@ -346,7 +475,9 @@ class EquipamentoService {
           agrupado.set(linha.id, {
             id: linha.id,
             apelido: linha.apelido,
+            tipo_id: linha.tipo_id,
             tipo: linha.tipo,
+            icone: linha.icone,
             patrimonio: linha.patrimonio,
             responsavel: linha.responsavel,
             disponivel: linha.responsavel == null,
@@ -379,7 +510,9 @@ class EquipamentoService {
         attributes: [
           "id",
           "apelido",
-          "tipo",
+          "tipo_id",
+          [Sequelize.col("tipoEquipamento.nome"), "tipo"],
+          [Sequelize.col("tipoEquipamento.icone"), "icone"],
           "patrimonio",
           [Sequelize.col("smartlockBase.id"), "smartlock_id"],
           [Sequelize.col("smartlockBase.apelido"), "smartlock_apelido"],
@@ -390,6 +523,11 @@ class EquipamentoService {
           [Sequelize.col("reservas->usuario.nome"), "reserva_usuario"],
         ],
         include: [
+          {
+            model: TipoEquipamento,
+            as: "tipoEquipamento",
+            attributes: [],
+          },
           {
             model: Usuario,
             as: "usuarioAtual",
@@ -440,7 +578,9 @@ class EquipamentoService {
           agrupado.set(linha.id, {
             id: linha.id,
             apelido: linha.apelido,
+            tipo_id: linha.tipo_id,
             tipo: linha.tipo,
+            icone: linha.icone,
             patrimonio: linha.patrimonio,
             responsavel: linha.responsavel,
             avatar: linha.avatar,
@@ -566,6 +706,11 @@ class EquipamentoService {
       where: { usuario_atual_id: usuarioId },
       include: [
         {
+          model: TipoEquipamento,
+          as: 'tipoEquipamento',
+          attributes: ['nome', 'icone'],
+        },
+        {
           model: Movimentacao,
           as: 'movimentacoes',
           where: { usuario_id: usuarioId, tipo_movimento: {[Op.like]:'emprestimo%'} },
@@ -586,8 +731,10 @@ class EquipamentoService {
         id: eq.id,
         apelido: eq.apelido ?? null,
         tag: eq.tag,
-        patrimonio: eq.patrimonio,
-        tipo: eq.tipo,
+        patrimonio: eq.patrimonio ?? null,
+        tipo: eq.tipoEquipamento?.nome ?? '',
+        tipo_id: eq.tipo_id,
+        icone: eq.tipoEquipamento?.icone ?? null,
         dataRetirada,
       };
     });
@@ -607,7 +754,14 @@ class EquipamentoService {
           model: Equipamento,
           as: 'equipamentos',
           through: { attributes: [] },
-          attributes: ['id', 'apelido', 'tag', 'patrimonio', 'tipo'],
+          attributes: ['id', 'apelido', 'tag', 'patrimonio', 'tipo_id'],
+          include: [
+            {
+              model: TipoEquipamento,
+              as: 'tipoEquipamento',
+              attributes: ['nome', 'icone'],
+            },
+          ],
         },
       ],
       order: [['timestamp', 'DESC']],
@@ -620,7 +774,15 @@ class EquipamentoService {
       id: m.id,
       tipo_movimento: m.tipo_movimento,
       timestamp: m.timestamp,
-      equipamentos: m.equipamentos,
+      equipamentos: (m.equipamentos ?? []).map((e: any) => ({
+        id: e.id,
+        apelido: e.apelido ?? null,
+        tag: e.tag,
+        patrimonio: e.patrimonio ?? null,
+        tipo: e.tipoEquipamento?.nome ?? '',
+        tipo_id: e.tipo_id,
+        icone: e.tipoEquipamento?.icone ?? null,
+      })),
     }));
 
     return { items, total: count, page, pageSize };

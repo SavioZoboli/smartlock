@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -12,6 +13,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
+import {
+  CadastroTipoEquipamentoDialog,
+  GerenciarTiposDialogResult,
+} from '../../../shared/components/cadastro-tipo-equipamento-dialog/cadastro-tipo-equipamento-dialog';
 import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
 import { sincronizarFiltroTabela } from '../../../shared/util/tabela-filtro.util';
 
@@ -19,8 +24,11 @@ export type StatusEquipamento = 'emprestado' | 'disponivel' | 'manutencao';
 
 export interface Equipamento {
   id: number;
-  patrimonio: string;
+  patrimonio: string | null;
   tipo: string;
+  tipo_id?: number;
+  has_patrimonio?: boolean;
+  has_credencial?: boolean;
   smartlock: string;
   unidade: string;
   status: StatusEquipamento;
@@ -35,6 +43,7 @@ export interface Equipamento {
     MatTableModule,
     MatPaginatorModule,
     MatButtonModule,
+    MatDialogModule,
     MatIconModule,
     MatTooltipModule,
     MatFormFieldModule,
@@ -79,6 +88,9 @@ export class ListaEquipamento {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
+  private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
     private router: Router,
     private equipamentoService: EquipamentoService,
@@ -112,8 +124,6 @@ export class ListaEquipamento {
     });
   }
 
-  private readonly destroyRef = inject(DestroyRef);
-
   private initFiltro(): void {
     const normalizarStatus = (s: string) => {
       const val = (s || '').toLowerCase().replace(/[\s_]+/g, '');
@@ -131,8 +141,8 @@ export class ListaEquipamento {
         const geralConfere =
           !geralNormalizado ||
           normalizarTexto(data.usuario_atual ?? '').includes(geralNormalizado) ||
-          normalizarTexto(data.patrimonio).includes(geralNormalizado) ||
-          normalizarTexto(data.tipo).includes(geralNormalizado);
+          normalizarTexto(data.patrimonio ?? '').includes(geralNormalizado) ||
+          normalizarTexto(data.tipo ?? '').includes(geralNormalizado);
 
         const unidadeConfere = !filtro.unidade || data.unidade === filtro.unidade;
         const smartlockConfere = !filtro.smartlock || data.smartlock === filtro.smartlock;
@@ -171,6 +181,23 @@ export class ListaEquipamento {
   }
 
   // --- AÇÕES DA TELA ---
+
+  onGerenciarTipos(): void {
+    const ref = this.dialog.open<
+      CadastroTipoEquipamentoDialog,
+      unknown,
+      GerenciarTiposDialogResult | undefined
+    >(CadastroTipoEquipamentoDialog, {
+      width: '540px',
+      maxWidth: '95vw',
+    });
+
+    ref.afterClosed().subscribe((resultado) => {
+      if (resultado?.alterou) {
+        this.carregarEquipamentos();
+      }
+    });
+  }
 
   onNovoEquipamento(): void {
     this.router.navigate(['/equipamentos/cadastro']);

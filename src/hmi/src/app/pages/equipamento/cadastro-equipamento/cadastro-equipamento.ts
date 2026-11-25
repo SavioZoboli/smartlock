@@ -10,12 +10,13 @@ import {
 } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { BehaviorSubject, map, Observable, shareReplay } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 
@@ -23,7 +24,11 @@ import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
 import { UnidadeService } from '../../../services/unidade.service';
 import { EquipamentoService } from '../../../services/equipamento.service';
-import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
+import { TipoEquipamentoService } from '../../../services/tipo-equipamento.service';
+import {
+  CadastroTipoEquipamentoDialog,
+  GerenciarTiposDialogResult,
+} from '../../../shared/components/cadastro-tipo-equipamento-dialog/cadastro-tipo-equipamento-dialog';
 import { IUnidade } from '../../../interfaces/unidade.interface';
 import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
@@ -51,6 +56,7 @@ export interface SmartlockOption {
     MatSelectModule,
     MatIconModule,
     MatButtonModule,
+    MatDialogModule,
     MatTooltipModule,
   ],
   templateUrl: './cadastro-equipamento.html',
@@ -62,13 +68,15 @@ export class CadastroEquipamento implements OnInit {
   private smartlockService = inject(SmartlockService);
   private sns = inject(SystemNotificationService);
   private equipamentoService = inject(EquipamentoService);
+  private tipoEquipamentoService = inject(TipoEquipamentoService);
+  private dialog = inject(MatDialog);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
 
   importForm!: FormGroup;
   novoItemForm!: FormGroup;
 
-  tiposEquipamento = TIPO_EQUIPAMENTOS;
+  tiposEquipamento = this.tipoEquipamentoService.tipos;
 
   private smartlocksSubject = new BehaviorSubject<SmartlockOption[]>([]);
 
@@ -100,6 +108,12 @@ export class CadastroEquipamento implements OnInit {
 
     // Dispara a busca (ou reaproveita o cache); o resultado atualiza o signal unidadeService.unidades
     this.unidadeService.listAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    this.tipoEquipamentoService.listAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+
+    this.novoItemForm
+      .get('tipo')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((tipoId) => this.atualizarValidacaoPatrimonio(this.novoItemForm, tipoId));
 
     this.filteredUnidades = filtrarAutocomplete(
       this.importForm.get('unidade')!,
@@ -161,37 +175,107 @@ export class CadastroEquipamento implements OnInit {
       return;
     }
 
-    const { tag, patrimonio, tipo, apelido } = this.novoItemForm.value;
+    const { tag, patrimonio, tipo, apelido } = this.novoItemForm.getRawValue();
     const tagTrimmed = typeof tag === 'string' ? tag.trim() : tag;
-    const patrimonioTrimmed = typeof patrimonio === 'string' ? patrimonio.trim() : patrimonio;
+    const patrimonioTrimmed = typeof patrimonio === 'string' ? patrimonio.trim() : '';
     const apelidoTrimmed = typeof apelido === 'string' ? apelido.trim() : apelido;
 
-    this.equipamentosArray.push(this.criarItemGroup(tagTrimmed, patrimonioTrimmed, tipo, apelidoTrimmed));
+    this.equipamentosArray.push(
+      this.criarItemGroup(tagTrimmed, patrimonioTrimmed, Number(tipo), apelidoTrimmed),
+    );
 
     // Mantém o tipo selecionado para agilizar o cadastro de vários itens do mesmo tipo em sequência
     this.novoItemForm.reset({ tag: '', patrimonio: '', tipo, apelido: '' });
+    this.atualizarValidacaoPatrimonio(this.novoItemForm, tipo);
   }
 
   removerItem(index: number): void {
     this.equipamentosArray.removeAt(index);
   }
 
-  private criarItemGroup(tag: string, patrimonio: string, tipo: string, apelido: string): FormGroup {
-    return this.fb.group({
+  private tipoExigePatrimonio(tipoId: unknown): boolean {
+    if (tipoId === '' || tipoId === null || tipoId === undefined) return true;
+    const idNum = Number(tipoId);
+    const tipo = this.tiposEquipamento().find((t) => t.id === idNum);
+    return tipo ? tipo.has_patrimonio : true;
+  }
+
+  private atualizarValidacaoPatrimonio(grupo: FormGroup, tipoId: unknown): void {
+    const patrimonioCtrl = grupo.get('patrimonio');
+    if (!patrimonioCtrl) return;
+
+    if (this.tipoExigePatrimonio(tipoId)) {
+      patrimonioCtrl.enable({ emitEvent: false });
+      patrimonioCtrl.setValidators([Validators.required, Validators.pattern(/^\d{6}$/)]);
+    } else {
+      patrimonioCtrl.setValue('', { emitEvent: false });
+      patrimonioCtrl.clearValidators();
+      patrimonioCtrl.disable({ emitEvent: false });
+    }
+    patrimonioCtrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private criarItemGroup(
+    tag: string,
+    patrimonio: string,
+    tipo: number | string,
+    apelido: string,
+  ): FormGroup {
+    const grupo = this.fb.group({
       tag: [tag, Validators.required],
       patrimonio: [patrimonio, [Validators.required, Validators.pattern(/^\d{6}$/)]],
       tipo: [tipo, Validators.required],
       apelido: [apelido],
     });
+
+    this.atualizarValidacaoPatrimonio(grupo, tipo);
+    grupo
+      .get('tipo')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((novoTipoId) => this.atualizarValidacaoPatrimonio(grupo, novoTipoId));
+
+    return grupo;
   }
 
-  // --- TIPO GLOBAL ---
+  // --- TIPO GLOBAL E MODAL ---
 
   aplicarTipoGlobal(): void {
     const tipo = this.importForm.get('tipoGlobal')!.value;
     if (!tipo) return;
 
-    this.equipamentosArray.controls.forEach((grupo) => grupo.get('tipo')!.setValue(tipo));
+    const tipoId = Number(tipo);
+    this.equipamentosArray.controls.forEach((grupo) => grupo.get('tipo')!.setValue(tipoId));
+  }
+
+  abrirModalGerenciarTipos(): void {
+    const ref = this.dialog.open<
+      CadastroTipoEquipamentoDialog,
+      unknown,
+      GerenciarTiposDialogResult | undefined
+    >(CadastroTipoEquipamentoDialog, {
+      width: '540px',
+      maxWidth: '95vw',
+    });
+
+    ref
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((resultado) => {
+        if (!resultado?.alterou) return;
+        this.tipoEquipamentoService
+          .listAll()
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => {
+            if (resultado.ultimoTipoCriado) {
+              this.novoItemForm.get('tipo')?.setValue(resultado.ultimoTipoCriado.id);
+            } else {
+              this.atualizarValidacaoPatrimonio(
+                this.novoItemForm,
+                this.novoItemForm.get('tipo')?.value,
+              );
+            }
+          });
+      });
   }
 
   // --- IMPORTAÇÃO CSV ---
@@ -213,8 +297,9 @@ export class CadastroEquipamento implements OnInit {
   }
 
   private processarImportacaoCsv(texto: string): void {
-    const tipoGlobal = this.importForm.get('tipoGlobal')!.value ?? '';
-    const itens = parseEquipamentosCsv(texto, tipoGlobal);
+    const tipoGlobal = this.importForm.get('tipoGlobal')!.value;
+    const tipoPadrao = tipoGlobal ? Number(tipoGlobal) : '';
+    const itens = parseEquipamentosCsv(texto, tipoPadrao);
 
     for (const item of itens) {
       this.equipamentosArray.push(
@@ -234,12 +319,15 @@ export class CadastroEquipamento implements OnInit {
     }
 
     const { smartlock, equipamentos } = this.importForm.getRawValue();
-    const equipamentosSanitizados = (equipamentos as any[]).map((e) => ({
-      ...e,
-      tag: typeof e.tag === 'string' ? e.tag.trim() : e.tag,
-      patrimonio: typeof e.patrimonio === 'string' ? e.patrimonio.trim() : e.patrimonio,
-      apelido: typeof e.apelido === 'string' ? e.apelido.trim() : e.apelido,
-    }));
+    const equipamentosSanitizados = (equipamentos as any[]).map((e) => {
+      const patrimonioTrimmed = typeof e.patrimonio === 'string' ? e.patrimonio.trim() : '';
+      return {
+        tag: typeof e.tag === 'string' ? e.tag.trim() : e.tag,
+        patrimonio: patrimonioTrimmed.length > 0 ? patrimonioTrimmed : null,
+        tipo_id: Number(e.tipo),
+        apelido: typeof e.apelido === 'string' ? e.apelido.trim() : e.apelido,
+      };
+    });
 
     this.equipamentoService
       .bulkCreate(smartlock.id, equipamentosSanitizados)
