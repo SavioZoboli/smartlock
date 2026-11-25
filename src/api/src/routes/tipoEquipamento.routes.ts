@@ -12,4 +12,5 @@ router.put('/', authMiddleware, handleAdmin, tipoEquipamentoController.update);
 router.put('/:id', authMiddleware, handleAdmin, tipoEquipamentoController.update);
 router.delete('/:id', authMiddleware, handleAdmin, tipoEquipamentoController.delete);
 
+
 module.exports = router;
