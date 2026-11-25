@@ -41,6 +41,11 @@ jobs:
       - name: Instalar dependências (HMI)
         working-directory: src/hmi
         run: npm ci
+      - name: Gerar arquivos de environment a partir do template
+        working-directory: src/hmi
+        run: |
+          sed -e "s|API_URL|http://localhost:3000|g" src/environments/environment.template.ts > src/environments/environment.ts
+          sed -e "s|API_URL|http://localhost:3000|g" src/environments/environment.template.ts > src/environments/environment.development.ts
       - name: Rodar testes unitários (HMI)
         working-directory: src/hmi
         env:
