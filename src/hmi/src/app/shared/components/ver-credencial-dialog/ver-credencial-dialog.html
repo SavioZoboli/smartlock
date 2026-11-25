@@ -1,0 +1,56 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon>key</mat-icon>
+  <span>Credenciais - {{ data.descricao }}</span>
+</h2>
+
+<mat-dialog-content>
+  @if (carregando()) {
+    <div class="loading">
+      <mat-spinner diameter="36"></mat-spinner>
+    </div>
+  } @else if (credencial(); as cred) {
+    <dl class="credencial-lista">
+      <div class="credencial-item">
+        <dt>Login</dt>
+        <dd class="valor" data-testid="login">{{ cred.login }}</dd>
+      </div>
+
+      <div class="credencial-item">
+        <dt>Senha</dt>
+        @if (!cred.possui_senha) {
+          <dd class="valor vazio">Nenhuma senha cadastrada</dd>
+        } @else if (senhaRevelada() !== null) {
+          <dd class="valor revelada" data-testid="senha">{{ senhaRevelada() }}</dd>
+        } @else {
+          <dd class="valor mascarada" data-testid="senha" aria-label="Senha oculta">{{ mascara }}</dd>
+        }
+      </div>
+    </dl>
+
+    @if (cred.possui_senha && senhaRevelada() === null) {
+      <p class="aviso-auditoria">
+        <mat-icon class="sm-icon">info</mat-icon>
+        A visualização da senha é registrada para auditoria.
+      </p>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  @if (senhaRevelada() !== null) {
+    <button mat-flat-button color="primary" (click)="fechar()" cdkFocusInitial>Ok</button>
+  } @else {
+    <button mat-button (click)="fechar()">Fechar</button>
+    @if (credencial()?.possui_senha) {
+      <button mat-flat-button color="primary" (click)="verSenha()" [disabled]="revelando()">
+        @if (revelando()) {
+          <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
+        } @else {
+          <mat-icon>visibility</mat-icon>
+        }
+        Ver Senha
+      </button>
+    }
+  }
+</mat-dialog-actions>
+

@@ -1,20 +1,6 @@
 @use '../../../../assets/scss/shared-patterns';
 
-.page-container {
-  @extend %page-container;
-}
-
-.page-header-container {
-  @extend %page-header;
-}
-
-.btn-new {
-  @extend %btn-new;
-}
-
 .filtros-container {
-  @extend %filtros-container;
-
   .filtro-nome {
     flex: 1 1 260px;
   }
@@ -24,41 +10,9 @@
   }
 }
 
-.table-container {
-  @extend %table-container;
-}
-
-.custom-table {
-  @extend %custom-table;
-}
-
-.fw-500 {
-  @extend %fw-500;
-}
-
-.inline-icon {
-  @extend %inline-icon;
-}
-
 // Nome de classe original mantido para não exigir alteração no template.
 .chip-entidade {
   @extend %status-chip;
   background-color: var(--app-info-soft-bg);
   color: var(--app-info-soft-on);
-}
-
-.align-right {
-  @extend %align-right;
-}
-
-.action-btn {
-  @extend %action-btn;
-}
-
-.empty-state {
-  @extend %empty-state;
-}
-
-.custom-paginator {
-  @extend %custom-paginator;
 }

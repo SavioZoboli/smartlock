@@ -21,6 +21,11 @@
   @extend %form-row;
   flex-direction: row;
   gap: 15px;
+
+  @include shared-patterns.down(sm) {
+    flex-direction: column;
+    gap: 0;
+  }
 }
 
 .full-width {

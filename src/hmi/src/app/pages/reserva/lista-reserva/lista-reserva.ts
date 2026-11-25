@@ -1,22 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Reserva } from '../../../models/reserva.model';
-import { SystemNotificationService } from '../../../services/system-notification.service';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { ReportReservaLista } from '../../../reports/report-reserva-lista/report-reserva-lista';
-import { ReportReservaCalendario } from '../../../reports/report-reserva-calendario/report-reserva-calendario';
 import { ReservaService } from '../../../services/reserva.service';
-
-type ModoVisualizacao = 'lista' | 'calendario';
+import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
+import { normalizarTexto } from '../../../shared/util/normalizar-texto.util';
 
 @Component({
   selector: 'app-lista-reserva',
@@ -25,76 +21,86 @@ type ModoVisualizacao = 'lista' | 'calendario';
     ReactiveFormsModule,
     FormsModule,
     MatButtonModule,
-    MatButtonToggleModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     ReportReservaLista,
-    ReportReservaCalendario,
   ],
   templateUrl: './lista-reserva.html',
   styleUrl: './lista-reserva.scss',
 })
-export class ListaReserva {
-  modoVisualizacao: ModoVisualizacao = 'lista';
-
-  private reservas = signal<any>([]);
-  reservasFiltradas= signal<any>([]);
+export class ListaReserva implements OnInit {
+  private reservas = signal<any[]>([]);
+  reservasFiltradas = signal<any[]>([]);
 
   filtros: FormGroup = new FormGroup({
     smartlock: new FormControl(''),
+    unidade: new FormControl(''),
+    situacao: new FormControl(''),
   });
 
   unidadesDisponiveis: string[] = [];
-  regionaisDisponiveis: string[] = [];
+  situacoesDisponiveis: string[] = [];
+
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
     private router: Router,
     private reservaService: ReservaService,
-    private dialog: MatDialog,
-    private sns: SystemNotificationService,
+    private confirmDelete: ConfirmDeleteService,
   ) {}
 
   ngOnInit(): void {
+    this.filtros.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.aplicarFiltros();
+      });
+
     this.carregarReservas();
-    this.initFiltro();
   }
 
   carregarReservas(): void {
     this.reservaService.listAll().subscribe({
-      next: (res) => {
-        console.log(res)
-        this.reservas.set(res);
-        this.reservasFiltradas.set(res);
+      next: (res: any) => {
+        const lista = Array.isArray(res) ? res : [];
+        this.reservas.set(lista);
+        this.unidadesDisponiveis = [...new Set(lista.map((r: any) => r.unidade).filter(Boolean))].sort() as string[];
+        this.situacoesDisponiveis = [...new Set(lista.map((r: any) => r.situacao).filter(Boolean))].sort() as string[];
+        this.aplicarFiltros();
       },
       error: (err) => {
-        console.log(err);
+        console.error(err);
         this.reservas.set([]);
         this.reservasFiltradas.set([]);
       },
     });
   }
 
+  private aplicarFiltros(): void {
+    const { smartlock, unidade, situacao } = this.filtros.value;
+    const termoSmartlock = normalizarTexto((smartlock || '').trim());
 
-  // Remove acentos: decompõe caracteres acentuados em base + diacrítico (NFD)
-  // e usa uma regex para eliminar os diacríticos (faixa Unicode \u0300-\u036f).
-  private normalizarTexto(valor: string): string {
-    return valor
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
+    const filtradas = this.reservas().filter((r: any) => {
+      const apelido = r.smartlock || r.smartlock_apelido || '';
+      const smartlockConfere = !termoSmartlock || normalizarTexto(apelido).includes(termoSmartlock);
+      const unidadeConfere = !unidade || r.unidade === unidade;
+      const situacaoConfere = !situacao || (r.situacao || '').toUpperCase() === situacao.toUpperCase();
 
-  private initFiltro(): void {
-   this.filtros.disable()
+      return smartlockConfere && unidadeConfere && situacaoConfere;
+    });
+
+    this.reservasFiltradas.set(filtradas);
   }
 
   limparFiltros(): void {
-    this.filtros.reset({ smartlock: ''});
+    this.filtros.reset({ smartlock: '', unidade: '', situacao: '' });
   }
 
-  // --- AÇÕES DA TELA ---
+  onVerRelatorio(): void {
+    this.router.navigate(['/relatorios/reservas']);
+  }
 
   onNovaReserva(): void {
     this.router.navigate(['/reservas/cadastro']);
@@ -104,35 +110,20 @@ export class ListaReserva {
     this.router.navigate(['/reservas/editar', reserva.id]);
   }
 
-  onExcluirReserva(reserva: any): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
+  onExcluirReserva(reserva: Reserva): void {
+    const apelido = (reserva as any).smartlock || (reserva as any).smartlock_apelido || '';
+    this.confirmDelete
+      .confirmarEExcluir({
         titulo: 'Excluir reserva',
-        mensagem: `Tem certeza que deseja excluir a reserva do smartlock "${reserva.smartlock}"? Esta ação não pode ser desfeita.`,
-        textoConfirmar: 'Excluir',
-        textoCancelar: 'Cancelar',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((confirmado: boolean) => {
-      if (confirmado) {
-        this.executarExclusao(reserva);
-      }
-    });
-  }
-
-  private executarExclusao(reserva: Reserva): void {
-    this.reservaService.delete(reserva.id).subscribe({
-      next: () => {
-        this.reservas.set(this.reservas().filter((r:any) => r.id !== reserva.id));
-        this.reservasFiltradas.set(this.reservasFiltradas().filter((r:any) => r.id !== reserva.id));
-        this.sns.notificar('Reserva removida com sucesso', 'sucesso');
-      },
-      error: (err) => {
-        console.log(err);
-        this.sns.notificar(err.message, 'erro');
-      },
-    });
+        mensagem: `Tem certeza que deseja excluir a reserva do smartlock "${apelido}"? Esta ação não pode ser desfeita.`,
+        excluir$: this.reservaService.delete(reserva.id),
+        mensagemSucesso: 'Reserva removida com sucesso',
+      })
+      .subscribe((excluido) => {
+        if (excluido) {
+          this.reservas.set(this.reservas().filter((r: any) => r.id !== reserva.id));
+          this.aplicarFiltros();
+        }
+      });
   }
 }

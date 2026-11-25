@@ -1,4 +1,4 @@
-<div class="page-container">
+<div class="page-container" [class.mobile-layout]="isMobile">
   <div class="page-header-container">
     <div class="title-area">
       <div class="breadcrumb">Gerenciamento / Movimentações</div>
@@ -21,11 +21,21 @@
           <mat-label>Unidade</mat-label>
           <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
           <mat-icon matPrefix>business</mat-icon>
+          @if (movForm.get('unidade')?.value) {
+            <button mat-icon-button matSuffix type="button" (click)="movForm.get('unidade')?.setValue('')" aria-label="Limpar unidade">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUnidade">
             @for (unidade of filteredUnidades | async; track unidade) {
-              <mat-option [value]="unidade">{{ unidade.nome }} / {{ unidade.regional }}</mat-option>
+              <mat-option [value]="unidade">{{ displayUnidade(unidade) }}</mat-option>
             }
           </mat-autocomplete>
+          @if (movForm.get('unidade')?.hasError('required')) {
+            <mat-error>A unidade é obrigatória.</mat-error>
+          } @else if (movForm.get('unidade')?.hasError('objetoInvalido')) {
+            <mat-error>Selecione uma opção válida da lista.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -34,10 +44,13 @@
           <mat-label>SmartLock</mat-label>
           <mat-select formControlName="smartlock">
             @for (sl of smartlocks; track sl.id) {
-              <mat-option [value]="sl.id">{{ sl.apelido }} (nº {{ sl.numero }})</mat-option>
+              <mat-option [value]="sl.id">{{ sl.apelido }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>lock</mat-icon>
+          @if (movForm.get('smartlock')?.hasError('required')) {
+            <mat-error>O SmartLock é obrigatório.</mat-error>
+          }
           @if (isLoadingSmartlocks) {
             <mat-hint>Carregando SmartLocks...</mat-hint>
           }
@@ -52,26 +65,108 @@
         </mat-button-toggle-group>
       </div>
 
+      @if (isMobile) {
+        <div class="form-row scanner-section">
+          <span class="section-label">Leitura por Câmera</span>
+
+          <app-barcode-scanner
+            [disabled]="isScannerDisabled"
+            disabledHint="Selecione a Unidade e o SmartLock antes de habilitar a leitura."
+            [continuous]="true"
+            (codeScanned)="onCodigoBarrasLido($event)"
+            (scanError)="onErroCamera($event)">
+          </app-barcode-scanner>
+
+          <div class="revisao-container">
+            <div class="revisao-header">
+              <span class="section-label">
+                Itens Lidos / Selecionados ({{ equipamentosSelecionados.length }})
+              </span>
+            </div>
+
+            @if (equipamentosSelecionados.length === 0) {
+              <p class="empty-hint">
+                Nenhum patrimônio lido até o momento. Aponte a câmera para o código de barras do equipamento.
+              </p>
+            } @else {
+              <mat-list class="revisao-list" role="list">
+                @for (item of equipamentosSelecionados; track item.id) {
+                  <mat-list-item class="revisao-list-item" role="listitem">
+                    <mat-icon matListItemIcon>{{ item.icone || 'inventory_2' }}</mat-icon>
+                    <div matListItemTitle class="revisao-item-title">
+                      Patrimônio: {{ item.patrimonio }}
+                    </div>
+                    <div matListItemLine class="revisao-item-subtitle">
+                      {{ item.apelido }} · {{ item.tipo }}
+                    </div>
+                    <button
+                      mat-icon-button
+                      matListItemMeta
+                      type="button"
+                      color="warn"
+                      aria-label="Remover item lido"
+                      (click)="removerEquipamentoRevisao(item)">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </mat-list-item>
+                }
+              </mat-list>
+            }
+          </div>
+        </div>
+      }
+
       @if (movForm.get('smartlock')?.value && movForm.get('tipo_movimento')?.value) {
         <div class="form-row">
-          <span class="section-label">Equipamentos</span>
+          <span class="section-label">Equipamentos Disponíveis</span>
 
-          @if (isLoadingEquipamentos) {
+          @if (reservaVigente && movForm.get('tipo_movimento')?.value === 'emprestimo_manual') {
+            <div class="reserva-banner">
+              <div class="reserva-banner-info">
+                <mat-icon>event_available</mat-icon>
+                <div>
+                  <strong>Reserva Ativa Encontrada</strong>
+                  <span>
+                    Horário: {{ reservaVigente.reserva_inicio | date:'HH:mm' }} às {{ reservaVigente.reserva_fim | date:'HH:mm' }}
+                    · {{ reservaVigente.equipamentos?.length || 0 }} equipamento(s) reservado(s)
+                  </span>
+                </div>
+              </div>
+              <button mat-stroked-button color="primary" type="button" (click)="selecionarEquipamentosDaReserva()">
+                <mat-icon>done_all</mat-icon>
+                Selecionar Itens da Reserva
+              </button>
+            </div>
+          }
+
+          @if (isLoadingEquipamentos || isLoadingReserva) {
             <mat-spinner diameter="30"></mat-spinner>
           } @else if (equipamentosVisiveis.length === 0) {
             <p class="empty-hint">Nenhum equipamento disponível para este tipo de movimentação.</p>
           } @else {
             <div class="equipamento-list">
               @for (equipamento of equipamentosVisiveis; track equipamento.id) {
-                <div class="equipamento-item" (click)="toggleEquipamento(equipamento)">
+                <div
+                  class="equipamento-item"
+                  [class.item-reservado]="equipamento.pertenceReserva && movForm.get('tipo_movimento')?.value === 'emprestimo_manual'"
+                  [class.item-bloqueado]="isEquipamentoBloqueado(equipamento)"
+                  (click)="toggleEquipamento(equipamento)">
                   <mat-checkbox
                     [checked]="equipamento.selecionado"
+                    [disabled]="isEquipamentoBloqueado(equipamento)"
                     (click)="$event.stopPropagation()"
                     (change)="toggleEquipamento(equipamento)">
                   </mat-checkbox>
-                  <mat-icon class="equipamento-icone">{{ equipamento.icone}}</mat-icon>
+                  <mat-icon class="equipamento-icone">{{ equipamento.icone }}</mat-icon>
                   <div class="equipamento-info">
-                    <span class="equipamento-apelido">{{ equipamento.apelido }}</span>
+                    <div class="equipamento-header-row">
+                      <span class="equipamento-apelido">{{ equipamento.apelido }}</span>
+                      @if (equipamento.pertenceReserva && movForm.get('tipo_movimento')?.value === 'emprestimo_manual') {
+                        <span class="badge-reserva">Sua Reserva</span>
+                      } @else if (isEquipamentoBloqueado(equipamento)) {
+                        <span class="badge-bloqueado">Reservado por outro</span>
+                      }
+                    </div>
                     <span class="equipamento-detalhe">
                       Patrimônio: {{ equipamento.patrimonio }} · {{ equipamento.tipo }}
                     </span>

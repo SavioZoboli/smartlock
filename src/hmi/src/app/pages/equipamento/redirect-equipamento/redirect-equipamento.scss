@@ -1,20 +1,5 @@
-@use '../../../../assets/scss/shared-patterns';
-
 .page-container {
-  @extend %page-container;
   max-width: 1100px;
-}
-
-.page-header-container {
-  @extend %page-header;
-}
-
-.form-container {
-  @extend %form-container;
-}
-
-.full-width {
-  @extend %full-width;
 }
 
 .boxes-row {
@@ -87,10 +72,5 @@ mat-list-item {
 }
 
 .loading-overlay {
-  @extend %loading-overlay;
   border-radius: var(--app-radius-lg);
-}
-
-.form-actions {
-  @extend %form-actions;
 }

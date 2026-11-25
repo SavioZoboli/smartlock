@@ -8,6 +8,7 @@ export interface Equipamento {
   responsavel?: string;
   icone?:string;
   reservas?:any
+  avatar?:string
 }
 
 export interface TipoEquipamento {
@@ -23,5 +24,6 @@ export interface EquipamentoComigo {
   patrimonio: string;
   dataRetirada: string;        // ISO date
   smartlock: string;         // unidade / smartlock de origem
-  icone?:string
+  icone?:string;
+  possui_credencial?: boolean;
 }

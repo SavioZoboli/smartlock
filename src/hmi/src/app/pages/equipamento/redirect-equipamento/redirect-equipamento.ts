@@ -1,6 +1,7 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -11,111 +12,124 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, startWith, map, firstValueFrom } from 'rxjs';
+import { Observable, startWith, map, firstValueFrom, combineLatest } from 'rxjs';
 import { Router } from '@angular/router';
+
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
-
-interface SmartLock {
-  id: number;
-  apelido: string;
-}
-
-interface Equipamento {
-  id: number;
-  patrimonio: string;
-  tag: string;
-  tipo: string;
-  selecionado?: boolean;
-}
+import { ISmartlock } from '../../../interfaces/smartlock.interface';
+import { filtrarAutocomplete, filtrarLista } from '../../../shared/util/autocomplete-filtro.util';
+import { displayPorCampo } from '../../../shared/util/autocomplete-display.util';
+import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-selecionado.validator';
+import {
+  EquipamentoTransferivel,
+  transferirItemParaDestino,
+  transferirSelecionadosParaDestino,
+  devolverItemParaOrigem,
+} from './redirect-equipamento.util';
 
 @Component({
   selector: 'app-redirect-equipamentos',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, FormsModule, MatFormFieldModule,
-    MatInputModule, MatAutocompleteModule, MatButtonModule,
-    MatIconModule, MatProgressSpinnerModule, MatCheckboxModule,
-    MatListModule, MatDividerModule, MatTooltipModule
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatCheckboxModule,
+    MatListModule,
+    MatDividerModule,
+    MatTooltipModule,
   ],
   templateUrl: './redirect-equipamento.html',
-  styleUrls: ['./redirect-equipamento.scss']
+  styleUrls: ['./redirect-equipamento.scss'],
 })
-export class RedirectEquipamento {
-  form: FormGroup;
+export class RedirectEquipamento implements OnInit {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private equipamentoService = inject(EquipamentoService);
+  private smartlockService = inject(SmartlockService);
+  private sns = inject(SystemNotificationService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroyRef = inject(DestroyRef);
 
-  smartlocks: SmartLock[] = [];
-  filteredOrigem!: Observable<SmartLock[]>;
-  filteredDestino!: Observable<SmartLock[]>;
+  form: FormGroup = this.fb.group({
+    origem: ['', [Validators.required, objetoSelecionadoValidator]],
+    destino: [{ value: '', disabled: true }, [Validators.required, objetoSelecionadoValidator]],
+  });
 
-  origemSelecionada: SmartLock | null = null;
-  destinoSelecionado: SmartLock | null = null;
+  smartlocks: ISmartlock[] = [];
+  filteredOrigem!: Observable<ISmartlock[]>;
+  filteredDestino!: Observable<ISmartlock[]>;
 
-  equipamentosDisponiveis: Equipamento[] = [];
-  equipamentosParaTransferir: Equipamento[] = [];
+  origemSelecionada: ISmartlock | null = null;
+  destinoSelecionado: ISmartlock | null = null;
+
+  equipamentosDisponiveis: EquipamentoTransferivel[] = [];
+  equipamentosParaTransferir: EquipamentoTransferivel[] = [];
 
   isLoading = false;
   isLoadingEquipamentos = false;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private equipamentoService: EquipamentoService,
-    private smartlockService: SmartlockService,
-    private sns: SystemNotificationService,
-    private cdr: ChangeDetectorRef,
-  ) {
-    this.form = this.fb.group({
-      origem: ['', Validators.required],
-      destino: [{ value: '', disabled: true }, Validators.required],
-    });
+  readonly displaySmartlock = displayPorCampo<ISmartlock>('apelido');
 
-    this.init();
+  ngOnInit(): void {
+    this.inicializarDados();
   }
 
-  private async init(): Promise<void> {
+  private inicializarDados(): void {
     this.isLoading = true;
-    this.smartlocks = await firstValueFrom(this.smartlockService.listAll());
-    this.initFiltros();
-    this.isLoading = false;
-    this.cdr.detectChanges();
+    this.smartlockService
+      .listAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (smartlocks) => {
+          this.smartlocks = smartlocks;
+          this.iniciarFiltros();
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.sns.notificarErro(err, 'Erro ao carregar smartlocks');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
   }
 
-  private initFiltros(): void {
-    this.filteredOrigem = this.form.get('origem')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => this._filter(value, this.smartlocks)),
+  private iniciarFiltros(): void {
+    this.filteredOrigem = filtrarAutocomplete(
+      this.form.get('origem')!,
+      this.smartlockService.listAll(),
+      'apelido',
     );
 
-    this.filteredDestino = this.form.get('destino')!.valueChanges.pipe(
-      startWith(''),
-      map((value) => {
-        const disponiveis = this.smartlocks.filter(s => s.id !== this.origemSelecionada?.id);
-        return this._filter(value, disponiveis);
+    this.filteredDestino = combineLatest([
+      this.form.get('destino')!.valueChanges.pipe(startWith('')),
+      this.smartlockService.listAll(),
+      this.form.get('origem')!.valueChanges.pipe(startWith(this.form.get('origem')!.value)),
+    ]).pipe(
+      map(([valorDestino, smartlocks, origem]) => {
+        const origemId = origem && typeof origem === 'object' ? origem.id : null;
+        const disponiveis = origemId ? smartlocks.filter((s) => s.id !== origemId) : smartlocks;
+        return filtrarLista(disponiveis, valorDestino, 'apelido');
       }),
     );
   }
 
-  private _filter(value: any, lista: SmartLock[]): SmartLock[] {
-    const stringValue = typeof value === 'string' ? value : value?.apelido || '';
-    const filterValue = stringValue.toLowerCase();
-    return lista.filter((option) => option.apelido.toLowerCase().includes(filterValue));
-  }
-
-  displaySmartlock = (smartlock: SmartLock | string): string => {
-    if (!smartlock) return '';
-    if (typeof smartlock === 'string') return smartlock;
-    return smartlock.apelido;
-  };
-
   async onOrigemSelecionada(): Promise<void> {
-    const origem = this.form.get('origem')!.value as SmartLock;
+    const origem = this.form.get('origem')!.value as ISmartlock;
     if (!origem || typeof origem === 'string') return;
 
     this.origemSelecionada = origem;
 
-    // reseta destino e listas
+    // Reseta o destino e as listas ao alterar a origem
     this.form.get('destino')!.enable();
     this.form.get('destino')!.setValue('');
     this.destinoSelecionado = null;
@@ -124,48 +138,73 @@ export class RedirectEquipamento {
     await this.carregarEquipamentosDaOrigem(origem.id);
   }
 
+  limparOrigem(): void {
+    this.form.get('origem')?.setValue('');
+    this.origemSelecionada = null;
+    this.form.get('destino')?.setValue('');
+    this.form.get('destino')?.disable();
+    this.destinoSelecionado = null;
+    this.equipamentosDisponiveis = [];
+    this.equipamentosParaTransferir = [];
+  }
+
   onDestinoSelecionada(): void {
-    const destino = this.form.get('destino')!.value as SmartLock;
+    const destino = this.form.get('destino')!.value as ISmartlock;
     if (!destino || typeof destino === 'string') return;
     this.destinoSelecionado = destino;
+  }
+
+  limparDestino(): void {
+    this.form.get('destino')?.setValue('');
+    this.destinoSelecionado = null;
   }
 
   private async carregarEquipamentosDaOrigem(smartlockId: number): Promise<void> {
     this.isLoadingEquipamentos = true;
     try {
       this.equipamentosDisponiveis = await firstValueFrom(
-        this.equipamentoService.listBySmartlock(smartlockId)
+        this.equipamentoService.listBySmartlock(smartlockId),
       );
     } catch (err) {
-      console.log(err);
-      this.sns.notificar('Erro ao carregar equipamentos do smartlock de origem.', 'erro');
+      this.sns.notificarErro(err, 'Erro ao carregar equipamentos do smartlock de origem.');
       this.equipamentosDisponiveis = [];
     } finally {
       this.isLoadingEquipamentos = false;
+      this.cdr.detectChanges();
     }
   }
 
   get temSelecionados(): boolean {
-    return this.equipamentosDisponiveis.some(e => e.selecionado);
+    return this.equipamentosDisponiveis.some((e) => e.selecionado);
   }
 
-  enviarParaDestino(equipamento: Equipamento): void {
-    this.equipamentosDisponiveis = this.equipamentosDisponiveis.filter(e => e.id !== equipamento.id);
-    equipamento.selecionado = false;
-    this.equipamentosParaTransferir.push(equipamento);
+  enviarParaDestino(equipamento: EquipamentoTransferivel): void {
+    const res = transferirItemParaDestino(
+      this.equipamentosDisponiveis,
+      this.equipamentosParaTransferir,
+      equipamento,
+    );
+    this.equipamentosDisponiveis = res.disponiveis;
+    this.equipamentosParaTransferir = res.paraTransferir;
   }
 
   enviarSelecionadosParaDestino(): void {
-    const selecionados = this.equipamentosDisponiveis.filter(e => e.selecionado);
-
-    this.equipamentosDisponiveis = this.equipamentosDisponiveis.filter(e => !e.selecionado);
-    selecionados.forEach(e => e.selecionado = false);
-    this.equipamentosParaTransferir.push(...selecionados);
+    const res = transferirSelecionadosParaDestino(
+      this.equipamentosDisponiveis,
+      this.equipamentosParaTransferir,
+    );
+    this.equipamentosDisponiveis = res.disponiveis;
+    this.equipamentosParaTransferir = res.paraTransferir;
   }
 
-  removerDoDestino(equipamento: Equipamento): void {
-    this.equipamentosParaTransferir = this.equipamentosParaTransferir.filter(e => e.id !== equipamento.id);
-    this.equipamentosDisponiveis.push(equipamento);
+  removerDoDestino(equipamento: EquipamentoTransferivel): void {
+    const res = devolverItemParaOrigem(
+      this.equipamentosDisponiveis,
+      this.equipamentosParaTransferir,
+      equipamento,
+    );
+    this.equipamentosDisponiveis = res.disponiveis;
+    this.equipamentosParaTransferir = res.paraTransferir;
   }
 
   onCancelar(): void {
@@ -173,6 +212,12 @@ export class RedirectEquipamento {
   }
 
   salvar(): void {
+    if (this.form.invalid || !this.origemSelecionada) {
+      this.form.markAllAsTouched();
+      this.sns.notificar('Por favor, selecione smartlocks válidos de origem e destino.', 'erro');
+      return;
+    }
+
     if (!this.destinoSelecionado) {
       this.sns.notificar('Selecione o smartlock de destino.', 'erro');
       return;
@@ -184,18 +229,21 @@ export class RedirectEquipamento {
     }
 
     this.isLoading = true;
-    const equipamentoIds = this.equipamentosParaTransferir.map(e => e.id);
+    const equipamentoIds = this.equipamentosParaTransferir.map((e) => e.id);
 
-    this.equipamentoService.redirect(this.destinoSelecionado.id, equipamentoIds).subscribe({
-      next: () => {
-        this.sns.notificar('Equipamentos redirecionados com sucesso!', 'sucesso');
-        this.router.navigate(['/equipamentos/lista']);
-      },
-      error: (err: any) => {
-        console.log(err);
-        this.sns.notificar(err.message, 'erro');
-        this.isLoading = false;
-      },
-    });
+    this.equipamentoService
+      .redirect(this.destinoSelecionado.id, equipamentoIds)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.sns.notificar('Equipamentos redirecionados com sucesso!', 'sucesso');
+          this.router.navigate(['/equipamentos/lista']);
+        },
+        error: (err: any) => {
+          this.sns.notificarErro(err);
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
   }
 }

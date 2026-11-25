@@ -8,14 +8,31 @@
 //
 // Import este arquivo com `@use '../shared-patterns' as *;` (ou caminho
 // relativo equivalente) em cada .scss de componente.
+//
+// Responsividade: os breakpoints vivem em _breakpoints.scss e os mixins
+// down()/up()/between() são re-exportados daqui via @forward. Todo @media novo
+// deve usar esses mixins.
 // =============================================================================
+
+@forward 'breakpoints';
+@use 'breakpoints' as bp;
 
 // -----------------------------------------------------------------------------
 // Layout de página
 // -----------------------------------------------------------------------------
 %page-container {
-  padding: var(--app-space-lg);
+  padding: var(--app-space-xl);
   margin: 0 auto;
+  min-width: 0;
+  max-width: 100%;
+
+  @include bp.down(md) {
+    padding: var(--app-space-lg);
+  }
+
+  @include bp.down(xs) {
+    padding: var(--app-space-md);
+  }
 }
 
 %page-header {
@@ -23,15 +40,31 @@
   padding-bottom: 1.25rem;
   margin-bottom: var(--app-space-xl);
 
+  @include bp.down(sm) {
+    margin-bottom: var(--app-space-lg);
+  }
+
   &.with-actions {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+    flex-wrap: wrap;
+    gap: var(--app-space-md);
+
+    @include bp.down(sm) {
+      flex-direction: column;
+      align-items: stretch;
+
+      .action-area > * {
+        flex: 1 1 auto;
+      }
+    }
   }
 
   .title-area {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 
     .breadcrumb {
       font-size: 0.75rem;
@@ -47,11 +80,16 @@
       font-size: 1.5rem;
       font-weight: 700;
       color: var(--mat-sys-primary);
+
+      @include bp.down(sm) {
+        font-size: 1.25rem;
+      }
     }
   }
 
   .action-area {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--app-space-md);
   }
 }
@@ -105,6 +143,11 @@
   box-shadow: var(--app-shadow-sm);
   border: 1px solid var(--mat-sys-outline-variant);
   border-top: 3px solid var(--mat-sys-primary);
+
+  @include bp.down(sm) {
+    padding: var(--app-space-md);
+    border-radius: var(--app-radius-md);
+  }
 }
 
 %cadastro-form {
@@ -183,6 +226,20 @@
       filter: brightness(0.92);
     }
   }
+
+  @include bp.down(sm) {
+    flex-direction: column-reverse;
+    align-items: stretch;
+
+    .spacer {
+      display: none;
+    }
+
+    button {
+      width: 100%;
+      padding: var(--app-space-md);
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -194,7 +251,8 @@
   box-shadow: var(--app-shadow-sm);
   border: 1px solid var(--mat-sys-outline-variant);
   border-top: 3px solid var(--mat-sys-primary);
-  overflow: hidden;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 %custom-table {
@@ -234,6 +292,7 @@
 
 %filtros-container {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: var(--app-space-md);
   margin-bottom: 1.25rem;
@@ -244,6 +303,33 @@
 
     mat-icon {
       margin-right: var(--app-space-xs);
+    }
+  }
+
+  @include bp.down(sm) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--app-space-md);
+    margin-bottom: var(--app-space-lg);
+
+    > * {
+      flex: 1 1 auto !important;
+      width: 100%;
+      min-width: 0;
+    }
+
+    // Campos têm área de subscript reservada; compensa para o gap ficar uniforme
+    mat-form-field {
+      margin-bottom: calc(var(--app-space-xs) * -1);
+    }
+
+    mat-checkbox,
+    mat-slide-toggle {
+      padding: var(--app-space-xs) 0;
+    }
+
+    .btn-limpar {
+      height: 44px;
     }
   }
 }
@@ -295,9 +381,19 @@
 // cartões com indicador de status lateral.
 // -----------------------------------------------------------------------------
 %report-container {
-  padding: var(--app-space-lg);
+  padding: var(--app-space-xl);
+  min-width: 0;
+  max-width: 100%;
   //max-width: 1600px;
   //margin: 0 auto;
+
+  @include bp.down(md) {
+    padding: var(--app-space-lg);
+  }
+
+  @include bp.down(xs) {
+    padding: var(--app-space-md);
+  }
 }
 
 %report-header {
@@ -350,7 +446,7 @@
 
 %equipment-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
   gap: var(--app-space-md);
 }
 

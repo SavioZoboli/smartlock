@@ -32,3 +32,20 @@
 .form-actions {
   @extend %form-actions;
 }
+
+.tipo-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .tipo-field {
+    flex: 1 1 260px;
+  }
+
+  .btn-novo-tipo {
+    height: 56px;
+    white-space: nowrap;
+  }
+}

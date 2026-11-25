@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { KPI_CATALOGO, KPI_PADRAO, KpiDefinicao } from '../../models/kpi.model';
 import { KpiService } from '../../services/kpi.service';
 import { SystemNotificationService } from '../../services/system-notification.service';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-dashboard-cards',
@@ -22,6 +23,7 @@ import { SystemNotificationService } from '../../services/system-notification.se
     MatTooltipModule,
     MatCardModule,
     MatIconModule,
+    MatProgressSpinner,
   ],
   templateUrl: './dashboard-cards.html',
   styleUrls: ['./dashboard-cards.scss'],
@@ -35,7 +37,7 @@ export class DashboardCards implements OnInit {
 
   // kpisExibidos guarda cópias próprias do componente, nunca referências do catalogo
   kpisExibidos = signal<KpiDefinicao[]>([]);
-  carregando = false;
+  carregando = signal<boolean>(false);
 
   constructor(
     private kpiService: KpiService,
@@ -65,13 +67,13 @@ export class DashboardCards implements OnInit {
       .filter((k) => ids.includes(k.id))
       .map((k) => ({ ...k, valor: undefined }));
 
-    this.kpisExibidos.set(kpis)
-    
+    this.kpisExibidos.set(kpis);
+
     void this.carregarValores(ids);
   }
 
   private async carregarValores(ids: string[]) {
-    this.carregando = true;
+    this.carregando.set(true);
 
     // uma consulta por vez, em sequência - contagens simples no backend, sem custo real
     for (const id of ids) {
@@ -85,11 +87,11 @@ export class DashboardCards implements OnInit {
       }
     }
 
-    this.carregando = false;
+    this.carregando.set(false);
   }
 
   private atualizarValorKpi(id: string, valor: number | string | undefined) {
     let kpis = this.kpisExibidos().map((k) => (k.id === id ? { ...k, valor } : k));
-    this.kpisExibidos.set(kpis)
+    this.kpisExibidos.set(kpis);
   }
 }

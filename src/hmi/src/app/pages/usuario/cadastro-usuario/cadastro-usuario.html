@@ -21,11 +21,17 @@
           <mat-label>Nome</mat-label>
           <input matInput formControlName="nome">
           <mat-icon matPrefix>person</mat-icon>
+          @if (userForm.get('nome')?.hasError('required')) {
+            <mat-error>O nome é obrigatório.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>Sobrenome</mat-label>
           <input matInput formControlName="sobrenome">
+          @if (userForm.get('sobrenome')?.hasError('required')) {
+            <mat-error>O sobrenome é obrigatório.</mat-error>
+          }
         </mat-form-field>
       </div>
       <div class="form-row">
@@ -33,20 +39,31 @@
           <mat-label>E-mail</mat-label>
           <input matInput formControlName="email">
           <mat-icon matPrefix>mail</mat-icon>
+          @if (userForm.get('email')?.hasError('required')) {
+            <mat-error>O e-mail é obrigatório.</mat-error>
+          }
         </mat-form-field>
       </div>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>UID (Identificador Único)</mat-label>
           <input matInput formControlName="uuid">
           <mat-icon matPrefix>fingerprint</mat-icon>
+          @if (userForm.get('uuid')?.hasError('required')) {
+            <mat-error>O UID é obrigatório.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>Matrícula</mat-label>
           <input matInput formControlName="matricula" mask="00000" placeholder="00000">
           <mat-icon matPrefix>badge</mat-icon>
+          @if (userForm.get('matricula')?.hasError('required')) {
+            <mat-error>A matrícula é obrigatória.</mat-error>
+          } @else if (userForm.get('matricula')?.hasError('pattern')) {
+            <mat-error>A matrícula deve conter 5 dígitos numéricos.</mat-error>
+          }
           <mat-hint>Apenas 5 dígitos numéricos</mat-hint>
         </mat-form-field>
       </div>
@@ -56,11 +73,21 @@
           <mat-label>Unidade de Lotação</mat-label>
           <input type="text" matInput formControlName="unidade" [matAutocomplete]="auto">
           <mat-icon matPrefix>business</mat-icon>
+          @if (userForm.get('unidade')?.value) {
+            <button mat-icon-button matSuffix type="button" (click)="userForm.get('unidade')?.setValue('')" aria-label="Limpar unidade">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUnidade">
             @for (unidade of filteredUnidades | async; track unidade) {
-              <mat-option [value]="unidade">{{ unidade.nome }} / <span class="fs-small">{{unidade.regional}}</span></mat-option>
+              <mat-option [value]="unidade">{{ displayUnidade(unidade) }}</mat-option>
             }
           </mat-autocomplete>
+          @if (userForm.get('unidade')?.hasError('required')) {
+            <mat-error>A unidade é obrigatória.</mat-error>
+          } @else if (userForm.get('unidade')?.hasError('objetoInvalido')) {
+            <mat-error>Selecione uma opção válida da lista.</mat-error>
+          }
         </mat-form-field>
       </div>
 

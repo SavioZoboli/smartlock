@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import authService from "../services/auth.service";
+import usuarioService from "../services/usuario.service";
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -38,7 +39,18 @@ class AuthController {
   }
 
   async returnMe(req: Request, res: Response) {
-    res.json(req.user);
+    if (!req.user) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
+    try {
+      const userDb = await usuarioService.getById(req.user.id);
+      return res.json({
+        ...req.user,
+        unidade_id: (userDb as any)?.unidade_id ?? null,
+      });
+    } catch {
+      return res.json(req.user);
+    }
   }
 
   async logout(req: Request, res: Response) {

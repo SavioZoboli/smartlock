@@ -5,8 +5,8 @@ export interface EquipamentoAttributes {
   id: number;
   apelido?:string;
   tag: string;
-  patrimonio: string;
-  tipo: string;
+  patrimonio?: string | null;
+  tipo_id: number;
   smartlock_base_id: number;
   status_atual: string;
   usuario_atual_id?: number|null;
@@ -17,7 +17,7 @@ export interface EquipamentoAttributes {
 
 interface EquipamentoCreationAttributes extends Optional<
   EquipamentoAttributes,
-  "id" | "usuario_atual_id" | "ativo"
+  "id" | "apelido" | "patrimonio" | "usuario_atual_id" | "ativo"
 > {}
 
 class Equipamento extends Model<
@@ -27,8 +27,8 @@ class Equipamento extends Model<
   declare id: number;
   declare apelido?:string;
   declare tag: string;
-  declare patrimonio: string;
-  declare tipo: string;
+  declare patrimonio?: string | null;
+  declare tipo_id: number;
   declare smartlock_base_id: number;
   declare status_atual: string;
   declare usuario_atual_id?: number;
@@ -55,12 +55,16 @@ Equipamento.init(
     },
     patrimonio: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true,
     },
-    tipo: {
-      type: DataTypes.STRING,
+    tipo_id: {
+      type: DataTypes.BIGINT,
       allowNull: false,
+      references: {
+        model: "tipos_equipamento",
+        key: "id",
+      },
     },
     smartlock_base_id: {
       type: DataTypes.INTEGER,

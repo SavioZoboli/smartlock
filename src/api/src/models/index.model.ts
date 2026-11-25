@@ -9,6 +9,9 @@ import ItensMovimentacao from './itensMovimentacao.model';
 import Reserva from './reserva.model';
 import ItensReserva from './itensReserva.model';
 import Regiao from './regiao.model';
+import EquipamentoCredencial from './equipamentoCredencial.model';
+import LogAcessoEqpCred from './logAcessoEqpCred.model';
+import TipoEquipamento from './tipoEquipamento.model';
 
 // ============================================================================
 // DEFINIÇÃO DOS RELACIONAMENTOS (ASSOCIATIONS)
@@ -98,6 +101,20 @@ Equipamento.belongsToMany(Reserva, {
   as: 'reservas',
 });
 
+// 7. Credenciais de equipamento (1:1) e auditoria de acesso à senha
+Equipamento.hasOne(EquipamentoCredencial, { foreignKey: 'equipamento_id', as: 'credencial' });
+EquipamentoCredencial.belongsTo(Equipamento, { foreignKey: 'equipamento_id', as: 'equipamento' });
+
+Equipamento.hasMany(LogAcessoEqpCred, { foreignKey: 'equipamento_id', as: 'logsAcessoCredencial' });
+LogAcessoEqpCred.belongsTo(Equipamento, { foreignKey: 'equipamento_id', as: 'equipamento' });
+
+Usuario.hasMany(LogAcessoEqpCred, { foreignKey: 'usuario_id', as: 'logsAcessoCredencial' });
+LogAcessoEqpCred.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'usuario' });
+
+// 8. Tipos de equipamento (1:N)
+TipoEquipamento.hasMany(Equipamento, { foreignKey: 'tipo_id', as: 'equipamentos' });
+Equipamento.belongsTo(TipoEquipamento, { foreignKey: 'tipo_id', as: 'tipoEquipamento' });
+
 // ============================================================================
 // EXPORTAÇÃO CENTRALIZADA
 // ============================================================================
@@ -112,5 +129,8 @@ export {
   ItensMovimentacao,
   Reserva,
   ItensReserva,
-  Regiao
+  Regiao,
+  EquipamentoCredencial,
+  LogAcessoEqpCred,
+  TipoEquipamento
 };

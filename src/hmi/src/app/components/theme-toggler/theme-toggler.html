@@ -1,0 +1,14 @@
+<button
+  type="button"
+  role="switch"
+  class="theme-toggle-track"
+  [class.checked]="themeToggler.isDarkTheme()"
+  [attr.aria-checked]="themeToggler.isDarkTheme()"
+  [matTooltip]="themeToggler.isDarkTheme() ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
+  [attr.aria-label]="themeToggler.isDarkTheme() ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
+  (click)="themeToggler.toggleTheme()"
+>
+  <span class="theme-toggle-thumb">
+    <mat-icon>{{ themeToggler.isDarkTheme() ? 'dark_mode' : 'light_mode' }}</mat-icon>
+  </span>
+</button>

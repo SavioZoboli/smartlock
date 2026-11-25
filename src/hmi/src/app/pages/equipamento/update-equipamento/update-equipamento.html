@@ -21,19 +21,36 @@
           <mat-label>SmartLock</mat-label>
           <input type="text" matInput formControlName="smartlock" [matAutocomplete]="auto">
           <mat-icon matPrefix>lock</mat-icon>
+          @if (eqForm.get('smartlock')?.value) {
+            <button mat-icon-button matSuffix type="button" (click)="eqForm.get('smartlock')?.setValue('')" aria-label="Limpar smartlock">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <mat-autocomplete #auto="matAutocomplete" [displayWith]="displaySmartlock">
             @for (smartlock of filteredSmartlocks | async; track smartlock) {
               <mat-option [value]="smartlock">{{ smartlock.apelido }}</mat-option>
             }
           </mat-autocomplete>
+          @if (eqForm.get('smartlock')?.hasError('required')) {
+            <mat-error>O SmartLock é obrigatório.</mat-error>
+          } @else if (eqForm.get('smartlock')?.hasError('objetoInvalido')) {
+            <mat-error>Selecione uma opção válida da lista.</mat-error>
+          }
         </mat-form-field>
       </div>
 
       <div class="form-row">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>Patrimônio</mat-label>
-          <input matInput formControlName="patrimonio">
+          <input
+            matInput
+            formControlName="patrimonio"
+            [placeholder]="eqForm.get('patrimonio')?.disabled ? 'Não aplicável para este tipo' : ''"
+          />
           <mat-icon matPrefix>inventory_2</mat-icon>
+          @if (eqForm.get('patrimonio')?.hasError('required')) {
+            <mat-error>O patrimônio é obrigatório.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -42,19 +59,35 @@
           <mat-label>Tag RFID</mat-label>
           <input matInput formControlName="tag">
           <mat-icon matPrefix>nfc</mat-icon>
+          @if (eqForm.get('tag')?.hasError('required')) {
+            <mat-error>A tag RFID é obrigatória.</mat-error>
+          }
         </mat-form-field>
       </div>
 
-      <div class="form-row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+      <div class="form-row tipo-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="tipo-field">
           <mat-label>Tipo</mat-label>
           <mat-select formControlName="tipo">
-            @for (tipo of tipos; track tipo.descricao) {
-              <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
+            @for (tipo of tipos; track tipo.id) {
+              <mat-option [value]="tipo.id">{{ tipo.nome }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
+          @if (eqForm.get('tipo')?.hasError('required')) {
+            <mat-error>O tipo é obrigatório.</mat-error>
+          }
         </mat-form-field>
+
+        <button
+          mat-stroked-button
+          type="button"
+          class="btn-novo-tipo"
+          (click)="abrirModalGerenciarTipos()"
+          matTooltip="Gerenciar tipos de equipamento"
+        >
+          <mat-icon>category</mat-icon> Gerenciar Tipos
+        </button>
       </div>
       <div class="form-row">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
@@ -70,6 +103,12 @@
           Excluir
         </button>
         <span class="spacer"></span>
+        @if (hasCredencial) {
+          <button mat-stroked-button type="button" (click)="onCredenciais()">
+            <mat-icon>key</mat-icon>
+            Credenciais
+          </button>
+        }
         <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
         <button mat-flat-button color="primary" type="submit" [disabled]="eqForm.invalid">
           Salvar

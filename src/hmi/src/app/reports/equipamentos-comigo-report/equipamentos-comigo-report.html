@@ -32,6 +32,17 @@
               <div class="datas">
                 <span>Retirado em {{ item.dataRetirada | date: 'dd/MM/yyyy' }}</span>
               </div>
+              @if (item.possui_credencial) {
+                <button
+                  mat-mini-fab
+                  type="button"
+                  class="btn-credenciais"
+                  (click)="verCredenciais(item)"
+                  [attr.aria-label]="'Ver credenciais do equipamento ' + (item.apelido || item.patrimonio)"
+                >
+                  <mat-icon>key</mat-icon>
+                </button>
+              }
             </div>
           </div>
         </mat-card>
