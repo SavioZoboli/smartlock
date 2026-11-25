@@ -13,6 +13,7 @@ const reservaRouter = require("./reserva.routes")
 const regiaoRouter = require("./regiao.routes")
 const systemStatusRouter = require("./system-status.routes")
 const equipamentoCredencialRouter = require("./equipamentoCredencial.routes")
+const tipoEquipamentoRouter = require("./tipoEquipamento.routes")
 
 router.get('/',(req:Request,res:Response)=>{
     res.status(200).json({message:"API acessível"})
@@ -29,5 +30,6 @@ router.use('/reserva',reservaRouter)
 router.use('/regiao',regiaoRouter)
 router.use('/status',systemStatusRouter)
 router.use('/equipamento-credencial',equipamentoCredencialRouter)
+router.use('/tipo-equipamento',tipoEquipamentoRouter)
 
 module.exports = router;

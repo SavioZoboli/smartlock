@@ -10,6 +10,8 @@ function responderErro(res: Response, e: any) {
       return res.status(404).json({ message: "Credencial não encontrada para este equipamento" });
     case "ERR_EQUIPAMENTO_NOT_FOUND":
       return res.status(404).json({ message: "Equipamento não encontrado ou inativo" });
+    case "ERR_TIPO_SEM_CREDENCIAL":
+      return res.status(400).json({ message: "Este tipo de equipamento não suporta credenciais" });
     case "ERR_DUPLICATE":
       return res.status(409).json({ message: "Este equipamento já possui credencial cadastrada" });
     case "ERR_SENHA_MUITO_LONGA":

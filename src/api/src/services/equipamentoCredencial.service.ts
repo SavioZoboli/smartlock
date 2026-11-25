@@ -5,6 +5,7 @@ import {
   EquipamentoCredencial,
   LogAcessoEqpCred,
   SmartLock,
+  TipoEquipamento,
   Unidade,
 } from "../models/index.model";
 import {
@@ -21,7 +22,7 @@ export interface CredencialDTO {
 }
 
 export interface CredencialListagemDTO extends CredencialDTO {
-  patrimonio: string;
+  patrimonio: string | null;
   apelido: string | null;
   tipo: string;
 }
@@ -56,7 +57,7 @@ class EquipamentoCredencialService {
         POSSUI_SENHA("EquipamentoCredencial"),
         [Sequelize.col("equipamento.patrimonio"), "patrimonio"],
         [Sequelize.col("equipamento.apelido"), "apelido"],
-        [Sequelize.col("equipamento.tipo"), "tipo"],
+        [Sequelize.col("equipamento->tipoEquipamento.nome"), "tipo"],
       ],
       include: [
         {
@@ -65,6 +66,11 @@ class EquipamentoCredencialService {
           attributes: [],
           where: { ativo: true },
           include: [
+            {
+              model: TipoEquipamento,
+              as: "tipoEquipamento",
+              attributes: [],
+            },
             {
               model: SmartLock,
               as: "smartlockBase",
@@ -115,10 +121,20 @@ class EquipamentoCredencialService {
     senha?: string | null,
   ): Promise<CredencialDTO> {
     const equipamento = await Equipamento.findByPk(equipamento_id, {
-      attributes: ["id", "ativo"],
+      attributes: ["id", "ativo", "tipo_id"],
+      include: [
+        {
+          model: TipoEquipamento,
+          as: "tipoEquipamento",
+          attributes: ["has_credencial"],
+        },
+      ],
     });
     if (!equipamento || !equipamento.ativo) {
       throw new Error("ERR_EQUIPAMENTO_NOT_FOUND");
+    }
+    if (!(equipamento as any).tipoEquipamento?.has_credencial) {
+      throw new Error("ERR_TIPO_SEM_CREDENCIAL");
     }
 
     const existente = await EquipamentoCredencial.findOne({

@@ -33,6 +33,16 @@ class EquipamentoController {
       );
       return res.status(201).json({ contagem });
     } catch (e: any) {
+      if (e.message === "ERR_TIPO_NOT_FOUND") {
+        return res
+          .status(400)
+          .json({ message: "Tipo de equipamento inválido ou não encontrado" });
+      }
+      if (e.message === "ERR_PATRIMONIO_OBRIGATORIO") {
+        return res.status(400).json({
+          message: "O patrimônio é obrigatório para o tipo de equipamento selecionado",
+        });
+      }
       if (e.message === "ERR_DUPLICATE") {
         return res.status(409).json({
           message: `${e.duplicados.length} patrimônio(s) já cadastrado(s): ${e.duplicados.join(", ")}`,
@@ -66,14 +76,38 @@ class EquipamentoController {
   }
 
   async update(req: Request, res: Response) {
-    let { id, smartlock_id, tag, patrimonio, tipo,apelido } = req.body;
-    if (!id || !smartlock_id || !tag || !patrimonio || !tipo) {
+    let { id, smartlock_id, tag, patrimonio, tipo_id, tipo, apelido } = req.body;
+    const resolvedTipoId = Number(tipo_id ?? tipo);
+    if (!id || !smartlock_id || !tag || isNaN(resolvedTipoId) || resolvedTipoId <= 0) {
       return res.status(400).json({ message: "Dados obrigatórios faltando" });
     }
     try {
-      await equipamentoService.update(id, tag, patrimonio, tipo, smartlock_id,apelido);
+      await equipamentoService.update(
+        id,
+        tag,
+        patrimonio,
+        resolvedTipoId,
+        smartlock_id,
+        apelido,
+      );
       return res.status(200).json({ message: "Alterado" });
-    } catch (e) {
+    } catch (e: any) {
+      if (e.message === "ERR_NOT_FOUND") {
+        return res.status(404).json({ message: "Equipamento não encontrado" });
+      }
+      if (e.message === "ERR_TIPO_NOT_FOUND") {
+        return res
+          .status(400)
+          .json({ message: "Tipo de equipamento inválido ou não encontrado" });
+      }
+      if (e.message === "ERR_PATRIMONIO_OBRIGATORIO") {
+        return res.status(400).json({
+          message: "O patrimônio é obrigatório para o tipo de equipamento selecionado",
+        });
+      }
+      if (e.name === "SequelizeUniqueConstraintError" || e.message === "ERR_DUPLICATE") {
+        return res.status(409).json({ message: "Tag ou patrimônio já cadastrado" });
+      }
       return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

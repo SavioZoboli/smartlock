@@ -6,9 +6,11 @@ import { Equipamento } from '../models/equipamento.model';
 import { EquipamentoEmUso, HistoricoItem, PaginatedResponse } from '../reports/extrato-emprestimos/extrato-emprestimos';
 
 export type EquipamentoCreateAttributes = {
-  rfid: string;
-  patrimonio: string;
-  tipo: string;
+  tag?: string;
+  rfid?: string;
+  patrimonio?: string | null;
+  tipo_id: number;
+  apelido?: string;
 };
 
 @Injectable({
@@ -40,15 +42,15 @@ export class EquipamentoService {
 
   public update(
     id: number,
-    patrimonio: string,
+    patrimonio: string | null,
     tag: string,
-    tipo: string,
-    smartlock_id: string,
+    tipo_id: number,
+    smartlock_id: string | number,
     apelido: string,
   ): Observable<any> {
     return this.http.put(
       `${this.api_url}/`,
-      { id, patrimonio, tag, tipo, smartlock_id, apelido },
+      { id, patrimonio, tag, tipo_id, tipo: tipo_id, smartlock_id, apelido },
       { withCredentials: true },
     );
   }

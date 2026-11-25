@@ -42,7 +42,11 @@
       <div class="form-row">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
           <mat-label>Patrimônio</mat-label>
-          <input matInput formControlName="patrimonio">
+          <input
+            matInput
+            formControlName="patrimonio"
+            [placeholder]="eqForm.get('patrimonio')?.disabled ? 'Não aplicável para este tipo' : ''"
+          />
           <mat-icon matPrefix>inventory_2</mat-icon>
           @if (eqForm.get('patrimonio')?.hasError('required')) {
             <mat-error>O patrimônio é obrigatório.</mat-error>
@@ -61,12 +65,12 @@
         </mat-form-field>
       </div>
 
-      <div class="form-row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+      <div class="form-row tipo-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="tipo-field">
           <mat-label>Tipo</mat-label>
           <mat-select formControlName="tipo">
-            @for (tipo of tipos; track tipo.descricao) {
-              <mat-option [value]="tipo.descricao">{{ tipo.descricao }}</mat-option>
+            @for (tipo of tipos; track tipo.id) {
+              <mat-option [value]="tipo.id">{{ tipo.nome }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
@@ -74,6 +78,16 @@
             <mat-error>O tipo é obrigatório.</mat-error>
           }
         </mat-form-field>
+
+        <button
+          mat-stroked-button
+          type="button"
+          class="btn-novo-tipo"
+          (click)="abrirModalGerenciarTipos()"
+          matTooltip="Gerenciar tipos de equipamento"
+        >
+          <mat-icon>category</mat-icon> Gerenciar Tipos
+        </button>
       </div>
       <div class="form-row">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
@@ -89,10 +103,12 @@
           Excluir
         </button>
         <span class="spacer"></span>
-        <button mat-stroked-button type="button" (click)="onCredenciais()">
-          <mat-icon>key</mat-icon>
-          Credenciais
-        </button>
+        @if (hasCredencial) {
+          <button mat-stroked-button type="button" (click)="onCredenciais()">
+            <mat-icon>key</mat-icon>
+            Credenciais
+          </button>
+        }
         <button mat-stroked-button type="button" (click)="onCancelar()">Cancelar</button>
         <button mat-flat-button color="primary" type="submit" [disabled]="eqForm.invalid">
           Salvar

@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -8,13 +9,21 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EquipamentoService } from '../../../services/equipamento.service';
 import { SmartlockService } from '../../../services/smartlock.service';
 import { SystemNotificationService } from '../../../services/system-notification.service';
-import { TIPO_EQUIPAMENTOS } from '../../../shared/tipoEquipamentos.constant';
+import {
+  ITipoEquipamento,
+  TipoEquipamentoService,
+} from '../../../services/tipo-equipamento.service';
+import {
+  CadastroTipoEquipamentoDialog,
+  GerenciarTiposDialogResult,
+} from '../../../shared/components/cadastro-tipo-equipamento-dialog/cadastro-tipo-equipamento-dialog';
 import { ConfirmDeleteService } from '../../../services/confirm-delete.service';
 import { ISmartlock } from '../../../interfaces/smartlock.interface';
 import { filtrarAutocomplete } from '../../../shared/util/autocomplete-filtro.util';
@@ -36,19 +45,26 @@ import { objetoSelecionadoValidator } from '../../../shared/validators/objeto-se
     MatIconModule,
     MatProgressSpinnerModule,
     MatDialogModule,
+    MatTooltipModule,
   ],
   templateUrl: './update-equipamento.html',
   styleUrls: ['./update-equipamento.scss'],
 })
 export class UpdateEquipamento implements OnInit {
+  private tipoEquipamentoService = inject(TipoEquipamentoService);
+  private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
+
   eqForm: FormGroup;
   smartlocks!: ISmartlock[];
   filteredSmartlocks!: Observable<ISmartlock[]>;
-  tipos = TIPO_EQUIPAMENTOS;
+  tipos: ITipoEquipamento[] = [];
 
   equipamento_id!: number;
   isLoading = false;
   ativo = true;
+  hasPatrimonio = true;
+  hasCredencial = false;
 
   constructor(
     private fb: FormBuilder,
@@ -80,18 +96,31 @@ export class UpdateEquipamento implements OnInit {
 
     this.equipamento_id = Number(idParam);
 
+    this.eqForm
+      .get('tipo')!
+      .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((tipoId) => this.aplicarRegrasDoTipo(tipoId));
+
     this.inicializarFormulario();
   }
 
   private async inicializarFormulario(): Promise<void> {
     this.isLoading = true;
-    this.eqForm.disable();
+    this.eqForm.disable({ emitEvent: false });
 
-    await this.inicializaSmartlocks();
+    await Promise.all([this.inicializaSmartlocks(), this.inicializaTipos()]);
     await this.carregarDadosEquipamento();
 
     this.isLoading = false;
     this.cdr.detectChanges();
+  }
+
+  private async inicializaTipos(): Promise<void> {
+    try {
+      this.tipos = await firstValueFrom(this.tipoEquipamentoService.listAll());
+    } catch (err) {
+      this.sns.notificarErro(err, 'Erro ao carregar tipos de equipamento');
+    }
   }
 
   private async inicializaSmartlocks(): Promise<void> {
@@ -119,13 +148,18 @@ export class UpdateEquipamento implements OnInit {
 
       this.ativo = dados.ativo;
 
-      this.eqForm.enable();
-      this.eqForm.patchValue({
-        patrimonio: dados.patrimonio,
-        tag: dados.tag,
-        tipo: dados.tipo,
-        apelido: dados.apelido,
-      });
+      this.eqForm.enable({ emitEvent: false });
+      this.eqForm.patchValue(
+        {
+          patrimonio: dados.patrimonio ?? '',
+          tag: dados.tag,
+          tipo: Number(dados.tipo_id),
+          apelido: dados.apelido ?? '',
+        },
+        { emitEvent: false },
+      );
+
+      this.aplicarRegrasDoTipo(Number(dados.tipo_id));
 
       // Smartlocks já garantidos carregados neste ponto (await em inicializaSmartlocks)
       this.eqForm
@@ -137,18 +171,72 @@ export class UpdateEquipamento implements OnInit {
     }
   }
 
+  private aplicarRegrasDoTipo(tipoId: unknown): void {
+    const tipoEncontrado = this.tipos.find((t) => t.id === Number(tipoId));
+    this.hasPatrimonio = tipoEncontrado ? tipoEncontrado.has_patrimonio : true;
+    this.hasCredencial = tipoEncontrado ? tipoEncontrado.has_credencial : false;
+
+    const patrimonioCtrl = this.eqForm.get('patrimonio');
+    if (!patrimonioCtrl) return;
+
+    if (this.hasPatrimonio) {
+      if (this.eqForm.enabled) {
+        patrimonioCtrl.enable({ emitEvent: false });
+      }
+      patrimonioCtrl.setValidators([Validators.required]);
+    } else {
+      patrimonioCtrl.setValue('', { emitEvent: false });
+      patrimonioCtrl.clearValidators();
+      patrimonioCtrl.disable({ emitEvent: false });
+    }
+    patrimonioCtrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  abrirModalGerenciarTipos(): void {
+    const ref = this.dialog.open<
+      CadastroTipoEquipamentoDialog,
+      unknown,
+      GerenciarTiposDialogResult | undefined
+    >(CadastroTipoEquipamentoDialog, {
+      width: '540px',
+      maxWidth: '95vw',
+    });
+
+    ref
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async (resultado) => {
+        if (!resultado?.alterou) return;
+        await this.inicializaTipos();
+        if (resultado.ultimoTipoCriado) {
+          this.eqForm.get('tipo')?.setValue(resultado.ultimoTipoCriado.id);
+        } else {
+          this.aplicarRegrasDoTipo(this.eqForm.get('tipo')?.value);
+        }
+        this.cdr.detectChanges();
+      });
+  }
+
   salvar(): void {
     if (this.eqForm.valid) {
-      const { smartlock, patrimonio, tag, tipo, apelido } = this.eqForm.value;
-      const patrimonioTrimmed = typeof patrimonio === 'string' ? patrimonio.trim() : patrimonio;
+      const { smartlock, patrimonio, tag, tipo, apelido } = this.eqForm.getRawValue();
+      const patrimonioTrimmed = typeof patrimonio === 'string' ? patrimonio.trim() : '';
+      const patrimonioLimpo = patrimonioTrimmed.length > 0 ? patrimonioTrimmed : null;
       const tagTrimmed = typeof tag === 'string' ? tag.trim() : tag;
       const apelidoTrimmed = typeof apelido === 'string' ? apelido.trim() : apelido;
 
       this.isLoading = true;
-      this.eqForm.disable();
+      this.eqForm.disable({ emitEvent: false });
 
       this.equipamentoService
-        .update(this.equipamento_id, patrimonioTrimmed, tagTrimmed, tipo, smartlock.id, apelidoTrimmed)
+        .update(
+          this.equipamento_id,
+          patrimonioLimpo,
+          tagTrimmed,
+          Number(tipo),
+          smartlock.id,
+          apelidoTrimmed,
+        )
         .subscribe({
           next: () => {
             this.sns.notificar('Equipamento atualizado com sucesso!', 'sucesso');
@@ -157,7 +245,8 @@ export class UpdateEquipamento implements OnInit {
           error: (err: any) => {
             this.sns.notificarErro(err);
             this.isLoading = false;
-            this.eqForm.enable();
+            this.eqForm.enable({ emitEvent: false });
+            this.aplicarRegrasDoTipo(this.eqForm.get('tipo')?.value);
           },
         });
     } else {

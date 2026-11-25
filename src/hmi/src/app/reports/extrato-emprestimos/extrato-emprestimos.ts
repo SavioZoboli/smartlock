@@ -19,7 +19,7 @@ import { UnidadeComRegionalDTO } from '../../dto/UnidadeComRegional.dto';
 import { displayPorCampo, displayUnidadeComRegional } from '../../shared/util/autocomplete-display.util';
 import { filtrarLista } from '../../shared/util/autocomplete-filtro.util';
 import { normalizarTexto } from '../../shared/util/normalizar-texto.util';
-import { TIPO_EQUIPAMENTOS } from '../../shared/tipoEquipamentos.constant';
+import { obterIconeTipoEquipamento } from '../../shared/tipoEquipamentos.constant';
 
 export interface UsuarioComEquipamento {
   id: number;
@@ -231,7 +231,7 @@ export class ExtratoEmprestimosComponent implements OnInit {
         this.equipamentosEmUso.set(
           res.map((e) => ({
             ...e,
-            icone: TIPO_EQUIPAMENTOS.find((t) => t.descricao == e.tipo)?.icone,
+            icone: obterIconeTipoEquipamento(e.tipo, (e as any).icone),
           })),
         );
       },

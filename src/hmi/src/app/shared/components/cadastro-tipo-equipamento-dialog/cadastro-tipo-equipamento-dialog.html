@@ -1,0 +1,268 @@
+<h2 mat-dialog-title class="dialog-title">
+  @if (modo() !== 'lista') {
+    <button
+      mat-icon-button
+      type="button"
+      class="btn-voltar"
+      (click)="voltarParaLista()"
+      [disabled]="salvando()"
+      matTooltip="Voltar para a lista"
+      aria-label="Voltar para a lista"
+    >
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+  } @else {
+    <mat-icon class="title-icon">category</mat-icon>
+  }
+
+  <span class="title-text">
+    @switch (modo()) {
+      @case ('lista') { Gerenciar Tipos de Equipamento }
+      @case ('criar') { Novo Tipo de Equipamento }
+      @case ('editar') { Editar Tipo de Equipamento }
+    }
+  </span>
+
+  @if (modo() === 'lista') {
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      class="btn-novo-inline"
+      (click)="abrirNovoTipo()"
+    >
+      <mat-icon>add</mat-icon> Novo Tipo
+    </button>
+  }
+</h2>
+
+@if (modo() === 'lista') {
+  <mat-dialog-content class="dialog-content">
+    @if (carregandoLista()) {
+      <div class="loading-box">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    } @else if (tipos().length === 0) {
+      <div class="empty-lista">
+        <mat-icon>category</mat-icon>
+        <p>Nenhum tipo de equipamento cadastrado.</p>
+      </div>
+    } @else {
+      <div class="tipos-lista">
+        @for (tipo of tipos(); track tipo.id) {
+          <div class="tipo-row" (click)="abrirEdicao(tipo)">
+            <div class="tipo-icone-box">
+              <mat-icon>{{ obterIconeExibicao(tipo) }}</mat-icon>
+            </div>
+
+            <div class="tipo-info">
+              <div class="tipo-nome">{{ tipo.nome }}</div>
+              @if (tipo.descricao) {
+                <div class="tipo-descricao">{{ tipo.descricao }}</div>
+              }
+              <div class="tipo-badges">
+                @if (tipo.has_patrimonio) {
+                  <span class="badge">Patrimônio</span>
+                }
+                @if (tipo.has_credencial) {
+                  <span class="badge">Credenciais</span>
+                }
+                @if (tipo.qtd_equipamentos !== undefined) {
+                  <span class="badge badge-count">
+                    {{ tipo.qtd_equipamentos }} equip.
+                  </span>
+                }
+              </div>
+            </div>
+
+            <button
+              mat-icon-button
+              type="button"
+              matTooltip="Editar tipo"
+              aria-label="Editar tipo"
+              (click)="$event.stopPropagation(); abrirEdicao(tipo)"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button type="button" (click)="fechar()">Fechar</button>
+  </mat-dialog-actions>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="salvar()">
+    <mat-dialog-content class="dialog-content">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+        <mat-label>Nome</mat-label>
+        <input
+          matInput
+          formControlName="nome"
+          [maxlength]="tamanhoMaxNome"
+          placeholder="Ex: Mesa Digitalizadora"
+          cdkFocusInitial
+        />
+        <mat-icon matPrefix>label</mat-icon>
+        @if (form.controls.nome.hasError('required')) {
+          <mat-error>O nome é obrigatório.</mat-error>
+        } @else if (form.controls.nome.hasError('maxlength')) {
+          <mat-error>Máximo de {{ tamanhoMaxNome }} caracteres.</mat-error>
+        } @else if (form.controls.nome.hasError('duplicado')) {
+          <mat-error>Já existe um tipo com este nome.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+        <mat-label>Descrição</mat-label>
+        <textarea
+          matInput
+          formControlName="descricao"
+          [maxlength]="tamanhoMaxDescricao"
+          rows="2"
+          placeholder="Descrição opcional do tipo"
+        ></textarea>
+        <mat-icon matPrefix>description</mat-icon>
+        <mat-hint align="end">
+          {{ form.controls.descricao.value.length }} / {{ tamanhoMaxDescricao }}
+        </mat-hint>
+        @if (form.controls.descricao.hasError('maxlength')) {
+          <mat-error>Máximo de {{ tamanhoMaxDescricao }} caracteres.</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Seletor de ícone estilo emoji picker -->
+      <div class="icone-picker-section">
+        <button
+          type="button"
+          class="icone-trigger"
+          (click)="alternarSeletorIcone()"
+          [disabled]="salvando()"
+          [attr.aria-expanded]="seletorIconeAberto()"
+        >
+          <div class="icone-preview-box">
+            <mat-icon>{{ form.controls.icone.value || 'devices' }}</mat-icon>
+          </div>
+          <div class="icone-trigger-info">
+            <span class="icone-trigger-label">Ícone do tipo</span>
+            <span class="icone-trigger-value">
+              {{ obterLabelIcone(form.controls.icone.value || 'devices') }}
+            </span>
+          </div>
+          <mat-icon class="icone-trigger-arrow">
+            {{ seletorIconeAberto() ? 'expand_less' : 'expand_more' }}
+          </mat-icon>
+        </button>
+
+        @if (seletorIconeAberto()) {
+          <div class="icone-picker-panel">
+            <div class="icone-search-box">
+              <mat-icon class="search-icon">search</mat-icon>
+              <input
+                type="text"
+                class="icone-search-input"
+                [value]="buscaIcone()"
+                (input)="atualizarBuscaIcone($event)"
+                placeholder="Buscar (ex: microfone, mesa, arduino, câmera...)"
+                aria-label="Buscar ícone"
+              />
+              @if (buscaIcone()) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  class="clear-search-btn"
+                  (click)="limparBuscaIcone()"
+                  aria-label="Limpar busca"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </div>
+
+            <div class="icone-categories" role="tablist" aria-label="Categorias de ícones">
+              @for (cat of categoriasIcone; track cat.id) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="cat-pill"
+                  [class.active]="categoriaAtiva() === cat.id && !buscaIcone().trim()"
+                  (click)="selecionarCategoria(cat.id)"
+                >
+                  {{ cat.label }}
+                </button>
+              }
+            </div>
+
+            <div class="icone-grid" role="listbox" aria-label="Ícones disponíveis">
+              @for (item of iconesFiltrados(); track item.valor) {
+                <button
+                  type="button"
+                  role="option"
+                  class="icone-tile"
+                  [class.selected]="form.controls.icone.value === item.valor"
+                  [attr.aria-selected]="form.controls.icone.value === item.valor"
+                  [matTooltip]="item.label + ' (' + item.valor + ')'"
+                  (click)="selecionarIcone(item.valor)"
+                >
+                  <mat-icon>{{ item.valor }}</mat-icon>
+                </button>
+              } @empty {
+                <div class="icone-empty">Nenhum ícone encontrado no catálogo.</div>
+              }
+            </div>
+
+            @if (iconeCustomDigitado(); as customCode) {
+              <button
+                type="button"
+                class="icone-custom-btn"
+                (click)="selecionarIcone(customCode)"
+              >
+                <mat-icon>{{ customCode }}</mat-icon>
+                <span>Usar ícone Material Symbols: <strong>{{ customCode }}</strong></span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="flags-group">
+        <mat-checkbox formControlName="has_patrimonio">
+          Exige número de patrimônio
+        </mat-checkbox>
+
+        <mat-checkbox formControlName="has_credencial">
+          Suporta credenciais (login e senha)
+        </mat-checkbox>
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions class="form-dialog-actions">
+      @if (modo() === 'editar') {
+        <span [matTooltip]="tooltipExcluir()">
+          <button
+            mat-stroked-button
+            type="button"
+            color="warn"
+            [disabled]="!podeExcluirTipoEditando() || salvando()"
+            (click)="onExcluir()"
+          >
+            <mat-icon>delete</mat-icon>
+            Excluir
+          </button>
+        </span>
+      }
+      <span class="spacer"></span>
+      <button mat-button type="button" (click)="voltarParaLista()" [disabled]="salvando()">
+        Cancelar
+      </button>
+      <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || salvando()">
+        @if (salvando()) {
+          <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
+        }
+        Salvar
+      </button>
+    </mat-dialog-actions>
+  </form>
+}
