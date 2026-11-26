@@ -211,7 +211,7 @@ String System::getSystemTitle()
 {
     if (_apelido.length() > 0 && _unidade.nome.length() > 0)
     {
-        return _apelido + "/\n" + _unidade.nome;
+        return _apelido + "\n" + _unidade.nome;
     }
     else
     {
