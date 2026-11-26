@@ -49,6 +49,9 @@ public:
     // Usado na sincronização em background (já tem config local, só revalida)
     static bool atualizarConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade);
 
+    // Invalida configuração local e retorna ao estado PROVISIONANDO quando o servidor indica desvinculado
+    static void invalidarProvisionamento();
+
 private:
     static int _codigo;
     static String _apelido;

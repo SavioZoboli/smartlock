@@ -250,7 +250,7 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
     // ==========================================
     else if (strcmp(topic, topicIdentity) == 0)
     {
-        StaticJsonDocument<384> doc;
+        StaticJsonDocument<512> doc;
         DeserializationError error = deserializeJson(doc, message);
         if (error)
         {
@@ -259,7 +259,9 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
             return;
         }
 
-        JsonObject info = doc["me"];
+        JsonObject info = doc["me"]["smartlock_info"].is<JsonObject>()
+                              ? doc["me"]["smartlock_info"].as<JsonObject>()
+                              : doc["me"].as<JsonObject>();
         if (info.isNull()) return;
 
         int codigo = info["id"] | 0;
@@ -267,7 +269,16 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
         int codUnidade = info["uni_id"] | 0;
         String nomeUnidade = info["uni_nome"] | "";
 
-        if (codigo <= 0) return;
+        // Se o servidor não reconhece o provisionamento (sem unidade vinculada ou sem apelido),
+        // invalida a configuração local antiga e força o modo PROVISIONANDO.
+        if (codigo <= 0 || codUnidade <= 0 || apelido.length() == 0)
+        {
+            if (System::getState() != SystemState::PROVISIONANDO)
+            {
+                System::invalidarProvisionamento();
+            }
+            return;
+        }
 
         // Decide qual função chamar baseado no que o sistema está fazendo agora
         if (System::getState() == SystemState::PROVISIONANDO)

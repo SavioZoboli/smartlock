@@ -75,11 +75,14 @@ void DisplayHandler::setFixedMessage(const char *message)
 
     if (!isTimeoutActive)
     {
-        strncpy(currentTitle, systemTitle.c_str(), sizeof(currentTitle));
-        currentTitle[sizeof(currentTitle) - 1] = '\0';
-        strncpy(currentMessage, message, sizeof(currentMessage));
-        currentMessage[sizeof(currentMessage) - 1] = '\0';
-        needsRedraw = true;
+        if (strcmp(currentTitle, defaultTitle) != 0 || strcmp(currentMessage, defaultMessage) != 0)
+        {
+            strncpy(currentTitle, defaultTitle, sizeof(currentTitle) - 1);
+            currentTitle[sizeof(currentTitle) - 1] = '\0';
+            strncpy(currentMessage, defaultMessage, sizeof(currentMessage) - 1);
+            currentMessage[sizeof(currentMessage) - 1] = '\0';
+            needsRedraw = true;
+        }
     }
 }
 
