@@ -65,7 +65,7 @@ class UsuarioService {
       }
       let usuarios = await Usuario.findAll({
         where: { unidade_lotacao_id: smartlock.unidade_id, ativo: true },
-        attributes: [["uid_rfid", "uuid"], "nome"],
+        attributes: [["uid_rfid", "uuid"]],
         raw: true,
       });
       return usuarios;
