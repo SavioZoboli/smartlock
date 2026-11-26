@@ -315,7 +315,12 @@ export class CadastroMovimentacao implements OnInit {
       return;
     }
 
-    if (this.isEquipamentoBloqueado(equipamento)) {
+    let tipoAtual: string = this.movForm.get('tipo_movimento')?.value;
+    const tipoEfetivo =
+      tipoAtual ||
+      (equipamento.status_atual === 'DISPONIVEL' ? 'emprestimo_manual' : 'devolucao_manual');
+
+    if (equipamento.reservadoOutro && tipoEfetivo.includes('emprestimo')) {
       this.sns.notificar(
         'Este equipamento está reservado por outro usuário.',
         'info',
@@ -323,12 +328,9 @@ export class CadastroMovimentacao implements OnInit {
       return;
     }
 
-    let tipoAtual: string = this.movForm.get('tipo_movimento')?.value;
-
     // Se o usuário ainda não selecionou o tipo de movimento, infere pelo status atual do equipamento lido
     if (!tipoAtual) {
-      tipoAtual =
-        equipamento.status_atual === 'DISPONIVEL' ? 'emprestimo_manual' : 'devolucao_manual';
+      tipoAtual = tipoEfetivo;
       this.movForm.get('tipo_movimento')?.setValue(tipoAtual, { emitEvent: false });
     }
 
