@@ -8,7 +8,7 @@ export interface UsuarioToken {
   avatar: string;
   is_admin:boolean;
   regiao_id:number;
-  purpose?: "session" | "signup";
+  purpose?: "session" | "signup" | "refresh";
 }
 
 declare global {

@@ -2,8 +2,11 @@
 #include "config.h" // Garanta que #define BUZZER_PIN XX está configurado corretamente
 #include "pitches.h"
 
-// Inicializa o ponteiro da Task
+// Inicializa o ponteiro da Task e mutex para evitar race condition no vTaskDelete
 TaskHandle_t BuzzerHandler::buzzerTaskHandle = NULL;
+namespace {
+    portMUX_TYPE buzzerMux = portMUX_INITIALIZER_UNLOCKED;
+}
 
 void BuzzerHandler::init() {
     pinMode(BUZZER_PIN, OUTPUT);
@@ -12,22 +15,34 @@ void BuzzerHandler::init() {
 }
 
 void BuzzerHandler::play(SoundEffect effect) {
-    // Se já tiver um som tocando, cancelamos antes de começar o novo (evita sobreposição)
+    // Retira o handle atomicamente antes de deletar, evitando double-delete com buzzerTask
+    TaskHandle_t handleToDelete = NULL;
+    portENTER_CRITICAL(&buzzerMux);
     if (buzzerTaskHandle != NULL) {
-        vTaskDelete(buzzerTaskHandle);
+        handleToDelete = buzzerTaskHandle;
         buzzerTaskHandle = NULL;
+    }
+    portEXIT_CRITICAL(&buzzerMux);
+
+    if (handleToDelete != NULL) {
+        vTaskDelete(handleToDelete);
         noTone(BUZZER_PIN);
     }
 
-    // Cria uma tarefa no background para tocar o bipe sem travar o loop principal
-    xTaskCreate(
-        buzzerTask,          
-        "BuzzerTask",        
-        1024,                // Memória RAM reduzida (1024 é suficiente, não há mais arrays pesados)
-        (void*)(intptr_t)effect, 
-        1,                   // Prioridade da tarefa (1 = Baixa)
-        &buzzerTaskHandle    
-    );
+    // Cria uma tarefa no background com stack segura (2048 bytes para LEDC/tone)
+    TaskHandle_t created = NULL;
+    if (xTaskCreate(
+        buzzerTask,
+        "BuzzerTask",
+        2048,
+        (void*)(intptr_t)effect,
+        1,
+        &created
+    ) == pdPASS) {
+        portENTER_CRITICAL(&buzzerMux);
+        buzzerTaskHandle = created;
+        portEXIT_CRITICAL(&buzzerMux);
+    }
 }
 
 // O Maestro do Background: Roda paralelo ao loop principal
@@ -49,9 +64,15 @@ void BuzzerHandler::buzzerTask(void* parameter) {
 
     // Desliga o buzzer por segurança ao terminar
     noTone(BUZZER_PIN);
-    
-    // Limpa o handle e deleta a si mesmo (Obrigatório no FreeRTOS para liberar a RAM)
-    buzzerTaskHandle = NULL;
+
+    // Limpa o handle sob spinlock apenas se ainda apontar para esta task
+    TaskHandle_t self = xTaskGetCurrentTaskHandle();
+    portENTER_CRITICAL(&buzzerMux);
+    if (buzzerTaskHandle == self) {
+        buzzerTaskHandle = NULL;
+    }
+    portEXIT_CRITICAL(&buzzerMux);
+
     vTaskDelete(NULL);
 }
 
