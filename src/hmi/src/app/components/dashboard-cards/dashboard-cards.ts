@@ -38,6 +38,7 @@ export class DashboardCards implements OnInit {
   // kpisExibidos guarda cópias próprias do componente, nunca referências do catalogo
   kpisExibidos = signal<KpiDefinicao[]>([]);
   carregando = signal<boolean>(false);
+  private reqSeq = 0;
 
   constructor(
     private kpiService: KpiService,
@@ -73,21 +74,25 @@ export class DashboardCards implements OnInit {
   }
 
   private async carregarValores(ids: string[]) {
+    const seqAtual = ++this.reqSeq;
     this.carregando.set(true);
 
-    // uma consulta por vez, em sequência - contagens simples no backend, sem custo real
-    for (const id of ids) {
-      try {
-        console.log(`Consultando ${id}`);
-        const res = await firstValueFrom(this.kpiService.buscarKpi(id));
-        console.log(`Resposta ${res}`);
-        this.atualizarValorKpi(id, res);
-      } catch (err: any) {
-        this.sns.notificar(`KPI ${id} - ${err.status ?? err.message}`, 'erro');
-      }
-    }
+    await Promise.allSettled(
+      ids.map(async (id) => {
+        try {
+          const res = await firstValueFrom(this.kpiService.buscarKpi(id));
+          if (seqAtual !== this.reqSeq) return;
+          this.atualizarValorKpi(id, res);
+        } catch (err: any) {
+          if (seqAtual !== this.reqSeq) return;
+          this.sns.notificar(`KPI ${id} - ${err.status ?? err.message}`, 'erro');
+        }
+      }),
+    );
 
-    this.carregando.set(false);
+    if (seqAtual === this.reqSeq) {
+      this.carregando.set(false);
+    }
   }
 
   private atualizarValorKpi(id: string, valor: number | string | undefined) {
