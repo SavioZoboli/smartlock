@@ -287,10 +287,12 @@ class MovimentacaoService {
       } else if (acao === "devolucao") {
         const reservasEmUso = await Reserva.findAll({
           where: { situacao: "EM USO" },
+          attributes: ["id"],
           include: [
             {
               model: Equipamento,
               as: "equipamentos",
+              attributes: [],
               through: { attributes: [] },
               where: { id: { [Op.in]: equipamentos } },
               required: true,
@@ -299,28 +301,38 @@ class MovimentacaoService {
           transaction,
         });
 
-        for (const res of reservasEmUso) {
-          const itensDaReserva = await ItensReserva.findAll({
-            where: { reserva_id: res.id },
+        const reservaIds = reservasEmUso.map((r) => r.id);
+        if (reservaIds.length > 0) {
+          // Busca em lote todos os itens e status dos equipamentos das reservas afetadas (evita N+1)
+          const reservasComItens: any[] = await Reserva.findAll({
+            where: { id: { [Op.in]: reservaIds } },
+            attributes: ["id"],
+            include: [
+              {
+                model: Equipamento,
+                as: "equipamentos",
+                attributes: ["id", "status_atual"],
+                through: { attributes: [] },
+              },
+            ],
             transaction,
           });
-          const todosIds = itensDaReserva.map((item) => item.equipamento_id);
 
-          if (todosIds.length > 0) {
-            const aindaEmUso = await Equipamento.count({
-              where: {
-                id: { [Op.in]: todosIds },
-                status_atual: STATUS_EMPRESTADO,
-              },
-              transaction,
-            });
-
-            if (aindaEmUso === 0) {
-              await Reserva.update(
-                { situacao: "FINALIZADO" },
-                { where: { id: res.id }, transaction },
+          const reservasParaFinalizar = reservasComItens
+            .filter((r) => {
+              const eqs: any[] = r.equipamentos ?? [];
+              return (
+                eqs.length > 0 &&
+                eqs.every((eq) => eq.status_atual !== STATUS_EMPRESTADO)
               );
-            }
+            })
+            .map((r) => r.id);
+
+          if (reservasParaFinalizar.length > 0) {
+            await Reserva.update(
+              { situacao: "FINALIZADO" },
+              { where: { id: { [Op.in]: reservasParaFinalizar } }, transaction },
+            );
           }
         }
       }
