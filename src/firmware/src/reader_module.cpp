@@ -39,6 +39,12 @@ bool ReaderModule::beginReading() {
     return true;
 }
 
+void ReaderModule::resetReading() {
+    isReading = false;
+    justFinished = false;
+    scanSuccess = false;
+}
+
 bool ReaderModule::getIsReading() {
     return isReading;
 }
