@@ -38,7 +38,7 @@ AuthState AuthHandler::requestAccess(const char *uid)
     }
 
     // 2. SE NÃO ESTÁ NO CACHE, VAMOS PARA A NUVEM
-    if (!WiFiHandler::isConnected())
+    if (!WiFiHandler::isConnected() || !MqttHandler::isConnected())
     {
         Serial.printf("[AUTH] UID %s desconhecida e sistema OFFLINE. Acesso Negado.\n", uid);
         return AuthState::ERROR_OFFLINE;

@@ -1,9 +1,8 @@
 import mqtt from "mqtt";
+import { MQTT_PREFIX } from "./env";
 import { rotearMensagemMQTT } from "../topic/mqtt.topic";
 import fs from "fs";
 import path from "path";
-
-require('dotenv').config();
 
 // Avalia as configurações de conexão
 const brokerHost = process.env.MQTT_BROKER || "localhost";
@@ -11,6 +10,7 @@ const brokerPort = process.env.MQTT_PORT || 1883;
 const brokerProtocol = process.env.MQTT_PROTOCOL || "mqtt";
 const username = process.env.MQTT_USER || "";
 const password = process.env.MQTT_PASS || "";
+export { MQTT_PREFIX };
 
 // Monta a URL (ex: mqtt://localhost:1883 ou mqtts://iot.dominio.com:8883)
 const brokerUrl = `${brokerProtocol}://${brokerHost}:${brokerPort}`;
@@ -48,11 +48,11 @@ export const mqttClient = mqtt.connect(brokerUrl, options);
 mqttClient.on("connect", () => {
   console.log("[MQTT] Conectado ao Broker MQTT com sucesso!");
 
-  mqttClient.subscribe("smartlock/#", (err) => {
+  mqttClient.subscribe(`${MQTT_PREFIX}/#`, (err) => {
     if (err) {
       console.error("[MQTT] Erro ao assinar os tópicos MQTT", err);
     } else {
-      console.log("[MQTT] Escutando tópicos da família smartlock/#");
+      console.log(`[MQTT] Escutando tópicos da família ${MQTT_PREFIX}/#`);
     }
   });
 });

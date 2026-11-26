@@ -1,11 +1,12 @@
 import { mqttClient } from "../config/mqtt";
+import { MQTT_PREFIX, URL_API } from "../config/env";
 
 class UsuarioService{
 
-    private base_url = 'smartlock/usuarios'
+    private base_url = `${MQTT_PREFIX}/usuarios`
 
     async loginRequest(mac:string,uuid:string){
-        let resposta = await fetch(`${process.env.URL_API}/api/usuario/login`,{
+        let resposta = await fetch(`${URL_API}/api/usuario/login`,{
             method:'POST',
             headers:{
                 'content-type':'application/json'
@@ -24,7 +25,7 @@ class UsuarioService{
     }
 
     async syncList(mac:string){
-        let resposta = await fetch(`${process.env.URL_API}/api/usuario/${mac}`,{
+        let resposta = await fetch(`${URL_API}/api/usuario/smartlock/${mac}`,{
             method:"GET",
             headers:{"content-type":"application/json"},
         })

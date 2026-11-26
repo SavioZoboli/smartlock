@@ -12,6 +12,8 @@ router.post('/login',usuarioController.login)
 
 router.get('/',authMiddleware,usuarioController.listAll)
 
+router.get('/smartlock/:mac',usuarioController.getUsuariosAutorizados)
+
 router.get('/:id',authMiddleware,usuarioController.getById)
 
 router.put('/',authMiddleware,handleAdmin,usuarioController.update)

@@ -1,13 +1,14 @@
 import { mqttClient } from "../config/mqtt";
+import { MQTT_PREFIX, URL_API } from "../config/env";
 import { Events } from "../controllers/equipamentos.controller";
 
 class EquipamentoService{
 
-    private base_url = 'smartlock/equipamentos'
+    private base_url = `${MQTT_PREFIX}/equipamentos`
 
     async syncEvents(mac:string,events:Events[],usuario:string,timestamp:number){
         let resposta = await fetch(
-      `${process.env.URL_API}/api/movimentacao/${mac}`,
+      `${URL_API}/api/movimentacao/${mac}`,
       {
         method: "POST",
         headers:{

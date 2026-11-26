@@ -14,6 +14,10 @@ SystemState System::_estadoAtual = SystemState::INITIALIZING;
 Unidade System::_unidade = {0, ""};
 bool System::_is_provisionado = false;
 bool System::_sync_pendente = false;
+bool System::_syncing = false;
+unsigned long System::_syncStartMs = 0;
+
+const unsigned long SYNC_INDICATOR_TIMEOUT_MS = 15000;
 
 const char *CONFIG_FILE = "/config.json";
 bool solicitou_provisao = false;
@@ -83,6 +87,12 @@ void System::update()
         _sync_pendente = false;
         Serial.println("[SYSTEM] Sincronização em background enviada (rede ficou pronta).");
     }
+
+    // Evita que o indicador "SINCRONIZANDO" fique preso se não houver resposta
+    if (_syncing && (millis() - _syncStartMs >= SYNC_INDICATOR_TIMEOUT_MS))
+    {
+        _syncing = false;
+    }
 }
 
 void System::solicitarSincronizacaoBackground()
@@ -141,6 +151,15 @@ bool System::salvarConfiguracao(int codigo, String apelido, int codUnidade, Stri
     _is_provisionado = true;
     setState(SystemState::IDLE); // Só faz sentido aqui: estávamos em PROVISIONANDO
     Serial.println("[SYSTEM] Provisionamento concluído. Operacional.");
+
+    // Agora que a unidade foi vinculada, sincroniza imediatamente a lista de usuários autorizados
+    if (WiFiHandler::isConnected() && MqttHandler::isConnected())
+    {
+        if (MqttHandler::publish("usuarios", "sync_request", "{}"))
+        {
+            setSyncing(true);
+        }
+    }
     return true;
 }
 
@@ -207,23 +226,42 @@ SystemState System::getState()
     return _estadoAtual;
 }
 
+void System::setSyncing(bool syncing)
+{
+    _syncing = syncing;
+    if (syncing)
+    {
+        _syncStartMs = millis();
+    }
+}
+
+bool System::isSyncing()
+{
+    return _syncing;
+}
+
 String System::getStateString()
 {
+    if (_syncing && _estadoAtual == SystemState::IDLE)
+    {
+        return "SINCRONIZANDO";
+    }
+
     switch (_estadoAtual)
     {
     case SystemState::INITIALIZING:
-        return "INITIALIZING";
+        return "INICIANDO";
     case SystemState::IDLE:
         return "IDLE";
     case SystemState::AWAITING_CLOUD:
-        return "AWAITING_CLOUD";
+        return "VALIDANDO NUVEM";
     case SystemState::IN_PROCESS:
-        return "IN_PROCESS";
+        return "EM PROCESSO";
     case SystemState::READING:
-        return "READING";
+        return "LENDO...";
     case SystemState::PROVISIONANDO:
         return "PROVISIONANDO";
     default:
-        return "UNKNOWN_STATE";
+        return "DESCONHECIDO";
     }
 }

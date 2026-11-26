@@ -24,6 +24,7 @@ namespace
     // Buffers de texto (Evitando a classe String para proteger a RAM)
     char currentTitle[32] = "SISTEMA";
     char currentMessage[64] = "Iniciando...";
+    char currentStatus[24] = "INICIANDO";
 
     // Buffers para o estado padrão (quando o timeout acaba)
     char defaultTitle[32] = "SMART LOCK";
@@ -84,8 +85,10 @@ void DisplayHandler::setFixedMessage(const char *message)
 
 void DisplayHandler::setTimeoutMessage(const char *title, const char *message, unsigned long timeoutMs)
 {
-    strncpy(currentTitle, title, sizeof(currentTitle));
-    strncpy(currentMessage, message, sizeof(currentMessage));
+    strncpy(currentTitle, title, sizeof(currentTitle) - 1);
+    currentTitle[sizeof(currentTitle) - 1] = '\0';
+    strncpy(currentMessage, message, sizeof(currentMessage) - 1);
+    currentMessage[sizeof(currentMessage) - 1] = '\0';
 
     isTimeoutActive = true;
     timeoutEndMillis = millis() + timeoutMs;
@@ -96,6 +99,14 @@ void DisplayHandler::update()
 {
     // Atualiza os status do sistema
     setIndicators(WiFiHandler::isConnected(), MqttHandler::isConnected(), !HardwareIOHandler::isDoorOpen());
+
+    String stateStr = System::getStateString();
+    if (strcmp(currentStatus, stateStr.c_str()) != 0)
+    {
+        strncpy(currentStatus, stateStr.c_str(), sizeof(currentStatus) - 1);
+        currentStatus[sizeof(currentStatus) - 1] = '\0';
+        needsRedraw = true;
+    }
 
     // Verifica se o tempo da mensagem temporária acabou
     if (isTimeoutActive && millis() >= timeoutEndMillis)
@@ -142,13 +153,24 @@ void DisplayHandler::drawLayout()
     // ==========================================
     // Título da Ação (Ex: "ACESSO NEGADO")
     display.setTextSize(1);
-    display.setCursor(0, 16);
+    display.setCursor(0, 14);
     display.println(currentTitle);
 
     // Mensagem principal
     display.setTextSize(1);
-    display.setCursor(0, 36);
+    display.setCursor(0, 33);
     display.println(currentMessage);
+
+    // ==========================================
+    // 3. BARRA INFERIOR (Status do Sistema - espelhada)
+    // ==========================================
+    display.drawLine(0, 53, SCREEN_WIDTH, 53, SSD1306_WHITE);
+    display.setTextSize(1);
+    int16_t statusX = (SCREEN_WIDTH - (static_cast<int16_t>(strlen(currentStatus)) * 6)) / 2;
+    if (statusX < 0)
+        statusX = 0;
+    display.setCursor(statusX, 56);
+    display.print(currentStatus);
 
     // Envia o buffer inteiro para a tela física de uma vez só
     display.display();

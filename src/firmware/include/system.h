@@ -34,6 +34,9 @@ public:
 
     static SystemState getState();
 
+    static void setSyncing(bool syncing);
+    static bool isSyncing();
+
     static String getStateString();
 
     static String getSystemTitle();
@@ -57,6 +60,10 @@ private:
 
     // Fica true quando um pedido de sync em background precisa ser (re)enviado
     static bool _sync_pendente;
+
+    // Fica true enquanto aguarda resposta de sincronização (exibido no rodapé do display)
+    static bool _syncing;
+    static unsigned long _syncStartMs;
 
     static void iniciarProvisionamento();
     static void solicitarSincronizacaoBackground();
