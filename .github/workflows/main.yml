@@ -3,34 +3,19 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
 jobs:
-  changes:
+  prepare:
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      api-dados: ${{ steps.filter.outputs.api-dados }}
-      worker-mqtt: ${{ steps.filter.outputs.worker-mqtt }}
       repo_lc: ${{ steps.repo.outputs.repo_lc }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            frontend:
-              - './src/hmi/**'
-            api-dados:
-              - './src/api/**'
-            worker-mqtt:
-              - './src/worker-mqtt/**'
       - name: Definir nome do repo em minusculo
         id: repo
         run: echo "repo_lc=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
   # 1. Testes automatizados
   test-frontend:
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,8 +40,6 @@ jobs:
         run: npx ng test --watch=false
 
   test-api:
-    needs: changes
-    if: needs.changes.outputs.api-dados == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,8 +58,6 @@ jobs:
           for f in migrations/*.js; do node -c "$f"; done
 
   test-worker-mqtt:
-    needs: changes
-    if: needs.changes.outputs.worker-mqtt == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,10 +73,9 @@ jobs:
         working-directory: src/worker-mqtt
         run: npx tsc --noEmit
 
-  # 2. Build e push das imagens Docker (somente após testes passarem)
+  # 2. Build e push das imagens Docker (sempre para todos os serviços após testes passarem)
   build-frontend:
-    needs: [changes, test-frontend]
-    if: needs.changes.outputs.frontend == 'true'
+    needs: [prepare, test-frontend]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -124,13 +104,12 @@ jobs:
         with:
           context: ./src/hmi
           push: true
-          tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/hmi:latest
+          tags: ghcr.io/${{ needs.prepare.outputs.repo_lc }}/hmi:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   build-api-dados:
-    needs: [changes, test-api]
-    if: needs.changes.outputs.api-dados == 'true'
+    needs: [prepare, test-api]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -144,13 +123,12 @@ jobs:
         with:
           context: ./src/api
           push: true
-          tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/api:latest
+          tags: ghcr.io/${{ needs.prepare.outputs.repo_lc }}/api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   build-worker-mqtt:
-    needs: [changes, test-worker-mqtt]
-    if: needs.changes.outputs.worker-mqtt == 'true'
+    needs: [prepare, test-worker-mqtt]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -164,24 +142,14 @@ jobs:
         with:
           context: ./src/worker-mqtt
           push: true
-          tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/worker-mqtt:latest
+          tags: ghcr.io/${{ needs.prepare.outputs.repo_lc }}/worker-mqtt:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # 3. Aprovação manual (environment: production) + 4. Deploy no servidor (CD)
   #    A primeira ação do deploy no servidor é sempre verificar/executar migrations antes de subir os novos containers.
   deploy:
-    needs: [changes, test-frontend, test-api, test-worker-mqtt, build-frontend, build-api-dados, build-worker-mqtt]
-    if: |
-      always() &&
-      needs.changes.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.api-dados == 'true' || needs.changes.outputs.worker-mqtt == 'true') &&
-      (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
-      (needs.test-api.result == 'success' || needs.test-api.result == 'skipped') &&
-      (needs.test-worker-mqtt.result == 'success' || needs.test-worker-mqtt.result == 'skipped') &&
-      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
-      (needs.build-api-dados.result == 'success' || needs.build-api-dados.result == 'skipped') &&
-      (needs.build-worker-mqtt.result == 'success' || needs.build-worker-mqtt.result == 'skipped')
+    needs: [build-frontend, build-api-dados, build-worker-mqtt]
     environment: production
     runs-on: self-hosted
     steps:
