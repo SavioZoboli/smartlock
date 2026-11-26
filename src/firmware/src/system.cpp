@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include "display_handler.h"
 #include "mqtt_handler.h"
+#include "storage_handler.h"
 #include <WiFi.h>
 #include "wifi_handler.h"
 
@@ -167,11 +168,36 @@ bool System::salvarConfiguracao(int codigo, String apelido, int codUnidade, Stri
 // pra não interromper IN_PROCESS/READING/AWAITING_CLOUD em andamento.
 bool System::atualizarConfiguracao(int codigo, String apelido, int codUnidade, String nomeUnidade)
 {
+    bool unidadeMudou = (_unidade.codigo != codUnidade);
+
     if (!persistirConfiguracao(codigo, apelido, codUnidade, nomeUnidade))
         return false;
 
     Serial.println("[SYSTEM] Configuração atualizada via sincronização em background.");
+
+    if (unidadeMudou && WiFiHandler::isConnected() && MqttHandler::isConnected())
+    {
+        Serial.println("[SYSTEM] Unidade alterada. Ressincronizando lista de usuários...");
+        if (MqttHandler::publish("usuarios", "sync_request", "{}"))
+        {
+            setSyncing(true);
+        }
+    }
     return true;
+}
+
+void System::invalidarProvisionamento()
+{
+    Serial.println("[SYSTEM] Smartlock não provisionado no servidor. Limpando config local...");
+    if (LittleFS.exists(CONFIG_FILE))
+    {
+        LittleFS.remove(CONFIG_FILE);
+    }
+    StorageHandler::clearUsers();
+    _codigo = 0;
+    _apelido = "";
+    _unidade = {0, ""};
+    iniciarProvisionamento();
 }
 
 bool System::isProvisionado()
