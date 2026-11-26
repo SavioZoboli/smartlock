@@ -47,15 +47,22 @@ export function periodoValidoValidator(group: AbstractControl): ValidationErrors
 
 /**
  * Checa se um equipamento está com reserva ativa pertencente a outro usuário/reserva.
+ * Quando reservaAtualId é informado e as reservas trazem `id`, bloqueia se houver
+ * qualquer reserva conflitante com id diferente da reserva em edição.
  */
 export function isEquipamentoReservadoPorOutro(
   equipamento: EquipamentoComReservas,
   equipamentosDaReservaAtual: number[],
+  reservaAtualId?: number | null,
 ): boolean {
-  return (
-    (equipamento.reservas?.length ?? 0) > 0 &&
-    !equipamentosDaReservaAtual.includes(equipamento.id)
-  );
+  const reservas = equipamento.reservas ?? [];
+  if (reservas.length === 0) return false;
+
+  if (reservaAtualId != null && reservas.some((r) => r.id != null)) {
+    return reservas.some((r) => r.id !== reservaAtualId);
+  }
+
+  return !equipamentosDaReservaAtual.includes(equipamento.id);
 }
 
 /**

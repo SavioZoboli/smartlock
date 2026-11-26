@@ -1,4 +1,4 @@
-import { Op, Sequelize } from "sequelize";
+import { Op, Sequelize, Transaction } from "sequelize";
 import sequelize from "../config/database";
 import {
   Equipamento,
@@ -11,7 +11,60 @@ import {
   Usuario,
 } from "../models/index.model";
 
+const TOLERANCIA_RESERVA_MS = 30 * 60 * 1000; // 30 min (mesma regra da listagem)
+
 class ReservaService {
+  private async validarConflitosReserva(
+    equipamentoIds: number[],
+    inicio: Date,
+    fim: Date,
+    transaction: Transaction,
+    ignorarReservaId?: number,
+  ): Promise<void> {
+    const idsUnicos = Array.from(new Set(equipamentoIds));
+    if (idsUnicos.length === 0) return;
+
+    // Lock pessimista nos equipamentos alvo para evitar double-booking concorrente
+    await Equipamento.findAll({
+      where: { id: { [Op.in]: idsUnicos } },
+      attributes: ["id"],
+      lock: transaction.LOCK.UPDATE,
+      transaction,
+    });
+
+    const inicioComTolerancia = new Date(inicio.getTime() - TOLERANCIA_RESERVA_MS);
+    const fimComTolerancia = new Date(fim.getTime() + TOLERANCIA_RESERVA_MS);
+
+    const whereReserva: any = {
+      situacao: { [Op.notIn]: ["CANCELADA", "FINALIZADA"] },
+      reserva_inicio: { [Op.lte]: fimComTolerancia },
+      reserva_fim: { [Op.gte]: inicioComTolerancia },
+    };
+    if (ignorarReservaId) {
+      whereReserva.id = { [Op.ne]: ignorarReservaId };
+    }
+
+    const conflitos = await Reserva.findAll({
+      where: whereReserva,
+      attributes: ["id"],
+      include: [
+        {
+          model: Equipamento,
+          as: "equipamentos",
+          attributes: ["id"],
+          through: { attributes: [] },
+          where: { id: { [Op.in]: idsUnicos } },
+          required: true,
+        },
+      ],
+      transaction,
+    });
+
+    if (conflitos.length > 0) {
+      throw new Error("ERR_EQUIPAMENTO_RESERVADO");
+    }
+  }
+
   async create(
     usuario_id: number,
     smartlock_id: number,
@@ -21,6 +74,13 @@ class ReservaService {
   ) {
     let transaction = await sequelize.transaction();
     try {
+      await this.validarConflitosReserva(
+        equipamentos,
+        dt_reserva,
+        dt_devolucao,
+        transaction,
+      );
+
       let reserva = await Reserva.create(
         {
           usuario_id,
@@ -280,9 +340,20 @@ class ReservaService {
       if (!reserva) {
         throw new Error("ERR_RESERVA_NOT_FOUND");
       }
+
+      const equipamentosParaSalvar = [...equipamentos];
+      await this.validarConflitosReserva(
+        equipamentosParaSalvar,
+        dt_inicio,
+        dt_fim,
+        transaction,
+        reserva.id,
+      );
+
       reserva.reserva_inicio = dt_inicio;
       reserva.reserva_fim = dt_fim;
       reserva.motivo = motivo;
+      await reserva.save({ transaction });
 
       let antiga_reserva = await ItensReserva.findAll({
         where: {
@@ -291,19 +362,19 @@ class ReservaService {
         transaction,
       });
       for (let eqp of antiga_reserva) {
-        let indexEquipamento = equipamentos.indexOf(eqp.equipamento_id);
+        let indexEquipamento = equipamentosParaSalvar.indexOf(eqp.equipamento_id);
         if (indexEquipamento != -1) {
           // Já está cadastrado, ignora
-          equipamentos.splice(indexEquipamento, 1);
+          equipamentosParaSalvar.splice(indexEquipamento, 1);
         } else {
           //Não achou na lista atualizada, remove o vínculo
           await eqp.destroy({ transaction });
         }
       }
-      if (equipamentos.length > 0) {
+      if (equipamentosParaSalvar.length > 0) {
         //Passou por todos os que já estão cadastrados e ainda tem equipamentos na lista
         //cria o vínculo
-        let creation_equipamentos = equipamentos.map((e) => {
+        let creation_equipamentos = equipamentosParaSalvar.map((e) => {
           return { reserva_id: reserva.id, equipamento_id: e };
         });
         await ItensReserva.bulkCreate(creation_equipamentos, { transaction });
@@ -319,18 +390,15 @@ class ReservaService {
   async delete(reserva_id: number): Promise<void> {
     let transaction = await sequelize.transaction();
     try {
-      let itens = await ItensReserva.findAll({
-        where: { reserva_id },
-        transaction,
-      });
-      for (let item of itens) {
-        await item.destroy({ transaction });
-      }
-      let reserva = await Reserva.findByPk(reserva_id);
+      let reserva = await Reserva.findByPk(reserva_id, { transaction });
       if (!reserva) {
         throw new Error("ERR_RESERVA_NOT_FOUND");
       }
-      reserva.destroy();
+      await ItensReserva.destroy({
+        where: { reserva_id },
+        transaction,
+      });
+      await reserva.destroy({ transaction });
       await transaction.commit();
     } catch (e) {
       await transaction.rollback();

@@ -625,10 +625,11 @@ class EquipamentoService {
           through: { attributes: [] },
           required: false, // LEFT JOIN -> mantém equipamento mesmo sem reserva
           where: {
+            situacao: { [Op.notIn]: ["CANCELADA", "FINALIZADA"] },
             reserva_inicio: { [Op.lte]: fimComTolerancia },
             reserva_fim: { [Op.gte]: inicioComTolerancia },
           },
-          attributes: ["reserva_inicio", "reserva_fim"],
+          attributes: ["id", "reserva_inicio", "reserva_fim"],
           include: [
             {
               model: Usuario,
