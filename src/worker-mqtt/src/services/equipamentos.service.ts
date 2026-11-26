@@ -1,5 +1,5 @@
 import { mqttClient } from "../config/mqtt";
-import { MQTT_PREFIX, URL_API } from "../config/env";
+import { getInternalHeaders, MQTT_PREFIX, URL_API } from "../config/env";
 import { Events } from "../controllers/equipamentos.controller";
 
 class EquipamentoService{
@@ -11,10 +11,9 @@ class EquipamentoService{
       `${URL_API}/api/movimentacao/${mac}`,
       {
         method: "POST",
-        headers:{
-          "content-type":"application/json"
-        },
+        headers:getInternalHeaders(),
         body: JSON.stringify({events,usuario,timestamp}),
+        signal: AbortSignal.timeout(10000),
       },
     );
 

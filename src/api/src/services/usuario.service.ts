@@ -58,13 +58,17 @@ class UsuarioService {
 
   async getUsersSmartlock(mac: string): Promise<Usuario[]> {
     try {
-      const smartlock: Smartlock|null =
+      const smartlock: Smartlock | null =
         await smartLockService.getSmartlockByMac(mac);
       if (!smartlock) {
         throw new Error("SMARTLOCK_NOT_FOUND");
       }
+      const unidadeId = (smartlock as any).uni_id ?? smartlock.unidade_id;
+      if (!unidadeId) {
+        return [];
+      }
       let usuarios = await Usuario.findAll({
-        where: { unidade_lotacao_id: smartlock.unidade_id, ativo: true },
+        where: { unidade_lotacao_id: unidadeId, ativo: true },
         attributes: [["uid_rfid", "uuid"]],
         raw: true,
       });

@@ -1,18 +1,17 @@
 
+import { getInternalHeaders, URL_API } from "../config/env";
+
 class SistemaService {
   async enviaStatusAtual(mac: string, status: string) {
     const body = { mac, status };
 
-    console.log()
-
     let resposta = await fetch(
-      `${process.env.URL_API}/api/smartlock/setStatus`,
+      `${URL_API}/api/smartlock/setStatus`,
       {
         method: "POST",
-        headers:{
-          "content-type":"application/json"
-        },
+        headers: getInternalHeaders(),
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(10000),
       },
     );
 

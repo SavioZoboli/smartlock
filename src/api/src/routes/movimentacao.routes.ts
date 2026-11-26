@@ -1,11 +1,11 @@
 import movimentacaoController from "../controllers/movimentacao.controller"
-import { authMiddleware } from "../middlewares/auth.middleware"
+import { authMiddleware, internalAuthMiddleware } from "../middlewares/auth.middleware"
 
 const router = require('express').Router()
 
 router.post('/',authMiddleware,movimentacaoController.bulkMovimenta)
 
-router.post('/:mac',movimentacaoController.bulkMovimentaPorSmartlock)
+router.post('/:mac',internalAuthMiddleware,movimentacaoController.bulkMovimentaPorSmartlock)
 
 router.get('/ultimosDias/:dias',authMiddleware,movimentacaoController.getMovimentacoesUltimosDiasUsuario)
 
