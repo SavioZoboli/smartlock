@@ -15,7 +15,7 @@
 
 
 unsigned long timerLeitura = 0; 
-const unsigned long TIMEOUT_LEITURA_MS = 45000; // 45 Segundos limite para o Slave responder
+const unsigned long TIMEOUT_LEITURA_MS = 80000; // 80s limite (alinhado aos 6x12s = 72s máx do Slave)
 
 unsigned long timerInicioProcesso = 0;
 unsigned long timerUltimoBipPorta = 0;

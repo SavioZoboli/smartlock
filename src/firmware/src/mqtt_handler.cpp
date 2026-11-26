@@ -49,9 +49,6 @@ void MqttHandler::init()
 
 void MqttHandler::reconnect()
 {
-    if(!Time::is_sync()){
-        return;
-    }
     unsigned long currentMillis = millis();
     if (currentMillis - lastMqttReconnectAttempt >= MQTT_RECONNECT_INTERVAL)
     {
@@ -133,9 +130,16 @@ bool MqttHandler::publish(const char *module, const char *action, const char *pa
 
     char pubTopic[96];
     buildTopic(pubTopic, sizeof(pubTopic), module, action);
-    mqttClient.publish(pubTopic, payload);
-    Serial.printf("[MQTT] Publicado em %s: %s\n", pubTopic, payload);
-    return true;
+    bool publicado = mqttClient.publish(pubTopic, payload);
+    if (publicado)
+    {
+        Serial.printf("[MQTT] Publicado em %s: %s\n", pubTopic, payload);
+    }
+    else
+    {
+        Serial.printf("[MQTT] Falha ao publicar em %s (tamanho: %u bytes)\n", pubTopic, strlen(payload));
+    }
+    return publicado;
 }
 
 void MqttHandler::callback(char *topic, byte *payload, unsigned int length)

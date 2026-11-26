@@ -40,41 +40,81 @@ void StorageHandler::clearUsers() {
 // --- MÉTODOS DE FILA (FIFO com LittleFS) ---
 
 bool StorageHandler::pushEventToQueue(const char* jsonPayload) {
-    // Nome do arquivo baseado em tempo para garantir unicidade e ordem
-    String filename = String(QUEUE_DIR) + "/" + String(millis()) + ".json";
-    
+    // Contador monotônico persistido em NVS garante ordem FIFO real e evita colisões pós-reboot
+    Preferences queueMeta;
+    uint32_t seq = 1;
+    if (queueMeta.begin("qmeta", false)) {
+        seq = queueMeta.getUInt("seq", 0) + 1;
+        queueMeta.putUInt("seq", seq);
+        queueMeta.end();
+    }
+
+    char filename[48];
+    snprintf(filename, sizeof(filename), "%s/%08lu.json", QUEUE_DIR, static_cast<unsigned long>(seq));
+
     File file = LittleFS.open(filename, FILE_WRITE);
     if (!file) return false;
-    
-    file.print(jsonPayload);
+
+    size_t written = file.print(jsonPayload);
     file.close();
-    Serial.printf("[STORAGE] Evento enfileirado: %s\n", filename.c_str());
+    if (written == 0) {
+        LittleFS.remove(filename);
+        return false;
+    }
+    Serial.printf("[STORAGE] Evento enfileirado: %s\n", filename);
     return true;
 }
 
 bool StorageHandler::hasPendingEvents() {
     File root = LittleFS.open(QUEUE_DIR);
+    if (!root || !root.isDirectory()) {
+        if (root) root.close();
+        return false;
+    }
     File file = root.openNextFile();
     bool exists = (bool)file;
-    file.close();
+    if (file) file.close();
     root.close();
     return exists;
 }
 
 String StorageHandler::popEventFromQueue() {
     File root = LittleFS.open(QUEUE_DIR);
-    File oldestFile = root.openNextFile(); // Pega o primeiro arquivo na pasta
-    
-    if (!oldestFile) return "";
+    if (!root || !root.isDirectory()) {
+        if (root) root.close();
+        return "";
+    }
 
-    String path = oldestFile.path();
-    String content = oldestFile.readString();
-    
-    oldestFile.close();
+    // LittleFS não garante ordem cronológica no openNextFile():
+    // escolhe sempre o menor nome lexicográfico (%08lu.json) para FIFO estrito.
+    String oldestPath = "";
+    File entry = root.openNextFile();
+    while (entry) {
+        if (!entry.isDirectory()) {
+            String path = entry.path();
+            if (oldestPath.length() == 0 || path < oldestPath) {
+                oldestPath = path;
+            }
+        }
+        entry.close();
+        entry = root.openNextFile();
+    }
     root.close();
-    
-    LittleFS.remove(path); // Remove o arquivo após a leitura (FIFO)
-    Serial.printf("[STORAGE] Evento despachado e removido: %s\n", path.c_str());
-    
+
+    if (oldestPath.length() == 0) {
+        return "";
+    }
+
+    File oldestFile = LittleFS.open(oldestPath, FILE_READ);
+    if (!oldestFile) {
+        return "";
+    }
+
+    String content = oldestFile.readString();
+    oldestFile.close();
+
+    LittleFS.remove(oldestPath); // Remove o arquivo após a leitura (FIFO)
+    Serial.printf("[STORAGE] Evento despachado e removido: %s\n", oldestPath.c_str());
+
     return content;
 }

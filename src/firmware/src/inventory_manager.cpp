@@ -2,6 +2,7 @@
 #include "auth_handler.h"
 #include "hardware_io_handler.h"
 #include "reader_module.h"
+#include "time_handler.h"
 #include <ArduinoJson.h>
 
 
@@ -35,6 +36,12 @@ String InventoryManager::serializeEvents(const std::vector<EventoMovimentacao>& 
     // 1. Busca o último usuário autorizado que abriu a porta
     const char* user = AuthHandler::getLastUser();
     doc["usuario"] = user;
+
+    // Timestamp Unix em ms (quando NTP estiver sincronizado) para datar eventos offline
+    unsigned long unixSec = Time::getUnixTimestamp();
+    if (unixSec > 0) {
+        doc["timestamp"] = static_cast<uint64_t>(unixSec) * 1000ULL;
+    }
 
     // 2. Cria o array de eventos de retirada/devolução
     JsonArray array = doc.createNestedArray("eventos");

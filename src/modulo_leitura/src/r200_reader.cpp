@@ -111,11 +111,20 @@ void R200Reader::processBuffer(std::vector<String>& tagList) {
         uint8_t lenH   = _stream.read();
         uint8_t lenL   = _stream.read();
         uint16_t paramLen = (lenH << 8) | lenL;
+        constexpr uint16_t MAX_R200_PARAM_LEN = 64;
+        constexpr uint16_t MAX_R200_EPC_LEN = 32;
+
+        if (paramLen > MAX_R200_PARAM_LEN) {
+            #if DEBUG_UHF
+            Serial.printf("[UHF RX ERRO] paramLen inválido (%u > %u). Frame descartado.\n", paramLen, MAX_R200_PARAM_LEN);
+            #endif
+            continue;
+        }
 
         unsigned long inicioEspera = millis();
-        // Fica preso aqui no máximo 40ms esperando o resto da mensagem chegar
+        // Aguarda no máximo 5ms pelo restante do frame (evita jitter no motor de passo)
         while (_stream.available() < paramLen + 2) {
-            if (millis() - inicioEspera > 40) {
+            if (millis() - inicioEspera > 5) {
                 #if DEBUG_UHF
                 Serial.printf("[UHF RX ERRO] Timeout. Esperava %d bytes, buffer tinha %d.\n", (paramLen + 2), _stream.available());
                 #endif
@@ -125,8 +134,10 @@ void R200Reader::processBuffer(std::vector<String>& tagList) {
 
         if (_stream.available() < paramLen + 2) break;
 
-        uint8_t params[paramLen];
-        _stream.readBytes(params, paramLen);
+        uint8_t params[MAX_R200_PARAM_LEN];
+        if (paramLen > 0) {
+            _stream.readBytes(params, paramLen);
+        }
         uint8_t checksum = _stream.read();
         uint8_t endByte  = _stream.read();
 
@@ -146,11 +157,27 @@ void R200Reader::processBuffer(std::vector<String>& tagList) {
             continue;
         }
 
+        // Valida checksum do protocolo R200: soma de (type, cmd, lenH, lenL, params...) & 0xFF
+        uint32_t sum = type + cmd + lenH + lenL;
+        for (uint16_t i = 0; i < paramLen; i++) {
+            sum += params[i];
+        }
+        uint8_t expectedCs = static_cast<uint8_t>(sum & 0xFF);
+        if (checksum != expectedCs) {
+            #if DEBUG_UHF
+            Serial.printf("[UHF RX ERRO] Checksum inválido (recebido %02X, esperado %02X).\n", checksum, expectedCs);
+            #endif
+            continue;
+        }
+
         // Filtra Notificação de Tag Detectada do protocolo Python que testamos
         if (type == TYPE_NOTIFICATION && cmd == 0x22 && paramLen >= 5) {
             uint8_t rssi = params[0];
-            uint16_t epcLen = paramLen - 5; 
-            char epcStr[epcLen * 2 + 1];
+            uint16_t epcLen = paramLen - 5;
+            if (epcLen == 0 || epcLen > MAX_R200_EPC_LEN) {
+                continue;
+            }
+            char epcStr[MAX_R200_EPC_LEN * 2 + 1];
             for (uint16_t i = 0; i < epcLen; i++) {
                 sprintf(&epcStr[i * 2], "%02X", params[3 + i]);
             }
