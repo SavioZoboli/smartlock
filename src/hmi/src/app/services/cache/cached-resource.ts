@@ -3,6 +3,13 @@ import { catchError, finalize, Observable, of, shareReplay, tap } from 'rxjs';
 
 const DEFAULT_TTL_MS = 30 * 60 * 1000; // 30 minutos
 
+const sessionCacheClearers = new Set<() => void>();
+
+/** Limpa todos os caches de sessão registrados (chamar no logout ou expiração 401). */
+export function clearAllSessionCaches(): void {
+  sessionCacheClearers.forEach((clearFn) => clearFn());
+}
+
 /**
  * Cache genérico para um único recurso (ex: lista de unidades, lista de regiões).
  * Guarda o valor num signal (leitura direta, sem subscribe) e só chama `fetcher`
@@ -33,6 +40,7 @@ export class CachedResource<T> {
   ) {
     this._data = signal<T>(defaultValue);
     this.data = this._data.asReadonly();
+    sessionCacheClearers.add(() => this.clear());
   }
 
   /** Dispara a busca (se o cache estiver vazio/expirado) e atualiza o signal. */
@@ -55,8 +63,8 @@ export class CachedResource<T> {
         this.onError?.(err);
         return of(this.defaultValue);
       }),
-      shareReplay(1),
       finalize(() => (this.inflight$ = null)),
+      shareReplay(1),
     );
 
     return this.inflight$;
@@ -65,6 +73,13 @@ export class CachedResource<T> {
   /** Força a próxima chamada a `get()` buscar dado novo na API. */
   public invalidate(): void {
     this.lastFetch = 0;
+  }
+
+  /** Limpa dados em memória e invalida TTL (usado no logout). */
+  public clear(): void {
+    this._data.set(this.defaultValue);
+    this.lastFetch = 0;
+    this.inflight$ = null;
   }
 
   private cacheValido(): boolean {
@@ -94,7 +109,9 @@ export class CachedResourceMap<K, T> {
     private readonly defaultValue: T,
     private readonly ttlMs: number = DEFAULT_TTL_MS,
     private readonly onError?: (err: unknown) => void,
-  ) {}
+  ) {
+    sessionCacheClearers.add(() => this.clear());
+  }
 
   public get(key: K): Observable<T> {
     if (this.cacheValido(key)) {
@@ -118,8 +135,8 @@ export class CachedResourceMap<K, T> {
         this.onError?.(err);
         return of(this.defaultValue);
       }),
-      shareReplay(1),
       finalize(() => this.inflight.delete(key)),
+      shareReplay(1),
     );
 
     this.inflight.set(key, request$);
@@ -134,6 +151,13 @@ export class CachedResourceMap<K, T> {
   /** Invalida todas as chaves (útil após create/update/delete que não sabe a quem pertencia). */
   public invalidateAll(): void {
     this.lastFetch.clear();
+  }
+
+  /** Limpa todo o mapa em memória e TTLs (usado no logout). */
+  public clear(): void {
+    this._data.set(new Map());
+    this.lastFetch.clear();
+    this.inflight.clear();
   }
 
   private cacheValido(key: K): boolean {

@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, map, Observable, of, tap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { clearAllSessionCaches } from './cache/cached-resource';
 
 export interface UsuarioLogado {
   id?: number;
@@ -59,9 +60,14 @@ export class AuthService {
     );
   }
 
+  limparSessao(): void {
+    this.usuarioSubject.next(null);
+    clearAllSessionCaches();
+  }
+
   logout(): Observable<void> {
     return this.http.post<void>(`${this.auth_url}/api/auth/logout`, {}, { withCredentials: true }).pipe(
-      tap(() => this.usuarioSubject.next(null)),
+      finalize(() => this.limparSessao()),
     );
   }
 
