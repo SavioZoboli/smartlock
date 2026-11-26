@@ -1,22 +1,27 @@
 import { mqttClient } from "../config/mqtt";
+import { getInternalHeaders, URL_API } from "../config/env";
 
 
 class SystemStatus{
     private need_heartbeat = true;
-    private api_url = `${process.env.URL_API}/api/status/mqtt`
+    private api_url = `${URL_API}/api/status/mqtt`;
 
     private next_heartbeat_in:number = 15000;
 
-    public polling(){
-        this.sendHeartbeat()
-        setTimeout(()=>{
-            if(!this.need_heartbeat){
-                return;
-            }
+    public async polling(){
+        if(!this.need_heartbeat){
+            return;
+        }
 
-            this.sendHeartbeat()
-            this.polling()
-        },this.next_heartbeat_in)
+        await this.sendHeartbeat();
+
+        if(!this.need_heartbeat){
+            return;
+        }
+
+        setTimeout(()=>{
+            this.polling();
+        },this.next_heartbeat_in);
     }
 
     private async sendHeartbeat(){
@@ -29,11 +34,11 @@ class SystemStatus{
                     worker:'online',
                     broker:broker_status
                 }),
-                headers:{'Content-Type':'application/json'}
+                headers:getInternalHeaders(),
+                signal: AbortSignal.timeout(10000),
             })
             if(response.status != 200){
-                throw new Error("API_UNREACHABLE")
-                return;
+                throw new Error(`API_UNREACHABLE (${response.status})`)
             }
             
         }catch(e){

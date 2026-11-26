@@ -64,12 +64,16 @@ class AuthService {
   }
 
   private geraTokenTemporario(email: string,nome:string,avatar:string): string {
-    return jwt.sign({ email: email ,nome:nome,avatar:avatar}, this.JWT_SECRET, { expiresIn: "15min" });
+    return jwt.sign(
+      { email, nome, avatar, purpose: "signup" },
+      this.JWT_SECRET,
+      { expiresIn: "15min" },
+    );
   }
 
   public geraToken(id: number, email: string,nome:string,avatar:string,is_admin:boolean,regiao_id:number): string {
     return jwt.sign(
-      { id, email,nome,avatar,is_admin,regiao_id}, // Payload da nossa aplicação
+      { id, email, nome, avatar, is_admin, regiao_id, purpose: "session" }, // Payload da nossa aplicação
       this.JWT_SECRET,
       { expiresIn: this.JWT_EXPIRATION },
     );

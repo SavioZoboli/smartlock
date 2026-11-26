@@ -163,7 +163,15 @@ class UsuarioController {
     if(!signupToken){
       return res.status(401).json({message:"Sem token"})
     }
-    let usuario = verificarToken(signupToken)
+    let usuario;
+    try {
+      usuario = verificarToken(signupToken);
+    } catch {
+      return res.status(401).json({ message: "Token de cadastro inválido ou expirado" });
+    }
+    if (usuario.purpose && usuario.purpose !== "signup") {
+      return res.status(401).json({ message: "Token inválido para finalização de cadastro" });
+    }
     if(usuario.email != email){
       return res.status(401).json({message:"Proprietário do e-mail e usuário cadastrado não coincidem"})
     }

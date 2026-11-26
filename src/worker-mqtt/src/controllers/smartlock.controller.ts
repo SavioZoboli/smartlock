@@ -8,10 +8,7 @@ class SmartlockController {
 
   async whoami(mac: string) {
     if (!mac) {
-      mqttClient.publish(
-        `${this.mqtt_base_topic}/youare/${mac}`,
-        JSON.stringify({ status: "invalid" }),
-      );
+      console.warn("[SmartlockController] whoami chamado sem MAC válido.");
       return;
     }
     try {
@@ -32,7 +29,7 @@ class SmartlockController {
       console.error(e);
       mqttClient.publish(
         `${this.mqtt_base_topic}/youare/${mac}`,
-        JSON.stringify("error"),
+        JSON.stringify({ status: "error" }),
       );
     }
   }

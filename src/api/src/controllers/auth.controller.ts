@@ -24,17 +24,25 @@ class AuthController {
       const { sessionToken, userData, cadastrado } =
         await authService.processGoogleLogin(token);
 
-      // Configura o Cookie HttpOnly e Secure
-      res.cookie("token", sessionToken, COOKIE_OPTIONS);
+      // Só grava o cookie de sessão quando o usuário já está cadastrado.
+      // Para cadastros pendentes, retorna apenas o signupToken no corpo.
+      if (cadastrado) {
+        res.cookie("token", sessionToken, COOKIE_OPTIONS);
+      } else {
+        res.clearCookie("token", { ...COOKIE_OPTIONS, maxAge: undefined });
+      }
 
-      let responseBody =  {userData,cadastrado,signupToken:cadastrado==false?sessionToken:null}
-
+      let responseBody = {
+        userData,
+        cadastrado,
+        signupToken: cadastrado == false ? sessionToken : null,
+      };
 
       return res.status(200).json(responseBody);
     } catch (error: any) {
       return res
         .status(401)
-        .json({ error: "Falha na autenticação", details: error.message });
+        .json({ error: "Falha na autenticação" });
     }
   }
 

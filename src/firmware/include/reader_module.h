@@ -10,6 +10,7 @@ public:
     static void update();
 
     static bool beginReading();
+    static void resetReading();
     static bool getIsReading();
     
     // Retorna true exatamente no ciclo em que a leitura terminou

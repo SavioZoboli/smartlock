@@ -62,7 +62,9 @@ mqttClient.on("message", (topic, message) => {
   try {
     const payloadTexto = message.toString();
     const payloadObject = JSON.parse(payloadTexto);
-    rotearMensagemMQTT(topic, payloadObject);
+    rotearMensagemMQTT(topic, payloadObject).catch((error) => {
+      console.error(`[MQTT] Erro assíncrono ao rotear tópico ${topic}:`, error);
+    });
   } catch (error) {
     console.error(
       `[MQTT] Erro ao processar mensagem no tópico ${topic}: Payload não é um JSON válido.`,

@@ -198,7 +198,11 @@ export class CadastroReserva implements OnInit {
   }
 
   isReservadoPorOutro(equipamento: EquipamentoComReservas): boolean {
-    return isEquipamentoReservadoPorOutro(equipamento, this.equipamentosDaReservaAtual);
+    return isEquipamentoReservadoPorOutro(
+      equipamento,
+      this.equipamentosDaReservaAtual,
+      this.reserva_id,
+    );
   }
 
   private limparEquipamentos(): void {
@@ -341,7 +345,10 @@ export class CadastroReserva implements OnInit {
         error: (err: any) => {
           this.sns.notificarErro(err);
           this.isLoading.set(false);
-          this.reservaForm.enable();
+          this.reservaForm.enable({ emitEvent: false });
+          if (err?.status === 409) {
+            this.carregarEquipamentosDisponiveis();
+          }
         },
       });
     } else {

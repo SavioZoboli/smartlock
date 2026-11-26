@@ -17,6 +17,15 @@
 unsigned long timerLeitura = 0; 
 const unsigned long TIMEOUT_LEITURA_MS = 45000; // 45 Segundos limite para o Slave responder
 
+unsigned long timerInicioProcesso = 0;
+unsigned long timerUltimoBipPorta = 0;
+bool portaFoiAberta = false;
+const unsigned long TIMEOUT_PORTA_NAO_ABERTA_MS = 15000;   // 15s sem abrir volta para IDLE
+const unsigned long INTERVALO_BIP_PORTA_ABERTA_MS = 20000; // Bip a cada 20s enquanto aberta
+
+bool varreduraInicialPendente = true;
+bool leituraInicial = false;
+
 
 void setup()
 {
@@ -58,6 +67,9 @@ void autorizaAcesso()
     Serial.println("Acesso autorizado");
     HardwareIOHandler::unlockDoor();
     BuzzerHandler::play(SoundEffect::OP_SUCCESS);
+    timerInicioProcesso = millis();
+    timerUltimoBipPorta = millis();
+    portaFoiAberta = false;
     System::setState(SystemState::IN_PROCESS);
     DisplayHandler::setTimeoutMessage("SUCESSO", "Autorizado", 5000);
 }
@@ -105,6 +117,23 @@ void loop()
 
     // 1. Atualiza as rotinas de background
     AuthHandler::update();
+
+    // Varredura inicial ao ligar para estabelecer o inventário base físico real
+    if (varreduraInicialPendente && System::getState() == SystemState::IDLE && !HardwareIOHandler::isDoorOpen())
+    {
+        varreduraInicialPendente = false;
+        leituraInicial = true;
+        DisplayHandler::setFixedMessage("Varredura inicial");
+        if (ReaderModule::beginReading())
+        {
+            System::setState(SystemState::READING);
+            timerLeitura = millis();
+        }
+        else
+        {
+            leituraInicial = false;
+        }
+    }
 
     char uidLida[16] = {0};
 
@@ -161,14 +190,36 @@ void loop()
     if (System::getState() == SystemState::IN_PROCESS)
     {
         DisplayHandler::setFixedMessage("Feche a porta");
+
         if (HardwareIOHandler::doorJustClosed())
         {
             BuzzerHandler::play(SoundEffect::LOGOFF);
             DisplayHandler::setFixedMessage("Fazendo leitura");
+            leituraInicial = false;
             ReaderModule::beginReading();
             System::setState(SystemState::READING);
-            
+
             timerLeitura = millis(); // INICIA O CRONÔMETRO DE SEGURANÇA
+        }
+        else if (HardwareIOHandler::isDoorOpen())
+        {
+            if (!portaFoiAberta)
+            {
+                portaFoiAberta = true;
+                timerUltimoBipPorta = millis();
+            }
+            else if (millis() - timerUltimoBipPorta >= INTERVALO_BIP_PORTA_ABERTA_MS)
+            {
+                BuzzerHandler::play(SoundEffect::TAG_READ);
+                timerUltimoBipPorta = millis();
+            }
+        }
+        else if (!portaFoiAberta && (millis() - timerInicioProcesso >= TIMEOUT_PORTA_NAO_ABERTA_MS))
+        {
+            Serial.println("[SISTEMA] Porta permaneceu fechada por 15s. Retornando para IDLE.");
+            HardwareIOHandler::lockDoor();
+            System::setState(SystemState::IDLE);
+            DisplayHandler::setTimeoutMessage("CANCELADO", "Tempo esgotado", 2500);
         }
     }
 
@@ -178,6 +229,8 @@ void loop()
         // 1. Verifica se houve Timeout (Slave morreu ou cabo rompeu)
         if (millis() - timerLeitura > TIMEOUT_LEITURA_MS) {
             Serial.println("[ERRO CRÍTICO] Timeout! Slave não respondeu.");
+            ReaderModule::resetReading();
+            leituraInicial = false;
             BuzzerHandler::play(SoundEffect::OP_FAIL);
             DisplayHandler::setTimeoutMessage("ERRO", "Leitor Falhou", 4000);
             System::setState(SystemState::IDLE);
@@ -186,28 +239,38 @@ void loop()
         else if (ReaderModule::scanJustFinished()) 
         {
             if (ReaderModule::wasSuccess()) {
-                // SUCESSO: Faz o cálculo de diferença de inventário normalmente
-                BuzzerHandler::play(SoundEffect::RFID_SUCCESS);
                 ReaderModule::populateCurrentInventory(InventoryManager::inventarioAtual);
-                auto eventos = InventoryManager::calculateDiff();
 
-                if (!eventos.empty()) {
-                    String jsonEventos = InventoryManager::serializeEvents(eventos);
-                    StorageHandler::pushEventToQueue(jsonEventos.c_str());
+                if (leituraInicial) {
+                    // Varredura inicial: apenas estabelece o baseline sem gerar eventos
                     InventoryManager::commitInventory();
+                    Serial.println("[SISTEMA] Inventário inicial sincronizado.");
+                    DisplayHandler::setTimeoutMessage("PRONTO", "Inventario OK", 2000);
+                } else {
+                    // SUCESSO: Faz o cálculo de diferença de inventário normalmente
+                    BuzzerHandler::play(SoundEffect::RFID_SUCCESS);
+                    auto eventos = InventoryManager::calculateDiff();
+
+                    if (!eventos.empty()) {
+                        String jsonEventos = InventoryManager::serializeEvents(eventos);
+                        if (StorageHandler::pushEventToQueue(jsonEventos.c_str())) {
+                            InventoryManager::commitInventory();
+                        }
+                    }
                 }
             } else {
                 // ERRO MECÂNICO: Motor travou no meio. Descarta a leitura para não gerar falsas retiradas!
                 BuzzerHandler::play(SoundEffect::OP_FAIL);
                 DisplayHandler::setTimeoutMessage("ERRO", "Falha Mecanica", 4000);
             }
-            
+
+            leituraInicial = false;
             System::setState(SystemState::IDLE);
         }
     }
 
     // 3. Sync com o Servidor: Despacha a fila de eventos
-    if (WiFiHandler::isConnected() && StorageHandler::hasPendingEvents())
+    if (WiFiHandler::isConnected() && MqttHandler::isConnected() && StorageHandler::hasPendingEvents())
     {
         while (StorageHandler::hasPendingEvents())
         {

@@ -74,60 +74,63 @@ class MovimentacaoController {
       console.log(`${events_saida.length} equipamentos para dar saída:`);
       console.log(events_saida);
 
-      let nencontrados: any = [];
+      let nencontrados: string[] = [];
 
       if (events_entrada.length > 0) {
-        console.log("Possui equipamentos para dar entrada.");
-        let entradas = await equipamentoService.listByTag(events_entrada);
-        console.log("Equipamentos encontrados no banco:");
-        console.log(entradas);
+        const encontrados = await equipamentoService.listByTagWithTag(events_entrada);
+        const tagsEncontradas = new Set(encontrados.map((ent) => ent.tag));
+        const idsEntrada = encontrados.map((ent) => ent.id);
 
-        if (events_entrada.length != entradas.length) {
-          //Faz um push das tags não encontradas
-          events_entrada.forEach((e: any) => {
-            if (entradas.find((ent: any) => ent == e) == null) {
-              console.log(`${e} não foi encontrado no banco!`);
-              nencontrados.push(e);
-            }
-          });
+        for (const epc of events_entrada) {
+          if (!tagsEncontradas.has(epc)) {
+            nencontrados.push(epc);
+          }
         }
-        await movimentacaoService.bulkInsert(
-          usuario_id,
-          smartlock_id,
-          "devolucao",
-          entradas,
-        );
+        if (idsEntrada.length > 0) {
+          await movimentacaoService.bulkInsert(
+            usuario_id,
+            smartlock_id,
+            "devolucao",
+            idsEntrada,
+          );
+        }
       }
       if (events_saida.length > 0) {
-        console.log("Possui equipamentos para dar saida.");
-        let saidas = await equipamentoService.listByTag(events_saida);
-        console.log("Equipamentos encontrados no banco:");
-        console.log(saidas);
+        const encontrados = await equipamentoService.listByTagWithTag(events_saida);
+        const tagsEncontradas = new Set(encontrados.map((ent) => ent.tag));
+        const idsSaida = encontrados.map((ent) => ent.id);
 
-        if (events_saida.length != saidas.length) {
-          //Faz um push das tags não encontradas
-          events_saida.forEach((e: any) => {
-            if (!saidas.find((ent: any) => ent == e)) {
-              console.log(`${e} não foi encontrado no banco!`);
-              nencontrados.push(e);
-            }
-          });
+        for (const epc of events_saida) {
+          if (!tagsEncontradas.has(epc)) {
+            nencontrados.push(epc);
+          }
         }
-
-        await movimentacaoService.bulkInsert(
-          usuario_id,
-          smartlock_id,
-          "emprestimo",
-          saidas,
-        );
+        if (idsSaida.length > 0) {
+          await movimentacaoService.bulkInsert(
+            usuario_id,
+            smartlock_id,
+            "emprestimo",
+            idsSaida,
+          );
+        }
       }
-      console.log(`Equipamentos que não foi encontrado no banco:`);
-      console.log(nencontrados);
       return res
         .status(200)
         .json({ message: "ok", "nao-cadastrados": nencontrados });
-    } catch (e) {
-      console.log(e);
+    } catch (e: any) {
+      console.error("[MovimentacaoController] Erro em bulkMovimentaPorSmartlock:", e);
+      if (e?.message === "USER_NOT_FOUND") {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      if (e?.message === "SMARTLOCK_NOT_FOUND") {
+        return res.status(404).json({ message: "Smartlock não encontrado" });
+      }
+      if (e?.codigo) {
+        return res
+          .status(400)
+          .json({ message: e.message, codigo: e.codigo, detalhes: e.detalhes });
+      }
+      return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 

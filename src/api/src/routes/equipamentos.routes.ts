@@ -34,8 +34,8 @@ router.post('/disponiveis-para-reserva',authMiddleware,equipamentoController.lis
 
 router.get('/relatorio/qtdPorUsuario',authMiddleware,equipamentoController.reportQtdEmUsoPorUsuario)
 
-router.get('/equipamentos/em-uso/:usuarioId', equipamentoController.equipamentosEmUso);
-router.get('/emprestimos/historico/:usuarioId', equipamentoController.historico);
+router.get('/equipamentos/em-uso/:usuarioId', authMiddleware, equipamentoController.equipamentosEmUso);
+router.get('/emprestimos/historico/:usuarioId', authMiddleware, equipamentoController.historico);
 
 
 

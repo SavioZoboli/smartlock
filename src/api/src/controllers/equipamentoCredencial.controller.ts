@@ -18,6 +18,10 @@ function responderErro(res: Response, e: any) {
       return res.status(400).json({ message: "A senha excede o tamanho máximo permitido (100 bytes)" });
     case "ERR_SEM_SENHA":
       return res.status(404).json({ message: "Esta credencial não possui senha cadastrada" });
+    case "ERR_SEM_PERMISSAO_CREDENCIAL":
+      return res.status(403).json({
+        message: "Apenas administradores ou o usuário com o equipamento emprestado podem acessar esta credencial",
+      });
     case "ERR_FALHA_DESCRIPTOGRAFIA":
       console.error("[CREDENCIAL] Falha ao descriptografar senha (payload adulterado ou MASTER_KEY alterada)");
       return res.status(500).json({ message: "Não foi possível descriptografar a senha" });
@@ -52,11 +56,16 @@ function validarBody(login: unknown, senha: unknown): string | null {
 class EquipamentoCredencialController {
   async listAll(req: Request, res: Response) {
     const regiao_id = req.user?.regiao_id;
-    if (!regiao_id) {
+    const usuario_id = req.user?.id;
+    if (!regiao_id || !usuario_id) {
       return res.status(401).json({ message: "Deslogado" });
     }
     try {
-      const credenciais = await equipamentoCredencialService.listAll(regiao_id);
+      const credenciais = await equipamentoCredencialService.listAll(
+        regiao_id,
+        usuario_id,
+        Boolean(req.user?.is_admin),
+      );
       return res.status(200).json(credenciais);
     } catch (e) {
       return responderErro(res, e);
@@ -64,12 +73,20 @@ class EquipamentoCredencialController {
   }
 
   async getByEquipamento(req: Request, res: Response) {
+    const usuario_id = req.user?.id;
+    if (!usuario_id) {
+      return res.status(401).json({ message: "Não consegui te identificar" });
+    }
     const equipamento_id = lerEquipamentoId(req.params.equipamento_id);
     if (!equipamento_id) {
       return res.status(400).json({ message: "O código do equipamento precisa ser numérico" });
     }
     try {
-      const credencial = await equipamentoCredencialService.getByEquipamento(equipamento_id);
+      const credencial = await equipamentoCredencialService.getByEquipamento(
+        equipamento_id,
+        usuario_id,
+        Boolean(req.user?.is_admin),
+      );
       return res.status(200).json(credencial);
     } catch (e) {
       return responderErro(res, e);
@@ -144,7 +161,11 @@ class EquipamentoCredencialController {
       return res.status(400).json({ message: "O código do equipamento precisa ser numérico" });
     }
     try {
-      const senha = await equipamentoCredencialService.revelarSenha(equipamento_id, usuario_id);
+      const senha = await equipamentoCredencialService.revelarSenha(
+        equipamento_id,
+        usuario_id,
+        Boolean(req.user?.is_admin),
+      );
       // Segredo em texto puro: proíbe qualquer cache (browser/proxy).
       res.set("Cache-Control", "no-store");
       res.set("Pragma", "no-cache");

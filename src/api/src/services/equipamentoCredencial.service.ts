@@ -1,4 +1,4 @@
-import { Sequelize, UniqueConstraintError } from "sequelize";
+import { Sequelize, Transaction, UniqueConstraintError } from "sequelize";
 import sequelize from "../config/database";
 import {
   Equipamento,
@@ -48,7 +48,36 @@ function validarSenha(senha: string): void {
 }
 
 class EquipamentoCredencialService {
-  async listAll(regiao_id: number): Promise<CredencialListagemDTO[]> {
+  private async validarPermissaoAcesso(
+    equipamento_id: number,
+    usuario_id: number,
+    is_admin: boolean,
+    transaction?: Transaction,
+  ): Promise<void> {
+    if (is_admin) return;
+
+    const equipamento = await Equipamento.findByPk(equipamento_id, {
+      attributes: ["id", "usuario_atual_id", "ativo"],
+      transaction,
+    });
+    if (!equipamento || !equipamento.ativo) {
+      throw new Error("ERR_EQUIPAMENTO_NOT_FOUND");
+    }
+    if (equipamento.usuario_atual_id !== usuario_id) {
+      throw new Error("ERR_SEM_PERMISSAO_CREDENCIAL");
+    }
+  }
+
+  async listAll(
+    regiao_id: number,
+    usuario_id: number,
+    is_admin: boolean,
+  ): Promise<CredencialListagemDTO[]> {
+    const whereEquipamento: Record<string, any> = { ativo: true };
+    if (!is_admin) {
+      whereEquipamento.usuario_atual_id = usuario_id;
+    }
+
     const linhas = await EquipamentoCredencial.unscoped().findAll({
       attributes: [
         "id",
@@ -64,7 +93,7 @@ class EquipamentoCredencialService {
           model: Equipamento,
           as: "equipamento",
           attributes: [],
-          where: { ativo: true },
+          where: whereEquipamento,
           include: [
             {
               model: TipoEquipamento,
@@ -98,7 +127,13 @@ class EquipamentoCredencialService {
     return linhas as unknown as CredencialListagemDTO[];
   }
 
-  async getByEquipamento(equipamento_id: number): Promise<CredencialDTO> {
+  async getByEquipamento(
+    equipamento_id: number,
+    usuario_id: number,
+    is_admin: boolean,
+  ): Promise<CredencialDTO> {
+    await this.validarPermissaoAcesso(equipamento_id, usuario_id, is_admin);
+
     const credencial = await EquipamentoCredencial.unscoped().findOne({
       where: { equipamento_id },
       attributes: [
@@ -218,8 +253,19 @@ class EquipamentoCredencialService {
    * Descriptografa a senha e registra a auditoria em LogAcessoEqpCred.
    * A senha só é devolvida se o log for gravado com sucesso (mesma transação).
    */
-  async revelarSenha(equipamento_id: number, usuario_id: number): Promise<string> {
+  async revelarSenha(
+    equipamento_id: number,
+    usuario_id: number,
+    is_admin: boolean,
+  ): Promise<string> {
     return sequelize.transaction(async (transaction) => {
+      await this.validarPermissaoAcesso(
+        equipamento_id,
+        usuario_id,
+        is_admin,
+        transaction,
+      );
+
       const credencial = await EquipamentoCredencial.scope("comSenha").findOne({
         where: { equipamento_id },
         attributes: ["id", "equipamento_id", "senha"],

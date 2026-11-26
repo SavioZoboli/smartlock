@@ -14,12 +14,13 @@ class KpiService{
 
     async countEmprestimosUltimoMes(usuario_id:number){
         try{
-            let hoje = new Date().getTime()
-            let trinta_dias_atras = hoje - (30*24*60*60*1000);
+            const hoje = new Date();
+            const trintaDiasAtras = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
             let contagem = await Movimentacao.count({
                 where:{
                     usuario_id,
-                    timestamp:{[Op.between]:[trinta_dias_atras,hoje]}
+                    tipo_movimento: { [Op.like]: "emprestimo%" },
+                    timestamp:{[Op.between]:[trintaDiasAtras,hoje]}
                 }
             })
             return contagem;

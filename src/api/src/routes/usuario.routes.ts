@@ -1,18 +1,18 @@
 import usuarioController from "../controllers/usuario.controller";
-import { authMiddleware, handleAdmin } from "../middlewares/auth.middleware";
+import { authMiddleware, handleAdmin, internalAuthMiddleware } from "../middlewares/auth.middleware";
 
 const router = require('express').Router();
 
 
 router.post('/',authMiddleware,handleAdmin,usuarioController.create)
 
-router.post('/login',usuarioController.login)
+router.post('/login',internalAuthMiddleware,usuarioController.login)
 
 
 
 router.get('/',authMiddleware,usuarioController.listAll)
 
-router.get('/smartlock/:mac',usuarioController.getUsuariosAutorizados)
+router.get('/smartlock/:mac',internalAuthMiddleware,usuarioController.getUsuariosAutorizados)
 
 router.get('/:id',authMiddleware,usuarioController.getById)
 

@@ -15,26 +15,30 @@ export interface PayloadSyncEvents{
 class EquipamentosController{
 
     async syncEvents(mac:string,payload:PayloadSyncEvents){
-        let {usuario,eventos,timestamp} = payload;
-        if(!usuario){
-            usuario = "DESCONHECIDO";
-        }
-        if(!timestamp){
-            timestamp = (new Date()).getTime();
-        }
-        if(eventos.length==0){
-            console.error("Nenhum evento foi lançado")
-            return;
-        }
         try{
+            if(!payload || typeof payload !== "object" || !Array.isArray(payload.eventos)){
+                console.error(`[EquipamentosController] Payload inválido em sync_events de ${mac}`);
+                return;
+            }
+            let {usuario,eventos,timestamp} = payload;
+            if(!usuario){
+                usuario = "DESCONHECIDO";
+            }
+            if(!timestamp){
+                timestamp = (new Date()).getTime();
+            }
+            if(eventos.length==0){
+                console.error("Nenhum evento foi lançado")
+                return;
+            }
             await equipamentosService.syncEvents(mac,eventos,usuario,timestamp)
         }catch(e){
-            console.log(e)
+            console.error("[EquipamentosController] Erro em syncEvents:", e)
         }
     }
 
     async getMyEquipments(mac:string){
-
+        console.warn(`[EquipamentosController] Rota my_equipments ainda não implementada (MAC: ${mac})`);
     }
 
 

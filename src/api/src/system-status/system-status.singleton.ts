@@ -55,11 +55,10 @@ class SystemStatus {
     }
   }
 
-  public polling() {
-    this.verificaConexaoDatabase()
+  public async polling() {
+    await this.verificaConexaoDatabase();
     setTimeout(() => {
-      this.verificaConexaoDatabase();
-      this.polling()
+      this.polling();
     }, 15000);
   }
 

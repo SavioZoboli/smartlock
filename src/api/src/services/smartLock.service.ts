@@ -36,6 +36,7 @@ class SmartLockService {
   ): Promise<{ code: number; message: string }> {
     let transaction = await sequelize.transaction();
     let online = status == "online";
+    let smartlockId: number | null = null;
     try {
       let smartlock = await SmartLock.findOne({
         where: { mac_address: mac, ativo: true },
@@ -46,7 +47,7 @@ class SmartLockService {
         throw new Error("ERR_SMARTLOCK_NOT_FOUND");
       }
       if (smartlock.is_online == online) {
-        transaction.rollback();
+        await transaction.rollback();
         return { code: 202, message: "Já atualizado" };
       }
 
@@ -55,14 +56,19 @@ class SmartLockService {
       await smartlock.save({ transaction });
 
       await transaction.commit();
-
-      await logSmartLockService.gravarLog(smartlock.id, status);
-
-      return { code: 200, message: "Atualizado com sucesso" };
+      smartlockId = smartlock.id;
     } catch (e) {
       await transaction.rollback();
       throw e;
     }
+
+    try {
+      await logSmartLockService.gravarLog(smartlockId, status);
+    } catch (logErr) {
+      console.error("[SmartLockService] Falha ao gravar log de status:", logErr);
+    }
+
+    return { code: 200, message: "Atualizado com sucesso" };
   }
 
   async create(

@@ -11,11 +11,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Porta 14000 é a HMI
-// Porta 14003 será o Worker MQTT
+const defaultOrigins = [
+  'http://localhost:4200',
+  'http://189.8.205.50:14000',
+  'http://189.8.205.50:14003',
+  'https://hmi.189.8.205.50.sslip.io:14000',
+];
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  : defaultOrigins;
 
 app.use(cors({
-  origin: ['http://localhost:4200','http://189.8.205.50:14000','http://189.8.205.50:14003','https://hmi.189.8.205.50.sslip.io:14000'], 
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
@@ -40,6 +47,14 @@ app.get("/status", (req, res) => {
 
 const indexRoutes = require("./routes/index.routes")
 app.use("/api",indexRoutes)
+
+// Middleware global de erro (evita vazar stack traces ou travar requisições)
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("[ERRO NÃO TRATADO]", err);
+  if (!res.headersSent) {
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+});
 
 systemStatusSingleton.polling()
 

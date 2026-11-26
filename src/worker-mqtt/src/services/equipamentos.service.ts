@@ -1,5 +1,5 @@
 import { mqttClient } from "../config/mqtt";
-import { MQTT_PREFIX, URL_API } from "../config/env";
+import { getInternalHeaders, MQTT_PREFIX, URL_API } from "../config/env";
 import { Events } from "../controllers/equipamentos.controller";
 
 class EquipamentoService{
@@ -7,30 +7,32 @@ class EquipamentoService{
     private base_url = `${MQTT_PREFIX}/equipamentos`
 
     async syncEvents(mac:string,events:Events[],usuario:string,timestamp:number){
-        let resposta = await fetch(
-      `${URL_API}/api/movimentacao/${mac}`,
-      {
-        method: "POST",
-        headers:{
-          "content-type":"application/json"
-        },
-        body: JSON.stringify({events,usuario,timestamp}),
-      },
-    );
+        try{
+            let resposta = await fetch(
+          `${URL_API}/api/movimentacao/${mac}`,
+          {
+            method: "POST",
+            headers:getInternalHeaders(),
+            body: JSON.stringify({events,usuario,timestamp}),
+            signal: AbortSignal.timeout(10000),
+          },
+        );
 
-    if(!resposta.ok){
-        console.log("Houve algum erro")
-        console.log(resposta)
-        return
-    }
+        if(!resposta.ok){
+            console.error(`[EquipamentoService] Erro HTTP ${resposta.status} ao sincronizar eventos de ${mac}`);
+            mqttClient.publish(`${this.base_url}/sync_response/${mac}`,JSON.stringify({sincronizado:false}))
+            return
+        }
 
-    let retorno = await resposta.json()
+        let retorno = await resposta.json()
 
-    console.log(retorno)
+        console.log(retorno)
 
-    mqttClient.publish(`${this.base_url}/sync_response/${mac}`,JSON.stringify({sincronizado:resposta.status==200}))
-
-
+        mqttClient.publish(`${this.base_url}/sync_response/${mac}`,JSON.stringify({sincronizado:resposta.status==200}))
+        }catch(e){
+            console.error(`[EquipamentoService] Falha ao sincronizar eventos de ${mac}:`, e);
+            mqttClient.publish(`${this.base_url}/sync_response/${mac}`,JSON.stringify({sincronizado:false}))
+        }
     }
 
 }

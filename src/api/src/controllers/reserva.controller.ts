@@ -48,7 +48,13 @@ class ReservaController {
         equipamentos,
       );
       return res.status(201).json(reserva);
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.message === "ERR_EQUIPAMENTO_RESERVADO") {
+        return res.status(409).json({
+          message:
+            "Um ou mais equipamentos selecionados já possuem reserva neste período.",
+        });
+      }
       console.log(e);
       return res.status(500).json({ message: "Erro interno do servidor" });
     }
@@ -110,6 +116,9 @@ class ReservaController {
   }
 
   async getById(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
     let raw_id = req.params.id;
     if (!raw_id || typeof raw_id != "string") {
       return res.status(400).json({ message: "Dados inválidos" });
@@ -120,13 +129,22 @@ class ReservaController {
     }
     try {
       let reserva = await reservaService.getById(reserva_id);
+      if (!req.user.is_admin && reserva.usuario_id !== req.user.id) {
+        return res.status(403).json({ message: "Sem permissão para acessar esta reserva" });
+      }
       return res.status(200).json(reserva);
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.message === "Reserva não encontrada") {
+        return res.status(404).json({ message: "Reserva não encontrada" });
+      }
       return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 
   async update(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
     let { id, dt_reserva, dt_devolucao, equipamentos, motivo } = req.body;
 
     if (!id || !dt_reserva || !dt_devolucao || !equipamentos) {
@@ -165,15 +183,32 @@ class ReservaController {
         dt_devolucao,
         equipamentos,
         motivo,
+        req.user.id,
+        Boolean(req.user.is_admin),
       );
-      return res.status(201).json(reserva);
-    } catch (e) {
+      return res.status(200).json(reserva);
+    } catch (e: any) {
+      if (e?.message === "ERR_RESERVA_NOT_FOUND") {
+        return res.status(404).json({ message: "Reserva não encontrada" });
+      }
+      if (e?.message === "ERR_SEM_PERMISSAO_RESERVA") {
+        return res.status(403).json({ message: "Sem permissão para alterar esta reserva" });
+      }
+      if (e?.message === "ERR_EQUIPAMENTO_RESERVADO") {
+        return res.status(409).json({
+          message:
+            "Um ou mais equipamentos selecionados já possuem reserva neste período.",
+        });
+      }
       console.log(e);
       return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 
   async delete(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
     let raw_id = req.params.id;
     if (!raw_id || typeof raw_id != "string") {
       return res.status(400).json({ message: "Dados inválidos" });
@@ -183,9 +218,19 @@ class ReservaController {
       return res.status(400).json({ message: "ID é inválido" });
     }
     try {
-        await reservaService.delete(reserva_id)
-        return res.status(200).json({message:"Excluído"})
-    } catch (e) {
+      await reservaService.delete(
+        reserva_id,
+        req.user.id,
+        Boolean(req.user.is_admin),
+      );
+      return res.status(200).json({ message: "Excluído" });
+    } catch (e: any) {
+      if (e?.message === "ERR_RESERVA_NOT_FOUND") {
+        return res.status(404).json({ message: "Reserva não encontrada" });
+      }
+      if (e?.message === "ERR_SEM_PERMISSAO_RESERVA") {
+        return res.status(403).json({ message: "Sem permissão para excluir esta reserva" });
+      }
       return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

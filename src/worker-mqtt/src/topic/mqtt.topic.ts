@@ -27,14 +27,14 @@ export const rotearMensagemMQTT = async (topico: string, payload: any) => {
   try {
     switch (partesTopico[1]){
         case 'usuarios':
-            usuarioRoutesMQTT(partesTopico[2]||'',macAddress,payload)
+            await usuarioRoutesMQTT(partesTopico[2]||'',macAddress,payload)
             return;
         case 'equipamentos':
             console.log("Mensagem recebida para o equipamento")
-            roteiaMqttEquipamentos(partesTopico[2]||'',macAddress,payload)
+            await roteiaMqttEquipamentos(partesTopico[2]||'',macAddress,payload)
             return;
         case 'system':
-            roteiaMqttSistema(partesTopico[2]||'',macAddress,payload)
+            await roteiaMqttSistema(partesTopico[2]||'',macAddress,payload)
             return;
     }
 
