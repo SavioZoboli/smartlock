@@ -22,13 +22,98 @@ namespace
     bool _isLocked = true;
 
     // Buffers de texto (Evitando a classe String para proteger a RAM)
-    char currentTitle[32] = "SISTEMA";
+    char currentTitle[64] = "SISTEMA";
     char currentMessage[64] = "Iniciando...";
     char currentStatus[24] = "INICIANDO";
 
     // Buffers para o estado padrão (quando o timeout acaba)
-    char defaultTitle[32] = "SMART LOCK";
+    char defaultTitle[64] = "SMART LOCK";
     char defaultMessage[64] = "Aproxime o\nCracha";
+
+    constexpr uint8_t MAX_CHARS_PER_LINE = 21; // 128px / 6px por caractere (textSize 1)
+    constexpr int16_t LINE_HEIGHT_PX = 8;
+
+    /**
+     * Quebra o texto em linhas respeitando '\n' e limites de palavra (espaços),
+     * sem cortar palavras ao meio. Se `draw == true`, desenha a partir de `startY`.
+     * Retorna a quantidade de linhas usadas (limitada a `maxLines`).
+     */
+    int renderWrappedLines(const char *text, int16_t startY, int maxLines, bool draw)
+    {
+        if (!text || maxLines <= 0)
+            return 0;
+
+        int linesUsed = 0;
+        const char *p = text;
+
+        while (*p != '\0' && linesUsed < maxLines)
+        {
+            while (*p == ' ')
+                p++;
+            if (*p == '\0')
+                break;
+
+            // Encontra o fim do segmento até '\n' ou '\0'
+            const char *segEnd = p;
+            while (*segEnd != '\0' && *segEnd != '\n')
+                segEnd++;
+
+            size_t segLen = static_cast<size_t>(segEnd - p);
+            size_t takeLen = segLen;
+
+            if (takeLen > MAX_CHARS_PER_LINE)
+            {
+                // Procura último espaço dentro do limite de 21 caracteres
+                size_t breakPos = MAX_CHARS_PER_LINE;
+                while (breakPos > 0 && p[breakPos] != ' ')
+                    breakPos--;
+
+                takeLen = (breakPos > 0) ? breakPos : MAX_CHARS_PER_LINE;
+            }
+
+            // Copia a linha com reticências se for a última linha permitida e ainda sobrar texto
+            char lineBuf[MAX_CHARS_PER_LINE + 1];
+            const char *nextP = p + takeLen;
+            while (*nextP == ' ')
+                nextP++;
+
+            bool truncated = (linesUsed == maxLines - 1) && (*nextP != '\0');
+            if (truncated && takeLen > MAX_CHARS_PER_LINE - 3)
+            {
+                takeLen = MAX_CHARS_PER_LINE - 3;
+            }
+
+            memcpy(lineBuf, p, takeLen);
+            if (truncated)
+            {
+                memcpy(lineBuf + takeLen, "...", 3);
+                lineBuf[takeLen + 3] = '\0';
+            }
+            else
+            {
+                lineBuf[takeLen] = '\0';
+            }
+
+            if (draw)
+            {
+                display.setCursor(0, startY + (linesUsed * LINE_HEIGHT_PX));
+                display.print(lineBuf);
+            }
+
+            linesUsed++;
+
+            if (p + takeLen == segEnd && *segEnd == '\n')
+            {
+                p = segEnd + 1;
+            }
+            else
+            {
+                p = nextP;
+            }
+        }
+
+        return linesUsed;
+    }
 
     // Controle Assíncrono
     bool displayAvailable = false;
@@ -161,17 +246,32 @@ void DisplayHandler::drawLayout()
     display.drawLine(0, 10, SCREEN_WIDTH, 10, SSD1306_WHITE);
 
     // ==========================================
-    // 2. CORPO DA MENSAGEM
+    // 2. CORPO DA MENSAGEM (quebra por palavra + posicionamento dinâmico)
     // ==========================================
-    // Título da Ação (Ex: "ACESSO NEGADO")
     display.setTextSize(1);
-    display.setCursor(0, 14);
-    display.println(currentTitle);
+    display.setTextWrap(false);
 
-    // Mensagem principal
-    display.setTextSize(1);
-    display.setCursor(0, 33);
-    display.println(currentMessage);
+    // Área útil vertical: Y = 13 até Y = 51 (39px = até 4 linhas + respiro)
+    constexpr int16_t BODY_TOP_Y = 13;
+    constexpr int16_t BODY_BOTTOM_Y = 51;
+
+    int msgLinesNeeded = renderWrappedLines(currentMessage, 0, 2, false);
+    if (msgLinesNeeded < 1)
+        msgLinesNeeded = 1;
+
+    // Se a mensagem tem 1 linha, o título pode ocupar até 3 linhas; se tem 2, até 2 linhas
+    int maxTitleLines = (msgLinesNeeded >= 2) ? 2 : 3;
+    int titleLinesUsed = renderWrappedLines(currentTitle, BODY_TOP_Y, maxTitleLines, true);
+
+    int16_t msgY = BODY_TOP_Y + (titleLinesUsed * LINE_HEIGHT_PX) + 3;
+    int16_t maxMsgY = BODY_BOTTOM_Y - (msgLinesNeeded * LINE_HEIGHT_PX);
+    if (msgY > maxMsgY)
+        msgY = maxMsgY;
+    if (msgY < BODY_TOP_Y)
+        msgY = BODY_TOP_Y;
+
+    renderWrappedLines(currentMessage, msgY, msgLinesNeeded, true);
+    display.setTextWrap(true);
 
     // ==========================================
     // 3. BARRA INFERIOR (Status do Sistema - espelhada)

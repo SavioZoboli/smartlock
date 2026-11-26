@@ -31,15 +31,33 @@ describe('authInterceptor', () => {
     req.flush({});
   });
 
-  it('redireciona para /login e repassa o erro em respostas 401', () => {
+  it('tenta renovar o token em 401 e redireciona para /login se o refresh falhar', () => {
     const erro = vi.fn();
     http.get('/api/x').subscribe({ error: erro });
 
     ctrl.expectOne('/api/x').flush(null, { status: 401, statusText: 'Unauthorized' });
 
+    const refreshReq = ctrl.expectOne((r) => r.method === 'POST' && r.url.endsWith('/api/auth/refresh'));
+    refreshReq.flush(null, { status: 401, statusText: 'Unauthorized' });
+
     expect(navigate).toHaveBeenCalledWith(['/login']);
     expect(erro).toHaveBeenCalledTimes(1);
     expect(erro.mock.calls[0][0].status).toBe(401);
+  });
+
+  it('renova o token em 401 e refaz a requisição original sem redirecionar quando o refresh tem sucesso', () => {
+    const sucesso = vi.fn();
+    http.get('/api/x').subscribe({ next: sucesso });
+
+    ctrl.expectOne('/api/x').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    const refreshReq = ctrl.expectOne((r) => r.method === 'POST' && r.url.endsWith('/api/auth/refresh'));
+    refreshReq.flush({ ok: true });
+
+    ctrl.expectOne('/api/x').flush({ dado: 123 });
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(sucesso).toHaveBeenCalledWith({ dado: 123 });
   });
 
   it('não redireciona em outros erros (ex: 500)', () => {
