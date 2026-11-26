@@ -298,6 +298,7 @@ class ReservaService {
       where: { id },
       attributes: [
         "id",
+        "usuario_id",
         ["reserva_inicio", "data_hora_emprestimo"],
         ["reserva_fim", "data_hora_devolucao_prevista"],
         "situacao",
@@ -333,12 +334,17 @@ class ReservaService {
     dt_fim: Date,
     equipamentos: number[],
     motivo: string,
+    usuario_id: number,
+    is_admin: boolean,
   ) {
     let transaction = await sequelize.transaction();
     try {
       let reserva = await Reserva.findByPk(reserva_id, { transaction });
       if (!reserva) {
         throw new Error("ERR_RESERVA_NOT_FOUND");
+      }
+      if (!is_admin && reserva.usuario_id !== usuario_id) {
+        throw new Error("ERR_SEM_PERMISSAO_RESERVA");
       }
 
       const equipamentosParaSalvar = [...equipamentos];
@@ -387,12 +393,15 @@ class ReservaService {
     }
   }
 
-  async delete(reserva_id: number): Promise<void> {
+  async delete(reserva_id: number, usuario_id: number, is_admin: boolean): Promise<void> {
     let transaction = await sequelize.transaction();
     try {
       let reserva = await Reserva.findByPk(reserva_id, { transaction });
       if (!reserva) {
         throw new Error("ERR_RESERVA_NOT_FOUND");
+      }
+      if (!is_admin && reserva.usuario_id !== usuario_id) {
+        throw new Error("ERR_SEM_PERMISSAO_RESERVA");
       }
       await ItensReserva.destroy({
         where: { reserva_id },

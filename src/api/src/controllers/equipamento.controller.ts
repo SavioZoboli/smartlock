@@ -255,8 +255,8 @@ class EquipamentoController {
       let resposta = await equipamentoService.getRelatorioUsuariosUsando()
       return res.status(200).json(resposta)
     }catch(e){
-      console.log(e)
-      return res.status(500).json(e)
+      console.error(e)
+      return res.status(500).json({ message: "Erro interno do servidor" })
       
     }
   }

@@ -39,7 +39,12 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   }
 
   try {
-    req.user = verificarToken(token);
+    const decoded = verificarToken(token);
+    if (decoded.purpose === 'signup' || !decoded.id) {
+      res.status(401).json({ message: 'Sessão inválida ou cadastro incompleto' });
+      return;
+    }
+    req.user = decoded;
     next();
   } catch {
     // Cobre token expirado, assinatura inválida, malformado, etc.
