@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import usuarioService from "../services/usuario.service";
 import authService from "../services/auth.service";
 import { verificarToken } from "../utils/jwt.utils";
-import { COOKIE_OPTIONS } from "./auth.controller";
+import { COOKIE_OPTIONS, REFRESH_COOKIE_OPTIONS } from "./auth.controller";
 import regiaoService from "../services/regiao.service";
 
 class UsuarioController {
@@ -179,8 +179,10 @@ class UsuarioController {
       let usuario = await usuarioService.create(uuid,nome,sobrenome,matricula,unidade_id,email,avatar)
       let regional_id = await regiaoService.getRegiaoDoUsuario(usuario.id)
       let token = authService.geraToken(usuario.id,usuario.email,usuario.nome,usuario.avatar,usuario.role=='ADMIN',regional_id)
+      let refreshToken = authService.geraRefreshToken(usuario.id)
 
       res.cookie("token", token, COOKIE_OPTIONS);
+      res.cookie("refresh_token", refreshToken, REFRESH_COOKIE_OPTIONS);
 
       res.status(201).json({message:"Criado"})
 

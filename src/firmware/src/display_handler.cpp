@@ -31,21 +31,24 @@ namespace
     char defaultMessage[64] = "Aproxime o\nCracha";
 
     // Controle Assíncrono
+    bool displayAvailable = false;
     bool needsRedraw = true;
     bool isTimeoutActive = false;
-    unsigned long timeoutEndMillis = 0;
+    unsigned long timeoutStartMillis = 0;
+    unsigned long timeoutDurationMillis = 0;
 }
 
 void DisplayHandler::init()
 {
-    // Inicia a comunicação I2C
+    // Inicia a comunicação I2C (degrada para modo headless se o OLED falhar)
     if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
     {
-        Serial.println(F("Falha ao alocar SSD1306"));
-        for (;;)
-            ; // Trava aqui se o display estiver com defeito/desconectado
+        Serial.println(F("[DISPLAY] Falha ao iniciar SSD1306. Operando em modo headless."));
+        displayAvailable = false;
+        return;
     }
 
+    displayAvailable = true;
     display.clearDisplay();
     display.display();
     display.setTextColor(SSD1306_WHITE);
@@ -94,12 +97,18 @@ void DisplayHandler::setTimeoutMessage(const char *title, const char *message, u
     currentMessage[sizeof(currentMessage) - 1] = '\0';
 
     isTimeoutActive = true;
-    timeoutEndMillis = millis() + timeoutMs;
+    timeoutStartMillis = millis();
+    timeoutDurationMillis = timeoutMs;
     needsRedraw = true;
 }
 
 void DisplayHandler::update()
 {
+    if (!displayAvailable)
+    {
+        return;
+    }
+
     // Atualiza os status do sistema
     setIndicators(WiFiHandler::isConnected(), MqttHandler::isConnected(), !HardwareIOHandler::isDoorOpen());
 
@@ -111,8 +120,8 @@ void DisplayHandler::update()
         needsRedraw = true;
     }
 
-    // Verifica se o tempo da mensagem temporária acabou
-    if (isTimeoutActive && millis() >= timeoutEndMillis)
+    // Verifica se o tempo da mensagem temporária acabou (seguro contra rollover de millis())
+    if (isTimeoutActive && (millis() - timeoutStartMillis >= timeoutDurationMillis))
     {
         isTimeoutActive = false;
         // Restaura a mensagem padrão

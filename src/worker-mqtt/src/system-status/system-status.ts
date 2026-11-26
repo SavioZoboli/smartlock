@@ -7,6 +7,7 @@ class SystemStatus{
     private api_url = `${URL_API}/api/status/mqtt`;
 
     private next_heartbeat_in:number = 15000;
+    private timerId: NodeJS.Timeout | null = null;
 
     public async polling(){
         if(!this.need_heartbeat){
@@ -19,9 +20,17 @@ class SystemStatus{
             return;
         }
 
-        setTimeout(()=>{
+        this.timerId = setTimeout(()=>{
             this.polling();
         },this.next_heartbeat_in);
+    }
+
+    public stop(){
+        this.need_heartbeat = false;
+        if(this.timerId){
+            clearTimeout(this.timerId);
+            this.timerId = null;
+        }
     }
 
     private async sendHeartbeat(){

@@ -105,13 +105,11 @@ export class ListaMovimentacao {
   carregaEquipamentosComigo() {
     this.equipamentoService.buscarEquipamentosComigo().subscribe({
       next: (res: EmprestimoResumo[]) => {
-        console.log(res)
         this.emprestimosDoUsuario.set(res);
-        this.unidadesDisponiveis = [...new Set(res.map((m) => m.unidade))].sort();
       },
       error: (err) => {
-        console.log(err);
-        this.dataSource.data = [];
+        console.error(err);
+        this.emprestimosDoUsuario.set([]);
       },
     });
   }

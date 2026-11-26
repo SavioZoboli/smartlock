@@ -87,6 +87,7 @@ export class CadastroReserva implements OnInit {
   isLoading = signal(false);
   carregandoEquipamentos = signal(false);
   tentouSalvarSemEquipamento = false;
+  private reqEquipSeq = 0;
 
   readonly displayUnidade = displayUnidadeComRegional;
 
@@ -211,6 +212,7 @@ export class CadastroReserva implements OnInit {
   }
 
   private async carregarEquipamentosDisponiveis(): Promise<void> {
+    const seqAtual = ++this.reqEquipSeq;
     this.carregandoEquipamentos.set(true);
     this.limparEquipamentos();
 
@@ -225,11 +227,15 @@ export class CadastroReserva implements OnInit {
         this.equipamentoService.buscarDisponveisData(smartlock.id, dt_reserva, dt_devolucao),
       );
 
+      if (seqAtual !== this.reqEquipSeq) return;
       this.equipamentosDisponiveis.set(normalizarEquipamentoReservas(equipamentos));
     } catch (err) {
+      if (seqAtual !== this.reqEquipSeq) return;
       this.sns.notificarErro(err, 'Erro ao carregar equipamentos disponíveis.');
     } finally {
-      this.carregandoEquipamentos.set(false);
+      if (seqAtual === this.reqEquipSeq) {
+        this.carregandoEquipamentos.set(false);
+      }
     }
   }
 

@@ -22,6 +22,8 @@ const unsigned long SYNC_INDICATOR_TIMEOUT_MS = 15000;
 
 const char *CONFIG_FILE = "/config.json";
 bool solicitou_provisao = false;
+unsigned long ultimaTentativaProvisaoMs = 0;
+const unsigned long RETRY_PROVISAO_MS = 15000;
 
 void System::init()
 {
@@ -228,17 +230,23 @@ void System::iniciarProvisionamento()
 
 void System::updateProvisionamento()
 {
-    if (!solicitou_provisao)
+    unsigned long agora = millis();
+    if (!solicitou_provisao || (agora - ultimaTentativaProvisaoMs >= RETRY_PROVISAO_MS))
     {
         char macStr[18];
         String mac = WiFi.macAddress();
-        strncpy(macStr, mac.c_str(), sizeof(macStr));
+        strncpy(macStr, mac.c_str(), sizeof(macStr) - 1);
+        macStr[sizeof(macStr) - 1] = '\0';
 
         char bufferMsg[32];
         snprintf(bufferMsg, sizeof(bufferMsg), "MAC:\n%s", macStr);
         DisplayHandler::setFixedMessage(bufferMsg);
 
-        solicitou_provisao = MqttHandler::publish("system", "discover", "{}");
+        if (MqttHandler::publish("system", "discover", "{}"))
+        {
+            solicitou_provisao = true;
+            ultimaTentativaProvisaoMs = agora;
+        }
     }
 }
 

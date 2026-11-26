@@ -3,6 +3,10 @@
 #include "status_feedback_handler.h"
 #include "secrets.h"
 #include "display_handler.h"
+
+#ifndef WIFI_AP_PASSWORD
+#define WIFI_AP_PASSWORD "smartlock2026"
+#endif
 namespace {
     WiFiManager wm;
     unsigned long lastReconnectAttempt = 0;
@@ -53,21 +57,23 @@ void WiFiHandler::init() {
         StatusFeedback::set(Component::WIFI, State::OK);
     } else {
         Serial.println("\n[WIFI] Nenhuma rede disponivel. Subindo Portal AP em background...");
-        DisplayHandler::setFixedMessage("Rede: SMARTLOCK_CONFIG\nIP: 192.168.4.1");
+        DisplayHandler::setFixedMessage("Rede: SMART_LOCK_CONFIG\nIP: 192.168.4.1");
         snprintf(macHtml, sizeof(macHtml), 
                  "<hr><h3>Configuracao de Fabrica</h3><p><b>MAC Address:</b> %s</p><hr>", 
                  WiFi.macAddress().c_str());
-        customMacParam = new WiFiManagerParameter(macHtml);
-        wm.addParameter(customMacParam);
+        if (!customMacParam) {
+            customMacParam = new WiFiManagerParameter(macHtml);
+            wm.addParameter(customMacParam);
+        }
 
         // Configurações do Portal
         wm.setConfigPortalBlocking(false); // Mantém o hardware rodando!
         wm.setRemoveDuplicateAPs(true);
         wm.setMinimumSignalQuality(20);
-        wm.setConfigPortalTimeout(0);
+        wm.setConfigPortalTimeout(300); // 5 minutos de timeout no portal AP
         
-        // Inicia o portal AP de forma direta, sem forçar autoConnect a fazer scan
-        wm.startConfigPortal("SMART_LOCK_CONFIG");
+        // Inicia o portal AP protegido por senha
+        wm.startConfigPortal("SMART_LOCK_CONFIG", WIFI_AP_PASSWORD);
         portalRunning = true;
     }
 }

@@ -6,8 +6,16 @@ export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production", // exige HTTPS em produção
   sameSite: "strict" as const,
-  maxAge: 4 *60 * 60 * 1000, // 4h
+  maxAge: 15 * 60 * 1000, // 15 min (access token curto)
   path: "/",
+};
+
+export const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias (renovado via sliding rotation)
+  path: "/api/auth",
 };
 
 class AuthController {
@@ -21,15 +29,19 @@ class AuthController {
 
     try {
       // Aciona o serviço de validação
-      const { sessionToken, userData, cadastrado } =
+      const { sessionToken, refreshToken, userData, cadastrado } =
         await authService.processGoogleLogin(token);
 
-      // Só grava o cookie de sessão quando o usuário já está cadastrado.
+      // Só grava os cookies de sessão quando o usuário já está cadastrado.
       // Para cadastros pendentes, retorna apenas o signupToken no corpo.
       if (cadastrado) {
         res.cookie("token", sessionToken, COOKIE_OPTIONS);
+        if (refreshToken) {
+          res.cookie("refresh_token", refreshToken, REFRESH_COOKIE_OPTIONS);
+        }
       } else {
         res.clearCookie("token", { ...COOKIE_OPTIONS, maxAge: undefined });
+        res.clearCookie("refresh_token", { ...REFRESH_COOKIE_OPTIONS, maxAge: undefined });
       }
 
       let responseBody = {
@@ -61,8 +73,27 @@ class AuthController {
     }
   }
 
+  async refresh(req: Request, res: Response) {
+    const refreshToken = req.cookies?.refresh_token;
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token ausente" });
+    }
+
+    try {
+      const tokens = await authService.renovarSessao(refreshToken);
+      res.cookie("token", tokens.accessToken, COOKIE_OPTIONS);
+      res.cookie("refresh_token", tokens.refreshToken, REFRESH_COOKIE_OPTIONS);
+      return res.status(200).json({ ok: true });
+    } catch {
+      res.clearCookie("token", { ...COOKIE_OPTIONS, maxAge: undefined });
+      res.clearCookie("refresh_token", { ...REFRESH_COOKIE_OPTIONS, maxAge: undefined });
+      return res.status(401).json({ message: "Sessão expirada" });
+    }
+  }
+
   async logout(req: Request, res: Response) {
     res.clearCookie("token", { ...COOKIE_OPTIONS, maxAge: undefined });
+    res.clearCookie("refresh_token", { ...REFRESH_COOKIE_OPTIONS, maxAge: undefined });
     res.status(204).send();
   }
 

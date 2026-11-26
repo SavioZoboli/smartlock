@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, finalize, map, Observable, of, tap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { clearAllSessionCaches } from './cache/cached-resource';
 
@@ -22,6 +22,7 @@ export class AuthService {
 
   private usuarioSubject = new BehaviorSubject<UsuarioLogado | null>(null);
   usuario$ = this.usuarioSubject.asObservable();
+  private refreshInflight$: Observable<boolean> | null = null;
 
   constructor(private http:HttpClient){}
 
@@ -60,8 +61,30 @@ export class AuthService {
     );
   }
 
+  /**
+   * Renova o access token usando o cookie HttpOnly `refresh_token`.
+   * Deduplica chamadas simultâneas (ex.: múltiplas requisições recebendo 401 ao mesmo tempo).
+   */
+  renovarSessao(): Observable<boolean> {
+    if (this.refreshInflight$) {
+      return this.refreshInflight$;
+    }
+
+    this.refreshInflight$ = this.http
+      .post<{ ok: boolean }>(`${this.auth_url}/api/auth/refresh`, {}, { withCredentials: true })
+      .pipe(
+        map(() => true),
+        catchError(() => of(false)),
+        finalize(() => (this.refreshInflight$ = null)),
+        shareReplay(1),
+      );
+
+    return this.refreshInflight$;
+  }
+
   limparSessao(): void {
     this.usuarioSubject.next(null);
+    this.refreshInflight$ = null;
     clearAllSessionCaches();
   }
 

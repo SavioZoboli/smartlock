@@ -625,7 +625,7 @@ class EquipamentoService {
           through: { attributes: [] },
           required: false, // LEFT JOIN -> mantém equipamento mesmo sem reserva
           where: {
-            situacao: { [Op.notIn]: ["CANCELADA", "FINALIZADA"] },
+            situacao: { [Op.notIn]: ["CANCELADA", "FINALIZADA", "FINALIZADO"] },
             reserva_inicio: { [Op.lte]: fimComTolerancia },
             reserva_fim: { [Op.gte]: inicioComTolerancia },
           },
@@ -713,42 +713,49 @@ class EquipamentoService {
   }
 
  async buscarEquipamentosEmUso(usuarioId: number): Promise<EquipamentoEmUsoDTO[]> {
-    const equipamentos = await Equipamento.findAll({
-      where: { usuario_atual_id: usuarioId },
+    const uid = Math.trunc(Number(usuarioId));
+    const equipamentos: any[] = await Equipamento.findAll({
+      where: { usuario_atual_id: uid },
+      attributes: [
+        "id",
+        "apelido",
+        "tag",
+        "patrimonio",
+        "tipo_id",
+        [Sequelize.col("tipoEquipamento.nome"), "tipo"],
+        [Sequelize.col("tipoEquipamento.icone"), "icone"],
+        [
+          Sequelize.literal(`(
+            SELECT MAX(m.timestamp)
+            FROM "movimentacoes" m
+            INNER JOIN "itensMovimentacao" im ON im.movimentacao_id = m.id
+            WHERE im.equipamento_id = "Equipamento"."id"
+              AND m.usuario_id = ${uid}
+              AND m.tipo_movimento LIKE 'emprestimo%'
+          )`),
+          "dataRetirada",
+        ],
+      ],
       include: [
         {
           model: TipoEquipamento,
-          as: 'tipoEquipamento',
-          attributes: ['nome', 'icone'],
-        },
-        {
-          model: Movimentacao,
-          as: 'movimentacoes',
-          where: { usuario_id: usuarioId, tipo_movimento: {[Op.like]:'emprestimo%'} },
-          required: false,
-          through: { attributes: [] },
-          attributes: ['timestamp'],
+          as: "tipoEquipamento",
+          attributes: [],
         },
       ],
+      raw: true,
     });
 
-    return equipamentos.map((eq: any) => {
-      const movs: Movimentacao[] = eq.movimentacoes ?? [];
-      const dataRetirada = movs.length
-        ? movs.reduce((max, m: any) => (m.timestamp > max ? m.timestamp : max), movs[0]!.timestamp)
-        : null;
-
-      return {
-        id: eq.id,
-        apelido: eq.apelido ?? null,
-        tag: eq.tag,
-        patrimonio: eq.patrimonio ?? null,
-        tipo: eq.tipoEquipamento?.nome ?? '',
-        tipo_id: eq.tipo_id,
-        icone: eq.tipoEquipamento?.icone ?? null,
-        dataRetirada,
-      };
-    });
+    return equipamentos.map((eq) => ({
+      id: eq.id,
+      apelido: eq.apelido ?? null,
+      tag: eq.tag,
+      patrimonio: eq.patrimonio ?? null,
+      tipo: eq.tipo ?? "",
+      tipo_id: eq.tipo_id,
+      icone: eq.icone ?? null,
+      dataRetirada: eq.dataRetirada ?? null,
+    }));
   }
 
   async buscarHistoricoPaginado(

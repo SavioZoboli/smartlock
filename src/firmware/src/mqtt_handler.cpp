@@ -34,9 +34,11 @@ void MqttHandler::init()
     String mac = WiFi.macAddress();
     strncpy(macStr, mac.c_str(), sizeof(macStr));
 
-    //espClient.setCACert(root_ca);
-
+#ifdef MQTT_TLS_INSECURE
     espClient.setInsecure();
+#else
+    espClient.setCACert(root_ca);
+#endif
 
     mqttClient.setBufferSize(1024);
 
@@ -183,17 +185,20 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
 
         // Extrai os dados seguindo o contrato esperado do Node-RED
         const char *uid = doc["uuid"];
-        bool isAuthorized = doc["authorized"];
+        bool isAuthorized = doc["authorized"] | false;
+
+        if (uid == nullptr)
+        {
+            Serial.println("[MQTT] Resposta de login sem campo 'uuid'.");
+            return;
+        }
 
         Serial.print("O usuário ");
         Serial.print(uid);
         Serial.print(" está ");
-        Serial.print(isAuthorized?"autorizado":"não autorizado");
+        Serial.println(isAuthorized ? "autorizado" : "não autorizado");
 
-        if (uid != nullptr)
-        {
-            AuthHandler::processCloudResponse(uid, isAuthorized);
-        }
+        AuthHandler::processCloudResponse(uid, isAuthorized);
     }
 
     // ==========================================
@@ -228,11 +233,10 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
         {
             const char *uid = user["uuid"];
 
-            Serial.print("Salvando usuário com uuid: ");
-            Serial.println(uid);
-
             if (uid != nullptr)
             {
+                Serial.print("Salvando usuário com uuid: ");
+                Serial.println(uid);
                 StorageHandler::saveUserAccess(uid);
             }
         }

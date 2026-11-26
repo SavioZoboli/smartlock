@@ -36,7 +36,7 @@ class ReservaService {
     const fimComTolerancia = new Date(fim.getTime() + TOLERANCIA_RESERVA_MS);
 
     const whereReserva: any = {
-      situacao: { [Op.notIn]: ["CANCELADA", "FINALIZADA"] },
+      situacao: { [Op.notIn]: ["CANCELADA", "FINALIZADA", "FINALIZADO"] },
       reserva_inicio: { [Op.lte]: fimComTolerancia },
       reserva_fim: { [Op.gte]: inicioComTolerancia },
     };

@@ -116,6 +116,14 @@ export class BarcodeScannerComponent implements OnChanges, OnDestroy {
         },
       );
 
+      if (this.destroyed) {
+        this.html5QrCode
+          .stop()
+          .then(() => this.html5QrCode?.clear())
+          .catch(() => {});
+        return;
+      }
+
       this.isScanning = true;
       this.isStarting = false;
       this.activeChange.emit(true);
@@ -207,7 +215,10 @@ export class BarcodeScannerComponent implements OnChanges, OnDestroy {
     }, 500);
   }
 
+  private destroyed = false;
+
   ngOnDestroy(): void {
+    this.destroyed = true;
     if (this.flashTimeoutId) {
       clearTimeout(this.flashTimeoutId);
     }
