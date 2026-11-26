@@ -36,7 +36,7 @@ class SmartLockController {
       !body.mac_address ||
       !body.apelido ||
       !body.unidade_id ||
-      !body.has_equipamentos
+      body.has_equipamentos === undefined
     ) {
       return res.status(400).json({ message: "Faltam dados obrigatórios" });
     }
@@ -123,7 +123,11 @@ class SmartLockController {
             "O Smartlock possui equipamentos vinculados, redirecione-os a outro smartlock",
         });
       }
-      return;
+      if (e.message == "SMARTLOCK_NOT_FOUND") {
+        return res.status(404).json({ message: "Smartlock não encontrado" });
+      }
+      console.error(e);
+      return res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 

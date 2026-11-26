@@ -651,11 +651,21 @@ class EquipamentoService {
     try {
       let equipamentos = await Equipamento.findAll({
         where: { tag: { [Op.in]: tags } },
+        attributes: ["id"],
       });
       return equipamentos.map((e) => e.id);
     } catch (e) {
       throw e;
     }
+  }
+
+  async listByTagWithTag(tags: string[]): Promise<{ id: number; tag: string }[]> {
+    const equipamentos = await Equipamento.findAll({
+      where: { tag: { [Op.in]: tags } },
+      attributes: ["id", "tag"],
+      raw: true,
+    });
+    return equipamentos.map((e: any) => ({ id: e.id, tag: e.tag }));
   }
 
   async getRelatorioUsuariosUsando() {
