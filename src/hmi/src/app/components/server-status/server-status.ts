@@ -28,6 +28,7 @@ export class ServerStatus implements OnInit, OnDestroy {
   @Input() searchedModule: Modules = 'all';
 
   private intervalId?: ReturnType<typeof setInterval>;
+  private erroNotificado = false;
 
   private systemStatusService = inject(SystemStatusService);
   private sns = inject(SystemNotificationService);
@@ -44,67 +45,64 @@ export class ServerStatus implements OnInit, OnDestroy {
     if (this.intervalId) clearInterval(this.intervalId);
   }
 
+  private mapStatus(valor: unknown): StatusServidor {
+    return valor === 'online' ? 'ok' : 'erro';
+  }
+
+  private notificarErroUnico(): void {
+    if (!this.erroNotificado) {
+      this.erroNotificado = true;
+      this.sns.notificar('Erro ao buscar status', 'erro');
+    }
+  }
+
   private verificarStatus(module: Modules): void {
     switch (module) {
       case 'all':
         this.systemStatusService.getAllStatus().subscribe({
           next: (val) => {
-            console.log(val);
-            if (val.worker_mqtt == 'online') {
-              this.worker_mqtt.set('ok');
-            } else {
-              this.worker_mqtt.set('erro');
-            }
-
-            if (val.broker_mqtt == 'online') {
-              this.broker_mqtt.set('ok');
-            } else {
-              this.broker_mqtt.set('erro');
-            }
-
-            if (val.database == 'online') {
-              this.database.set('ok');
-            } else {
-              this.database.set('erro');
-            }
-
+            this.erroNotificado = false;
+            this.worker_mqtt.set(this.mapStatus(val?.worker_mqtt));
+            this.broker_mqtt.set(this.mapStatus(val?.broker_mqtt));
+            this.database.set(this.mapStatus(val?.database));
             this.api.set('ok');
           },
-          error: (err) => {
+          error: () => {
             this.database.set('erro');
             this.api.set('erro');
             this.worker_mqtt.set('erro');
             this.broker_mqtt.set('erro');
-            this.sns.notificar('Erro ao buscar status', 'erro');
-            console.log(err);
+            this.notificarErroUnico();
           },
         });
         break;
       case 'api':
         this.systemStatusService.getApiStatus().subscribe({
           next: (val) => {
-            this.database.set(val.database);
+            this.erroNotificado = false;
+            this.database.set(this.mapStatus(val?.database));
             this.api.set('ok');
           },
-          error: (err) => {
+          error: () => {
             this.database.set('erro');
             this.api.set('erro');
-            this.sns.notificar('Erro ao buscar status', 'erro');
-            console.log(err);
+            this.notificarErroUnico();
           },
         });
         break;
       case 'mqtt':
         this.systemStatusService.getMqttStatus().subscribe({
           next: (val) => {
-            this.worker_mqtt.set(val.worker_mqtt);
-            this.broker_mqtt.set(val.broker_mqtt);
+            this.erroNotificado = false;
+            this.worker_mqtt.set(this.mapStatus(val?.worker_mqtt));
+            this.broker_mqtt.set(this.mapStatus(val?.broker_mqtt));
+            this.api.set('ok');
           },
-          error: (err) => {
+          error: () => {
             this.worker_mqtt.set('erro');
             this.broker_mqtt.set('erro');
-            this.sns.notificar('Erro ao buscar status', 'erro');
-            console.log(err);
+            this.api.set('erro');
+            this.notificarErroUnico();
           },
         });
         break;
