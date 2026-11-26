@@ -1,91 +1,224 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './pages/login/login';
-import { Dashboard } from './pages/dashboard/dashboard';
-import { CadastroUsuario } from './pages/usuario/cadastro-usuario/cadastro-usuario';
-import { SmartlockReport } from './reports/smartlock-report/smartlock-report';
 import { MainLayoutComponent } from './components/main-layout/main-layout.component';
-import { CadastroEquipamento } from './pages/equipamento/cadastro-equipamento/cadastro-equipamento';
-import { CadastroSmartlock } from './pages/smartlock/cadastro-smartlock/cadastro-smartlock';
-import { CadastroUnidade } from './pages/unidade/cadastro-unidade/cadastro-unidade';
-import { ListaUnidade } from './pages/unidade/lista-unidade/lista-unidade';
-import { ListaUsuario } from './pages/usuario/lista-usuario/lista-usuario';
-import { ConcluirCadastro } from './pages/concluir-cadastro/concluir-cadastro';
 import { adminGuard, authGuard } from '../guards/auth.guard';
-import { ErrorPageComponent } from './pages/error/error';
-import { ListaSmartlock } from './pages/smartlock/lista-smartlock/lista-smartlock';
-import { ListaEquipamento } from './pages/equipamento/lista-equipamento/lista-equipamento';
-import { UpdateEquipamento } from './pages/equipamento/update-equipamento/update-equipamento';
-import { RedirectEquipamento } from './pages/equipamento/redirect-equipamento/redirect-equipamento';
-import { ListaMovimentacao } from './pages/movimentacao/lista-movimentacao/lista-movimentacao';
-import { CadastroMovimentacao } from './pages/movimentacao/cadastro-movimentacao/cadastro-movimentacao';
-import { ListaReserva } from './pages/reserva/lista-reserva/lista-reserva';
-import { CadastroReserva } from './pages/reserva/cadastro-reserva/cadastro-reserva';
-import { ExtratoEmprestimosComponent } from './reports/extrato-emprestimos/extrato-emprestimos';
-import { ReportReservaCalendario } from './reports/report-reserva-calendario/report-reserva-calendario';
-import { CredencialEquipamento } from './pages/equipamento/credencial-equipamento/credencial-equipamento';
 
 export const routes: Routes = [
-  // 1. Rota Pública (Tela de Login ocupa a tela inteira)
-  { path: 'login', component: LoginComponent, title: 'SmartLock | Login' },
-  { path: 'concluir-cadastro', component: ConcluirCadastro, title: 'SmartLock | Concluir Cadastro' },
+  // 1. Rotas Públicas (lazy-loaded)
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login').then((m) => m.LoginComponent),
+    title: 'SmartLock | Login',
+  },
+  {
+    path: 'concluir-cadastro',
+    loadComponent: () =>
+      import('./pages/concluir-cadastro/concluir-cadastro').then((m) => m.ConcluirCadastro),
+    title: 'SmartLock | Concluir Cadastro',
+  },
 
-  // 2. Rotas Privadas (Padrão de Layout)
+  // 2. Rotas Privadas sob um único MainLayoutComponent (evita destruir/recriar a navbar)
   {
     path: '',
     canActivate: [authGuard],
-    component: MainLayoutComponent, // O Layout Base com a Navbar
+    component: MainLayoutComponent,
     children: [
-      // Se acessar a raiz vazia, joga pro dashboard
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
-      // Tela de Dashboard
-      { path: 'dashboard', component: Dashboard, title: 'SmartLock | Dashboard' },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard),
+        title: 'SmartLock | Dashboard',
+      },
 
-      //Telas de relatório
-      { path: 'relatorios/disponibilidade', component: SmartlockReport, title: 'SmartLock | Relatório de Disponibilidade' },
-      { path: 'relatorios/extrato', component: ExtratoEmprestimosComponent, title: 'SmartLock | Extrato de Empréstimos' },
-      { path: 'relatorios/reservas', component: ReportReservaCalendario, title: 'SmartLock | Relatório de Reservas' },
+      // Relatórios
+      {
+        path: 'relatorios/disponibilidade',
+        loadComponent: () =>
+          import('./reports/smartlock-report/smartlock-report').then((m) => m.SmartlockReport),
+        title: 'SmartLock | Relatório de Disponibilidade',
+      },
+      {
+        path: 'relatorios/extrato',
+        loadComponent: () =>
+          import('./reports/extrato-emprestimos/extrato-emprestimos').then(
+            (m) => m.ExtratoEmprestimosComponent,
+          ),
+        title: 'SmartLock | Extrato de Empréstimos',
+      },
+      {
+        path: 'relatorios/reservas',
+        loadComponent: () =>
+          import('./reports/report-reserva-calendario/report-reserva-calendario').then(
+            (m) => m.ReportReservaCalendario,
+          ),
+        title: 'SmartLock | Relatório de Reservas',
+      },
 
-      { path: 'movimentacoes/lista', component: ListaMovimentacao, title: 'SmartLock | Histórico de Movimentações' },
-      { path: 'movimentacoes/cadastro', component: CadastroMovimentacao, title: 'SmartLock | Nova Movimentação' },
-      { path: 'reservas/lista', component: ListaReserva, title: 'SmartLock | Reservas' },
-      { path: 'reservas/cadastro', component: CadastroReserva, title: 'SmartLock | Nova Reserva' },
-      { path: 'reservas/editar/:id', component: CadastroReserva, title: 'SmartLock | Editar Reserva' },
-      
+      // Movimentações e Reservas
+      {
+        path: 'movimentacoes/lista',
+        loadComponent: () =>
+          import('./pages/movimentacao/lista-movimentacao/lista-movimentacao').then(
+            (m) => m.ListaMovimentacao,
+          ),
+        title: 'SmartLock | Histórico de Movimentações',
+      },
+      {
+        path: 'movimentacoes/cadastro',
+        loadComponent: () =>
+          import('./pages/movimentacao/cadastro-movimentacao/cadastro-movimentacao').then(
+            (m) => m.CadastroMovimentacao,
+          ),
+        title: 'SmartLock | Nova Movimentação',
+      },
+      {
+        path: 'reservas/lista',
+        loadComponent: () =>
+          import('./pages/reserva/lista-reserva/lista-reserva').then((m) => m.ListaReserva),
+        title: 'SmartLock | Reservas',
+      },
+      {
+        path: 'reservas/cadastro',
+        loadComponent: () =>
+          import('./pages/reserva/cadastro-reserva/cadastro-reserva').then(
+            (m) => m.CadastroReserva,
+          ),
+        title: 'SmartLock | Nova Reserva',
+      },
+      {
+        path: 'reservas/editar/:id',
+        loadComponent: () =>
+          import('./pages/reserva/cadastro-reserva/cadastro-reserva').then(
+            (m) => m.CadastroReserva,
+          ),
+        title: 'SmartLock | Editar Reserva',
+      },
+
+      // Grupo Administrativo (compartilha o mesmo MainLayoutComponent)
+      {
+        path: '',
+        canActivateChild: [adminGuard],
+        children: [
+          {
+            path: 'unidades/lista',
+            loadComponent: () =>
+              import('./pages/unidade/lista-unidade/lista-unidade').then((m) => m.ListaUnidade),
+            title: 'SmartLock | Unidades',
+          },
+          {
+            path: 'usuarios/lista',
+            loadComponent: () =>
+              import('./pages/usuario/lista-usuario/lista-usuario').then((m) => m.ListaUsuario),
+            title: 'SmartLock | Usuários',
+          },
+          {
+            path: 'smartlocks/lista',
+            loadComponent: () =>
+              import('./pages/smartlock/lista-smartlock/lista-smartlock').then(
+                (m) => m.ListaSmartlock,
+              ),
+            title: 'SmartLock | Smartlocks',
+          },
+          {
+            path: 'equipamentos/lista',
+            loadComponent: () =>
+              import('./pages/equipamento/lista-equipamento/lista-equipamento').then(
+                (m) => m.ListaEquipamento,
+              ),
+            title: 'SmartLock | Equipamentos',
+          },
+
+          {
+            path: 'usuarios/cadastro',
+            loadComponent: () =>
+              import('./pages/usuario/cadastro-usuario/cadastro-usuario').then(
+                (m) => m.CadastroUsuario,
+              ),
+            title: 'SmartLock | Novo Usuário',
+          },
+          {
+            path: 'usuarios/editar/:id',
+            loadComponent: () =>
+              import('./pages/usuario/cadastro-usuario/cadastro-usuario').then(
+                (m) => m.CadastroUsuario,
+              ),
+            title: 'SmartLock | Editar Usuário',
+          },
+
+          {
+            path: 'equipamentos/cadastro',
+            loadComponent: () =>
+              import('./pages/equipamento/cadastro-equipamento/cadastro-equipamento').then(
+                (m) => m.CadastroEquipamento,
+              ),
+            title: 'SmartLock | Novo Equipamento',
+          },
+          {
+            path: 'equipamentos/editar/:id',
+            loadComponent: () =>
+              import('./pages/equipamento/update-equipamento/update-equipamento').then(
+                (m) => m.UpdateEquipamento,
+              ),
+            title: 'SmartLock | Editar Equipamento',
+          },
+          {
+            path: 'equipamentos/credencial/:id',
+            loadComponent: () =>
+              import('./pages/equipamento/credencial-equipamento/credencial-equipamento').then(
+                (m) => m.CredencialEquipamento,
+              ),
+            title: 'SmartLock | Credenciais do Equipamento',
+          },
+          {
+            path: 'equipamentos/transferir',
+            loadComponent: () =>
+              import('./pages/equipamento/redirect-equipamento/redirect-equipamento').then(
+                (m) => m.RedirectEquipamento,
+              ),
+            title: 'SmartLock | Transferir Equipamento',
+          },
+
+          {
+            path: 'smartlocks/cadastro',
+            loadComponent: () =>
+              import('./pages/smartlock/cadastro-smartlock/cadastro-smartlock').then(
+                (m) => m.CadastroSmartlock,
+              ),
+            title: 'SmartLock | Novo Smartlock',
+          },
+          {
+            path: 'smartlocks/editar/:id',
+            loadComponent: () =>
+              import('./pages/smartlock/cadastro-smartlock/cadastro-smartlock').then(
+                (m) => m.CadastroSmartlock,
+              ),
+            title: 'SmartLock | Editar Smartlock',
+          },
+
+          {
+            path: 'unidades/cadastro',
+            loadComponent: () =>
+              import('./pages/unidade/cadastro-unidade/cadastro-unidade').then(
+                (m) => m.CadastroUnidade,
+              ),
+            title: 'SmartLock | Nova Unidade',
+          },
+          {
+            path: 'unidades/editar/:id',
+            loadComponent: () =>
+              import('./pages/unidade/cadastro-unidade/cadastro-unidade').then(
+                (m) => m.CadastroUnidade,
+              ),
+            title: 'SmartLock | Editar Unidade',
+          },
+        ],
+      },
     ],
   },
 
   {
-        path: '',
-        canActivate: [authGuard,adminGuard],
-        component:MainLayoutComponent,
-        children: [
-          // Telas de listagem
-          { path: 'unidades/lista', component: ListaUnidade, title: 'SmartLock | Unidades' },
-          { path: 'usuarios/lista', component: ListaUsuario, title: 'SmartLock | Usuários' },
-          { path: 'smartlocks/lista', component: ListaSmartlock, title: 'SmartLock | Smartlocks' },
-          { path: 'equipamentos/lista', component: ListaEquipamento, title: 'SmartLock | Equipamentos' },
-
-          // Telas de Cadastros
-          { path: 'usuarios/cadastro', component: CadastroUsuario, title: 'SmartLock | Novo Usuário' },
-          { path: 'usuarios/editar/:id', component: CadastroUsuario, title: 'SmartLock | Editar Usuário' },
-
-          { path: 'equipamentos/cadastro', component: CadastroEquipamento, title: 'SmartLock | Novo Equipamento' },
-          { path: 'equipamentos/editar/:id', component: UpdateEquipamento, title: 'SmartLock | Editar Equipamento' },
-          { path: 'equipamentos/credencial/:id', component: CredencialEquipamento, title: 'SmartLock | Credenciais do Equipamento' },
-          { path: 'equipamentos/transferir', component: RedirectEquipamento, title: 'SmartLock | Transferir Equipamento' },
-
-          { path: 'smartlocks/cadastro', component: CadastroSmartlock, title: 'SmartLock | Novo Smartlock' },
-          { path: 'smartlocks/editar/:id', component: CadastroSmartlock, title: 'SmartLock | Editar Smartlock' },
-
-          { path: 'unidades/cadastro', component: CadastroUnidade, title: 'SmartLock | Nova Unidade' },
-          { path: 'unidades/editar/:id', component: CadastroUnidade, title: 'SmartLock | Editar Unidade' },
-        ],
-      },
-
-  {
-    path: 'not-allowed', // captura qualquer rota não mapeada
-    component: ErrorPageComponent,
+    path: 'not-allowed',
+    loadComponent: () => import('./pages/error/error').then((m) => m.ErrorPageComponent),
     title: 'SmartLock | Acesso Não Autorizado',
     data: {
       codigo: 401,
@@ -95,8 +228,8 @@ export const routes: Routes = [
     },
   },
   {
-    path: '**', // captura qualquer rota não mapeada
-    component: ErrorPageComponent,
+    path: '**',
+    loadComponent: () => import('./pages/error/error').then((m) => m.ErrorPageComponent),
     title: 'SmartLock | Página Não Encontrada',
     data: {
       codigo: 404,
@@ -105,5 +238,4 @@ export const routes: Routes = [
       icone: 'error_outline',
     },
   },
-  
 ];
