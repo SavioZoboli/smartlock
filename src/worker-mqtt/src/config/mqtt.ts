@@ -44,15 +44,24 @@ if (brokerProtocol === "mqtts" || brokerProtocol === "ssl") {
 // Estabelece a conexão com o broker
 export const mqttClient = mqtt.connect(brokerUrl, options);
 
-// Confirma a conexão bem-sucedida e assina os tópicos base
+// Confirma a conexão bem-sucedida e assina apenas os tópicos de entrada (evita auto-eco)
+const INBOUND_TOPICS = [
+  `${MQTT_PREFIX}/usuarios/login_request/+`,
+  `${MQTT_PREFIX}/usuarios/sync_request/+`,
+  `${MQTT_PREFIX}/equipamentos/sync_events/+`,
+  `${MQTT_PREFIX}/equipamentos/my_equipments/+`,
+  `${MQTT_PREFIX}/system/status/+`,
+  `${MQTT_PREFIX}/system/discover/+`,
+];
+
 mqttClient.on("connect", () => {
   console.log("[MQTT] Conectado ao Broker MQTT com sucesso!");
 
-  mqttClient.subscribe(`${MQTT_PREFIX}/#`, (err) => {
+  mqttClient.subscribe(INBOUND_TOPICS, (err) => {
     if (err) {
       console.error("[MQTT] Erro ao assinar os tópicos MQTT", err);
     } else {
-      console.log(`[MQTT] Escutando tópicos da família ${MQTT_PREFIX}/#`);
+      console.log(`[MQTT] Escutando ${INBOUND_TOPICS.length} tópicos de entrada em ${MQTT_PREFIX}/...`);
     }
   });
 });
