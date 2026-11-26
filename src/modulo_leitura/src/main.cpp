@@ -35,36 +35,59 @@ void executarLeitura() {
     Serial.println("[SLAVE] Comando BEGIN_READ recebido. Iniciando ciclo M1 e M2...");
     std::vector<String> tagsDetectadas;
     tagsDetectadas.reserve(80); // Pré-aloca espaço para o lote todo
+    const unsigned long MOVE_TIMEOUT_MS = 12000; // 6 movimentos x 12s <= 72s (< 80s do Master)
 
     // --- CICLO MOTOR 1 ---
     Serial.println("[SLAVE] Lendo eixo M1...");
-    motor1.moveToLimit(MotorDirection::RIGHT, 1600, 15000);
+    if (!motor1.moveToLimit(MotorDirection::RIGHT, 1600, MOVE_TIMEOUT_MS)) {
+        Serial.println("[SLAVE] ERRO: Falha mecânica no homing de M1.");
+        LinkMaster.println("STATUS:ERROR");
+        return;
+    }
     motor1.step(MotorDirection::LEFT, 150, 1200);
 
     uhfReader1.startInventory();
     auto leitorCallback1 = [&]() { uhfReader1.processBuffer(tagsDetectadas); };
-    
-    motor1.moveToLimit(MotorDirection::LEFT, 1000, 15000, leitorCallback1);
-    motor1.step(MotorDirection::RIGHT, 150, 1200);
-    motor1.moveToLimit(MotorDirection::RIGHT, 1000, 15000, leitorCallback1);
-    motor1.step(MotorDirection::LEFT, 150, 1200);
-    
+
+    bool m1Ok = motor1.moveToLimit(MotorDirection::LEFT, 1000, MOVE_TIMEOUT_MS, leitorCallback1);
+    if (m1Ok) {
+        motor1.step(MotorDirection::RIGHT, 150, 1200);
+        m1Ok = motor1.moveToLimit(MotorDirection::RIGHT, 1000, MOVE_TIMEOUT_MS, leitorCallback1);
+    }
     uhfReader1.stopInventory();
+
+    if (!m1Ok) {
+        Serial.println("[SLAVE] ERRO: Falha mecânica durante varredura de M1.");
+        LinkMaster.println("STATUS:ERROR");
+        return;
+    }
+    motor1.step(MotorDirection::LEFT, 150, 1200);
 
     // --- CICLO MOTOR 2 ---
     Serial.println("[SLAVE] Lendo eixo M2...");
-    motor2.moveToLimit(MotorDirection::RIGHT, 1600, 15000);
+    if (!motor2.moveToLimit(MotorDirection::RIGHT, 1600, MOVE_TIMEOUT_MS)) {
+        Serial.println("[SLAVE] ERRO: Falha mecânica no homing de M2.");
+        LinkMaster.println("STATUS:ERROR");
+        return;
+    }
     motor2.step(MotorDirection::LEFT, 150, 1200);
 
     uhfReader2.startInventory();
     auto leitorCallback2 = [&]() { uhfReader2.processBuffer(tagsDetectadas); };
 
-    motor2.moveToLimit(MotorDirection::LEFT, 1000, 15000, leitorCallback2);
-    motor2.step(MotorDirection::RIGHT, 150, 1200);
-    motor2.moveToLimit(MotorDirection::RIGHT, 1000, 15000, leitorCallback2);
-    motor2.step(MotorDirection::LEFT, 150, 1200);
-    
+    bool m2Ok = motor2.moveToLimit(MotorDirection::LEFT, 1000, MOVE_TIMEOUT_MS, leitorCallback2);
+    if (m2Ok) {
+        motor2.step(MotorDirection::RIGHT, 150, 1200);
+        m2Ok = motor2.moveToLimit(MotorDirection::RIGHT, 1000, MOVE_TIMEOUT_MS, leitorCallback2);
+    }
     uhfReader2.stopInventory();
+
+    if (!m2Ok) {
+        Serial.println("[SLAVE] ERRO: Falha mecânica durante varredura de M2.");
+        LinkMaster.println("STATUS:ERROR");
+        return;
+    }
+    motor2.step(MotorDirection::LEFT, 150, 1200);
 
     // --- CONSOLIDAÇÃO E ENVIO (LINK MASTER) ---
     for (const auto& tag : tagsDetectadas) {
