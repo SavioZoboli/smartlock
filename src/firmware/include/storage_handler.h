@@ -13,6 +13,7 @@ public:
     // --- MÉTODOS DE USUÁRIOS (Preferences) ---
     static DbResult getUserAccess(const char* uid);
     static void saveUserAccess(const char* uid);
+    static void clearUsers();
 
     // --- MÉTODOS DE FILA DE EVENTOS (LittleFS / FIFO) ---
     static bool pushEventToQueue(const char* jsonPayload);

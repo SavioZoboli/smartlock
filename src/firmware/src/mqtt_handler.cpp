@@ -24,7 +24,7 @@ namespace
     const unsigned long MQTT_RECONNECT_INTERVAL = 5000; // Tenta a cada 5 segundos
 
     char macStr[18];   // Armazena o MAC (ex: "AA:BB:CC:DD:EE:FF")
-    char lwtTopic[64]; // Tópico de Last Will
+    char lwtTopic[96]; // Tópico de Last Will
 
 }
 
@@ -68,7 +68,7 @@ void MqttHandler::reconnect()
             mqttClient.publish(lwtTopic, "{\"status\":\"online\"}", true);
 
             // === ASSINATURA DE TÓPICOS ===
-            char subTopic[64];
+            char subTopic[96];
 
             // 1. Sincronização de Usuários
             buildTopic(subTopic, sizeof(subTopic), "usuarios", "sync_response");
@@ -88,7 +88,10 @@ void MqttHandler::reconnect()
 
             Serial.println("[MQTT] Tópicos assinados com sucesso.");
 
-            MqttHandler::publish("usuarios", "sync_request", "{}");
+            if (MqttHandler::publish("usuarios", "sync_request", "{}"))
+            {
+                System::setSyncing(true);
+            }
         }
         else
         {
@@ -128,7 +131,7 @@ bool MqttHandler::publish(const char *module, const char *action, const char *pa
         return false;
     }
 
-    char pubTopic[64];
+    char pubTopic[96];
     buildTopic(pubTopic, sizeof(pubTopic), module, action);
     mqttClient.publish(pubTopic, payload);
     Serial.printf("[MQTT] Publicado em %s: %s\n", pubTopic, payload);
@@ -148,10 +151,10 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
     // MONTAGEM DINÂMICA DOS TÓPICOS ESPERADOS
     // (Garante que só processaremos dados destinados ao NOSSO MAC)
     // ==========================================
-    char topicLoginResponse[64];
-    char topicUserSync[64];
-    char topicEquipSync[64];
-    char topicIdentity[64];
+    char topicLoginResponse[96];
+    char topicUserSync[96];
+    char topicEquipSync[96];
+    char topicIdentity[96];
 
     buildTopic(topicLoginResponse, sizeof(topicLoginResponse), "usuarios", "login_response");
     buildTopic(topicUserSync, sizeof(topicUserSync), "usuarios", "sync_response");
@@ -194,6 +197,7 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
     // ==========================================
     else if (strcmp(topic, topicUserSync) == 0)
     {
+        System::setSyncing(false);
 
         // Aloca até 2048 bytes no Heap (suporta arrays maiores)
         DynamicJsonDocument doc(2048);
@@ -206,7 +210,15 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
             return;
         }
 
-        // O Node-RED deve enviar: {"usuarios": [{"uid":"A1B2", "autorizado":true}, ...]}
+        if (!doc["usuarios"].is<JsonArray>())
+        {
+            Serial.println(F("[MQTT] Payload de sync sem array 'usuarios' válido. Cache mantido."));
+            return;
+        }
+
+        // Limpa cache anterior antes de gravar a lista atualizada da unidade
+        StorageHandler::clearUsers();
+
         JsonArray users = doc["usuarios"].as<JsonArray>();
         for (JsonObject user : users)
         {
@@ -272,7 +284,7 @@ void MqttHandler::callback(char *topic, byte *payload, unsigned int length)
 // Monta as strings de tópico sem usar a classe String do Arduino (Evita fragmentação de heap)
 void MqttHandler::buildTopic(char *buffer, size_t maxLen, const char *module, const char *action)
 {
-    snprintf(buffer, maxLen, "smartlock/%s/%s/%s", module, action, macStr);
+    snprintf(buffer, maxLen, "%s/%s/%s/%s", MQTT_PREFIX, module, action, macStr);
 }
 
 bool MqttHandler::isConnected()

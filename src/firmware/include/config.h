@@ -30,3 +30,7 @@
 // CONSTANTES DO SISTEMA
 // ==========================================
 #define TEMPO_ABERTURA_MS 5000 // Tempo que o relé fica aberto
+
+#ifndef MQTT_PREFIX
+#define MQTT_PREFIX "smartlock"
+#endif

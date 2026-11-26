@@ -29,7 +29,12 @@ DbResult StorageHandler::getUserAccess(const char* uid) {
 }
 
 void StorageHandler::saveUserAccess(const char* uid) {
-    userDb.putString(uid, "");
+    userDb.putUChar(uid, 1);
+}
+
+void StorageHandler::clearUsers() {
+    userDb.clear();
+    Serial.println("[STORAGE] Cache local de usuários limpo.");
 }
 
 // --- MÉTODOS DE FILA (FIFO com LittleFS) ---
