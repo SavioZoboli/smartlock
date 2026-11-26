@@ -40,7 +40,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
   try {
     const decoded = verificarToken(token);
-    if (decoded.purpose === 'signup' || !decoded.id) {
+    if ((decoded.purpose && decoded.purpose !== 'session') || !decoded.id) {
       res.status(401).json({ message: 'Sessão inválida ou cadastro incompleto' });
       return;
     }

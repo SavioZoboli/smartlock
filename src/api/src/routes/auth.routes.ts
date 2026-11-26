@@ -9,6 +9,8 @@ router.get('/me',authMiddleware,authController.returnMe)
 
 router.post('/logout',authController.logout)
 
+router.post('/refresh',authController.refresh)
+
 router.get('/googleToken',authController.returnToken)
 
 module.exports = router

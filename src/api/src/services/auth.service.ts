@@ -1,3 +1,4 @@
+import { Usuario } from "../models/index.model";
 import regiaoService from "./regiao.service";
 import usuarioService from "./usuario.service";
 
@@ -9,7 +10,9 @@ class AuthService {
   private GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   // O segredo para assinar o NOSSO token de sessão
   private JWT_SECRET = process.env.JWT_SECRET;
-  private JWT_EXPIRATION = process.env.JWT_EXPIRATION;
+  private JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+  private JWT_EXPIRATION = process.env.JWT_EXPIRATION || "15m";
+  private JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION || "7d";
 
   private googleClient = new OAuth2Client(this.GOOGLE_CLIENT_ID);
 
@@ -50,9 +53,11 @@ class AuthService {
         let is_admin = user.role == "ADMIN";
 
         let sessionToken = this.geraToken(user.id, user.email,user.nome+" "+user.sobrenome,user.avatar,is_admin,regiao_id);
+        let refreshToken = this.geraRefreshToken(user.id);
 
         return {
           sessionToken,
+          refreshToken,
           userData,
           cadastrado:true
         };
@@ -77,6 +82,46 @@ class AuthService {
       this.JWT_SECRET,
       { expiresIn: this.JWT_EXPIRATION },
     );
+  }
+
+  public geraRefreshToken(id: number): string {
+    return jwt.sign(
+      { id, purpose: "refresh" },
+      this.JWT_REFRESH_SECRET,
+      { expiresIn: this.JWT_REFRESH_EXPIRATION },
+    );
+  }
+
+  public async renovarSessao(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    const decoded = jwt.verify(refreshToken, this.JWT_REFRESH_SECRET) as {
+      id?: number;
+      purpose?: string;
+    };
+
+    if (decoded.purpose !== "refresh" || !decoded.id) {
+      throw new Error("REFRESH_TOKEN_INVALIDO");
+    }
+
+    const user = await Usuario.findOne({
+      where: { id: decoded.id, ativo: true },
+    });
+    if (!user) {
+      throw new Error("USUARIO_INATIVO");
+    }
+
+    const regiao_id = await regiaoService.getRegiaoDoUsuario(user.id);
+    const is_admin = user.role === "ADMIN";
+    const accessToken = this.geraToken(
+      user.id,
+      user.email,
+      `${user.nome} ${user.sobrenome}`,
+      user.avatar ?? "",
+      is_admin,
+      regiao_id,
+    );
+    const novoRefreshToken = this.geraRefreshToken(user.id);
+
+    return { accessToken, refreshToken: novoRefreshToken };
   }
 }
 
