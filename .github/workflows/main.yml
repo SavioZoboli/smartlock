@@ -2,6 +2,7 @@ name: CI/CD
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -73,6 +74,24 @@ jobs:
           npx tsc --noEmit
           for f in migrations/*.js; do node -c "$f"; done
 
+  test-worker-mqtt:
+    needs: changes
+    if: needs.changes.outputs.worker-mqtt == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: src/worker-mqtt/package-lock.json
+      - name: Instalar dependências (Worker MQTT)
+        working-directory: src/worker-mqtt
+        run: npm ci
+      - name: Validar TypeScript (Worker MQTT)
+        working-directory: src/worker-mqtt
+        run: npx tsc --noEmit
+
   # 2. Build e push das imagens Docker (somente após testes passarem)
   build-frontend:
     needs: [changes, test-frontend]
@@ -106,6 +125,8 @@ jobs:
           context: ./src/hmi
           push: true
           tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/hmi:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build-api-dados:
     needs: [changes, test-api]
@@ -124,9 +145,11 @@ jobs:
           context: ./src/api
           push: true
           tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build-worker-mqtt:
-    needs: changes
+    needs: [changes, test-worker-mqtt]
     if: needs.changes.outputs.worker-mqtt == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -142,16 +165,20 @@ jobs:
           context: ./src/worker-mqtt
           push: true
           tags: ghcr.io/${{ needs.changes.outputs.repo_lc }}/worker-mqtt:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # 3. Aprovação manual (environment: production) + 4. Deploy no servidor (CD)
   #    A primeira ação do deploy no servidor é sempre verificar/executar migrations antes de subir os novos containers.
   deploy:
-    needs: [changes, test-frontend, test-api, build-frontend, build-api-dados, build-worker-mqtt]
+    needs: [changes, test-frontend, test-api, test-worker-mqtt, build-frontend, build-api-dados, build-worker-mqtt]
     if: |
       always() &&
       needs.changes.result == 'success' &&
+      (github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.api-dados == 'true' || needs.changes.outputs.worker-mqtt == 'true') &&
       (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
       (needs.test-api.result == 'success' || needs.test-api.result == 'skipped') &&
+      (needs.test-worker-mqtt.result == 'success' || needs.test-worker-mqtt.result == 'skipped') &&
       (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
       (needs.build-api-dados.result == 'success' || needs.build-api-dados.result == 'skipped') &&
       (needs.build-worker-mqtt.result == 'success' || needs.build-worker-mqtt.result == 'skipped')
@@ -165,6 +192,7 @@ jobs:
         run: |
           echo "$ENV_API_DADOS" > /srv/app/api/.env
           echo "$ENV_WORKER_MQTT" > /srv/app/worker-mqtt/.env
+          chmod 600 /srv/app/api/.env /srv/app/worker-mqtt/.env
 
       - name: Login GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
