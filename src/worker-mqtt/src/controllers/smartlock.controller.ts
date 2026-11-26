@@ -1,8 +1,9 @@
 import { mqttClient } from "../config/mqtt";
+import { MQTT_PREFIX } from "../config/env";
 import smartlockService from "../services/smartlock.service";
 
 class SmartlockController {
-  private mqtt_base_topic = "smartlock/system";
+  private mqtt_base_topic = `${MQTT_PREFIX}/system`;
 
   async whoami(mac: string) {
     if (!mac) {
